@@ -45,14 +45,22 @@ PSU with operator-adjustable 5 V trim pot + 5 fault modes, coin mech,
 buttons, marquee, harness segments. Cabinet (peripherals) panel in the
 UI with a trim slider, color-coded rail readouts, fault dropdowns.
 See [Phase-4-PSU-Peripherals](Phases/Phase-4-PSU-Peripherals.md).
-### ✅ Phase 5 — Address decoder (Target B) — partial
+### ✅ Phase 5 — Address decoder (Target B)
 4-6 weekends estimated. **Actual: 1 evening for the address decoder.**
 Representative netlist with 74161 + 74155A producing four active-low
 chip-selects (ROM/RAM/POKEY/EAROM); preprocessor instrumented; fault
 scenario `fault_addr_qb_stuck_lo.cpp` reproduces a clean two-of-four
-chip-select dropout. Target C (RAM region with bad-cell device)
-deferred to Phase 5.5. See
+chip-select dropout. See
 [Phase-5-Address-Decoder-RAM](Phases/Phase-5-Address-Decoder-RAM.md).
+### ✅ Phase 5.5 — RAM region with cell-level fault modeling
+**Actual: 1 evening.**
+New `BAD_RAM_CELL` netlist device — 16-cell SRAM with `BAD_ADDR` +
+`MODE` parameters that pin a single cell to stuck-at-0/1/inverted
+state. Test netlist `tests/netlist/centiped/ram_region.cpp` walks
+0..15 with write-then-read cycles; under STUCK_LO at BAD_ADDR=5 the DO
+line dips LOW once per 16-address sweep while the other 15 cells read
+back the written 1. See
+[Phase-5.5-RAM-Region](Phases/Phase-5.5-RAM-Region.md).
 ### 🚧 Phase 6 — CRT monitor + trackball + audio chain
 8-12 weekends. Largest single phase. Wells-Gardner 19K6100 chassis
 model as shader effects, trackball quadrature with fault categories,

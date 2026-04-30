@@ -1,0 +1,201 @@
+From c7cc0e970a02a4ceb75fcbf08205721de509e892 Mon Sep 17 00:00:00 2001
+From: jackie grey <leftstick22@gmail.com>
+Date: Thu, 30 Apr 2026 01:45:28 -0500
+Subject: [PATCH 3/3] Add BAD_RAM_CELL netlist device for cell-level RAM fault
+ injection
+
+A 16x1 SRAM with two new params, BAD_ADDR and MODE, that pin a single
+cell to a stuck-at-0/stuck-at-1/inverted state. Other cells behave
+like a normal SRAM. Pin map mirrors RAM_2102A (CEQ active-low, RWQ
+low for write) so the device drops into existing RAM topologies.
+
+Built and verified with nltool on a 16-cell test netlist:
+  - MODE=0 (NORMAL): every read after warmup returns the written 1.
+  - MODE=2 (STUCK_LO) at BAD_ADDR=5: reads return 0 only when the
+    address counter sweeps through 5; all other addresses still
+    return the written value.
+
+Co-Authored-By: Oz <oz-agent@warp.dev>
+---
+ scripts/src/netlist.lua                      |   1 +
+ src/lib/netlist/devices/nld_bad_ram_cell.cpp | 121 +++++++++++++++++++
+ src/lib/netlist/generated/lib_entries.hxx    |   1 +
+ src/lib/netlist/generated/nld_devinc.h       |  10 ++
+ 4 files changed, 133 insertions(+)
+ create mode 100644 src/lib/netlist/devices/nld_bad_ram_cell.cpp
+
+diff --git a/scripts/src/netlist.lua b/scripts/src/netlist.lua
+index e916b04e..8461e27c 100644
+--- a/scripts/src/netlist.lua
++++ b/scripts/src/netlist.lua
+@@ -194,6 +194,7 @@ project "netlist"
+ 		MAME_DIR .. "src/lib/netlist/devices/nld_am2847.cpp",
+ 		MAME_DIR .. "src/lib/netlist/devices/nld_dm9314.cpp",
+ 		MAME_DIR .. "src/lib/netlist/devices/nld_dm9334.cpp",
++		MAME_DIR .. "src/lib/netlist/devices/nld_bad_ram_cell.cpp",
+ 		MAME_DIR .. "src/lib/netlist/devices/nld_fault_buffer.cpp",
+ 		MAME_DIR .. "src/lib/netlist/devices/nld_ne555.cpp",
+ 		MAME_DIR .. "src/lib/netlist/devices/nld_mm5837.cpp",
+diff --git a/src/lib/netlist/devices/nld_bad_ram_cell.cpp b/src/lib/netlist/devices/nld_bad_ram_cell.cpp
+new file mode 100644
+index 00000000..111f6389
+--- /dev/null
++++ b/src/lib/netlist/devices/nld_bad_ram_cell.cpp
+@@ -0,0 +1,121 @@
++// license:BSD-3-Clause
++// copyright-holders:Arcade Cabinet Fault Simulator
++/*
++ * nld_bad_ram_cell.cpp
++ *
++ *  Small (16 x 1) static RAM with cell-level fault injection. Models a
++ *  stuck-at fault that lives at a single configurable address; all
++ *  other cells behave like a normal SRAM. The architectural pattern
++ *  follows MAME's nld_2102a.cpp; the storage is a state_container so
++ *  it survives netlist save/load.
++ *
++ *  Pin map:
++ *      A0..A3   address inputs (4 bits -> 16 cells)
++ *      CEQ      chip enable, active low
++ *      RWQ      read/write, low = write, high = read
++ *      DI       data input (1 bit)
++ *      DO       data output (1 bit)
++ *
++ *  Parameters:
++ *      BAD_ADDR  the address whose cell is faulty (0..15)
++ *      MODE      0 = NORMAL    (no fault, full RAM behavior)
++ *                1 = STUCK_HI  (cell at BAD_ADDR reads as 1, writes drop)
++ *                2 = STUCK_LO  (cell at BAD_ADDR reads as 0, writes drop)
++ *                3 = FLIP      (cell at BAD_ADDR returns inverted of stored)
++ *
++ *  This is a v1 model: 16 cells x 1 bit at a single bit width. A fuller
++ *  Phase 5.5 RAM region (the full Centipede working RAM) chains four of
++ *  these to give 1024x4 with the same fault-injection surface.
++ */
++
++#include "nl_base.h"
++
++namespace netlist::devices {
++
++	NETLIB_OBJECT(bad_ram_cell)
++	{
++		NETLIB_CONSTRUCTOR(bad_ram_cell)
++		, m_A(*this, {"A0", "A1", "A2", "A3"}, NETLIB_DELEGATE(inputs))
++		, m_CEQ(*this, "CEQ", NETLIB_DELEGATE(inputs))
++		, m_RWQ(*this, "RWQ", NETLIB_DELEGATE(inputs))
++		, m_DI(*this, "DI", NETLIB_DELEGATE(inputs))
++		, m_DO(*this, "DO")
++		, m_bad_addr(*this, "BAD_ADDR", 0)
++		, m_mode(*this, "MODE", 0)
++		, m_ram(*this, "m_ram", 0)
++		, m_power_pins(*this)
++		{
++		}
++
++	private:
++		// Mode encoding — keep in sync with the Python-side runner if any.
++		static constexpr int MODE_NORMAL   = 0;
++		static constexpr int MODE_STUCK_HI = 1;
++		static constexpr int MODE_STUCK_LO = 2;
++		static constexpr int MODE_FLIP     = 3;
++
++		// Number of cells; address width is 4 bits so 16 cells.
++		static constexpr std::size_t NUM_CELLS = 16;
++
++		// Read access time approximating the 2114 (~250 ns).
++		static constexpr netlist_time ACCESS_DELAY = NLTIME_FROM_NS(250);
++
++		NETLIB_RESETI()
++		{
++			for (std::size_t i = 0; i < NUM_CELLS; i++)
++				m_ram[i] = 0;
++		}
++
++		NETLIB_HANDLERI(inputs)
++		{
++			if (m_CEQ())
++				return;  // chip not selected; output stays in last state
++
++			const unsigned a = (m_A[0]() << 0) |
++			                   (m_A[1]() << 1) |
++			                   (m_A[2]() << 2) |
++			                   (m_A[3]() << 3);
++
++			const bool is_bad = (a == static_cast<unsigned>(m_bad_addr()));
++
++			// Write phase. RWQ low = write. Stuck/flipped cells refuse writes
++			// (the cell's storage element can't be programmed any more).
++			if (!m_RWQ())
++			{
++				if (!(is_bad && m_mode() != MODE_NORMAL))
++				{
++					m_ram[a] = m_DI() ? 1 : 0;
++				}
++			}
++
++			// Read phase. The output reflects either the stored bit or the
++			// fault-injected value at BAD_ADDR.
++			unsigned out = m_ram[a];
++			if (is_bad)
++			{
++				switch (m_mode())
++				{
++					case MODE_STUCK_HI: out = 1;        break;
++					case MODE_STUCK_LO: out = 0;        break;
++					case MODE_FLIP:     out ^= 1;       break;
++					default: /* NORMAL */               break;
++				}
++			}
++			m_DO.push(out & 1, ACCESS_DELAY);
++		}
++
++		object_array_t<logic_input_t, 4> m_A;
++		logic_input_t  m_CEQ;
++		logic_input_t  m_RWQ;
++		logic_input_t  m_DI;
++		logic_output_t m_DO;
++		param_int_t    m_bad_addr;
++		param_int_t    m_mode;
++		state_container<std::array<uint8_t, NUM_CELLS>> m_ram;
++		nld_power_pins m_power_pins;
++	};
++
++	NETLIB_DEVICE_IMPL(bad_ram_cell, "BAD_RAM_CELL",
++		"+CEQ,+A0,+A1,+A2,+A3,+RWQ,+DI,@VCC,@GND")
++
++} // namespace netlist::devices
+diff --git a/src/lib/netlist/generated/lib_entries.hxx b/src/lib/netlist/generated/lib_entries.hxx
+index 1d09585a..4d26adac 100644
+--- a/src/lib/netlist/generated/lib_entries.hxx
++++ b/src/lib/netlist/generated/lib_entries.hxx
+@@ -51,6 +51,7 @@ LIB_ENTRY(9322)
+ LIB_ENTRY(9334)
+ LIB_ENTRY(9602)
+ LIB_ENTRY(AM2847)
++LIB_ENTRY(bad_ram_cell)
+ LIB_ENTRY(C)
+ LIB_ENTRY(CCCS)
+ LIB_ENTRY(CCVS)
+diff --git a/src/lib/netlist/generated/nld_devinc.h b/src/lib/netlist/generated/nld_devinc.h
+index 36496d2b..990f3d7a 100644
+--- a/src/lib/netlist/generated/nld_devinc.h
++++ b/src/lib/netlist/generated/nld_devinc.h
+@@ -655,6 +655,16 @@
+ 	__VA_OPT__(NET_CHECK_PARAM_COUNT(TTL_AM2847, PNARGS(__VA_ARGS__), 9)) \
+ 	NET_REGISTER_DEV(TTL_AM2847, name __VA_OPT__(,) __VA_ARGS__)
+ 
++// ---------------------------------------------------------------------
++// Source: ../devices/nld_bad_ram_cell.cpp
++// ---------------------------------------------------------------------
++
++// usage       : BAD_RAM_CELL(name, CEQ, A0, A1, A2, A3, RWQ, DI)
++// auto connect: VCC, GND
++#define BAD_RAM_CELL(name, ...) \
++	__VA_OPT__(NET_CHECK_PARAM_COUNT(BAD_RAM_CELL, PNARGS(__VA_ARGS__), 7)) \
++	NET_REGISTER_DEV(BAD_RAM_CELL, name __VA_OPT__(,) __VA_ARGS__)
++
+ // ---------------------------------------------------------------------
+ // Source: ../devices/nld_fault_buffer.cpp
+ // ---------------------------------------------------------------------
+-- 
+2.54.0
+

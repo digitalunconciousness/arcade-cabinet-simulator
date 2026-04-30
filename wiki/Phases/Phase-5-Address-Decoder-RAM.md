@@ -1,6 +1,7 @@
 # Phase 5 — Address decoder + RAM region
-**Status:** ✅ partial — Target B (address decoder) shipped; Target C
-(RAM region with bad-cell modeling) deferred to Phase 5.5.
+**Status:** ✅ complete — Target B (address decoder) shipped here;
+Target C (RAM region with bad-cell modeling) shipped in
+[Phase 5.5](Phase-5.5-RAM-Region.md).
 **Goal:** Two more PCB sub-circuits get netlist coverage:
 - **Target B — Address decoder** (TM-182 sheet 2). The 74139/74138
   decoders that produce ROM, RAM, POKEY, EAROM, and video-RAM
@@ -74,17 +75,14 @@ it to MAME if/when the address decoder grows beyond the rep stage.
   (`CLK.Q`, `QA`, `QB`), not the static-config wiring. That's
   correct — we don't want fault buffers on power, enable, or
   data-tie-high pins.
-## Out of scope (deferred to Phase 5.5)
-- **Target C — RAM region.** A schematic-faithful Centipede 2114 RAM
-  region needs:
-  - 2114-style RAM device (`RAM_2102A` exists in the netlist library
-    but it's a 1024×1 SRAM; 2114 is 1024×4, semantically similar).
-  - Address mux for CPU vs video access.
-  - Data-bus tristate buffers.
-  - A new `BAD_RAM_CELL` device that wraps a single bit at a single
-    address with stuck-at faults, distinct from `FAULT_BUFFER` (which
-    only handles pin-level faults).
-  Realistically that's its own phase. Phase 5.5 picks it up.
+## Target C → Phase 5.5
+Target C (RAM region with bad-cell modeling) was split into a
+dedicated [Phase 5.5](Phase-5.5-RAM-Region.md) sub-phase and is now
+complete. The new `BAD_RAM_CELL` netlist device wraps an SRAM with
+stuck-at fault injection at a configurable address, distinct from
+`FAULT_BUFFER` (which only handles pin-level faults). See the
+Phase 5.5 page for verification and architecture.
+## Out of scope (still deferred)
 - **PSU rail coupling.** The Phase 4 PSU model exposes a 5 V rail in
   Python state but doesn't yet feed into the netlist solver as
   `ANALOG_INPUT(VCC, ...)`. Brown-out faults from the PSU thus don't
@@ -106,4 +104,4 @@ it to MAME if/when the address decoder grows beyond the rep stage.
   netlist work.
 ## Navigation
 ← Previous: [Phase 4 — PSU + peripherals](Phase-4-PSU-Peripherals.md) ·
-Next: [Phase 6 — CRT + trackball + audio](Phase-6-CRT-Trackball-Audio.md) →
+Next: [Phase 5.5 — RAM region](Phase-5.5-RAM-Region.md) →

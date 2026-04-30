@@ -104,6 +104,12 @@ that nothing in the netlist solver needs to know about FAULT_BUFFER.
 - Logic-mode (`FORCE_TRISTATE_LOGIC=1`) collapses OPEN to logic-low because
   the netlist solver's logic plane has no "floating" state. Use analog
   mode for honest OPEN-pin behavior.
+## See also
+- `docs/devices/bad_ram_cell.md` — cell-level fault primitive (the
+  right tool for single-cell RAM decay symptoms; FAULT_BUFFER on a
+  RAM data line would fault every address, not just one).
+- `wiki/Phases/Phase-5.5-RAM-Region.md` — the BAD_RAM_CELL phase
+  deliverable, with test results and architecture diagrams.
 ## References
 - Project plan: `arcade_cabinet_fault_simulator_plan.md` § Component 1
 - Netlist conventions reference: `vendor/mame/src/lib/netlist/devices/nld_74125.cpp`

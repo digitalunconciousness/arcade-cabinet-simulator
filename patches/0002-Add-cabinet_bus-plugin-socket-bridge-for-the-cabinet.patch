@@ -1,7 +1,7 @@
-From 0ea667085535bf3ab8f7fae4d0b351afe509443c Mon Sep 17 00:00:00 2001
+From 8e8407f4a8a6d893305eaadca1c807a06f76fb25 Mon Sep 17 00:00:00 2001
 From: jackie grey <leftstick22@gmail.com>
 Date: Thu, 30 Apr 2026 00:28:11 -0500
-Subject: [PATCH 2/2] Add cabinet_bus plugin: socket bridge for the cabinet-bus
+Subject: [PATCH 2/3] Add cabinet_bus plugin: socket bridge for the cabinet-bus
  server
 
 A Lua plugin that opens a TCP listener on 127.0.0.1:5051 and accepts
@@ -28,7 +28,7 @@ Co-Authored-By: Oz <oz-agent@warp.dev>
 
 diff --git a/plugins/cabinet_bus/init.lua b/plugins/cabinet_bus/init.lua
 new file mode 100644
-index 00000000..db2cb30a
+index 00000000..be34259c
 --- /dev/null
 +++ b/plugins/cabinet_bus/init.lua
 @@ -0,0 +1,156 @@
@@ -131,14 +131,14 @@ index 00000000..db2cb30a
 +        elseif cmd == "get_state" then
 +            return snapshot_state()
 +        elseif cmd == "pause" then
-+            local mach = manager.machine
-+            if mach then mach:pause() end
++            -- emu.pause() forwards to machine().pause(); the method is
++            -- exposed on the emu module rather than on machine itself.
++            emu.pause()
 +            local s = snapshot_state()
 +            s.paused = true
 +            return s
 +        elseif cmd == "resume" then
-+            local mach = manager.machine
-+            if mach then mach:resume() end
++            emu.unpause()
 +            local s = snapshot_state()
 +            s.paused = false
 +            return s
