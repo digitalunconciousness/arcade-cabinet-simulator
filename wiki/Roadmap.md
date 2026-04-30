@@ -45,11 +45,15 @@ PSU with operator-adjustable 5 V trim pot + 5 fault modes, coin mech,
 buttons, marquee, harness segments. Cabinet (peripherals) panel in the
 UI with a trim slider, color-coded rail readouts, fault dropdowns.
 See [Phase-4-PSU-Peripherals](Phases/Phase-4-PSU-Peripherals.md).
-### 🚧 Phase 5 — Address decoder + RAM region
-4-6 weekends. Targets B and C from the project plan: 74139/74138
-decoders for chip-selects, plus 2114 RAM bad-cell modeling. See
+### ✅ Phase 5 — Address decoder (Target B) — partial
+4-6 weekends estimated. **Actual: 1 evening for the address decoder.**
+Representative netlist with 74161 + 74155A producing four active-low
+chip-selects (ROM/RAM/POKEY/EAROM); preprocessor instrumented; fault
+scenario `fault_addr_qb_stuck_lo.cpp` reproduces a clean two-of-four
+chip-select dropout. Target C (RAM region with bad-cell device)
+deferred to Phase 5.5. See
 [Phase-5-Address-Decoder-RAM](Phases/Phase-5-Address-Decoder-RAM.md).
-### ⏳ Phase 6 — CRT monitor + trackball + audio chain
+### 🚧 Phase 6 — CRT monitor + trackball + audio chain
 8-12 weekends. Largest single phase. Wells-Gardner 19K6100 chassis
 model as shader effects, trackball quadrature with fault categories,
 audio chain post-processing. See

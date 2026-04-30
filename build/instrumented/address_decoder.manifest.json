@@ -1,0 +1,23 @@
+[
+  {
+    "refdes": "CLK",
+    "pin": "Q",
+    "fault_device": "FB_CLK_Q",
+    "source_line": 61,
+    "original_net": "NET_C(CLK.Q,  ADDR_CTR.CLK)"
+  },
+  {
+    "refdes": "ADDR_CTR",
+    "pin": "QA",
+    "fault_device": "FB_ADDR_CTR_QA",
+    "source_line": 76,
+    "original_net": "NET_C(ADDR_CTR.QA, DEC.A)"
+  },
+  {
+    "refdes": "ADDR_CTR",
+    "pin": "QB",
+    "fault_device": "FB_ADDR_CTR_QB",
+    "source_line": 77,
+    "original_net": "NET_C(ADDR_CTR.QB, DEC.B)"
+  }
+]

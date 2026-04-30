@@ -5,15 +5,16 @@ user inject realistic faults at any subsystem. Initial target is the Atari
 Centipede.
 The master plan is in [`arcade_cabinet_fault_simulator_plan.md`](../arcade_cabinet_fault_simulator_plan.md).
 ## Current status
-**Phase 4 complete.** The browser GUI now has a Cabinet (peripherals)
-panel with cards for the PSU, coin mech, marquee, buttons, and harness
-segments. The PSU card exposes the operator-adjustable 5 V trim pot as
-a live slider, alongside fault dropdowns for each peripheral. Trim
-over-adjustment color-warns the rail readout; some faults
-(`failed_regulator`, `overload_trip`) override the trim entirely — just
-like the real hardware.
-Up next: **Phase 5** — address decoder + RAM region netlist coverage.
-See `Phases/Phase-5-Address-Decoder-RAM.md` for the goal and plan.
+**Phase 5 partial complete — Target B (address decoder) shipped; Target C
+(RAM region with bad-cell modeling) split out to a Phase 5.5 follow-up.**
+A representative Centipede address decoder netlist now produces four
+active-low chip-select lines (ROM, RAM, POKEY, EAROM); a stuck-low fault
+on the QB address bit demonstrates the textbook "sound and high-score
+memory go dead, rest of the bus fine" symptom — ROM/RAM cycle at 2×,
+POKEY/EAROM never assert. Detailed in `Phases/Phase-5-Address-Decoder-RAM.md`.
+Up next: **Phase 6** — CRT monitor + trackball + audio chain. The
+biggest single phase per the project plan: shader-level chassis fault
+effects, trackball quadrature with fault categories, audio post-processing.
 ## Phase index
 | Phase | Title | Status |
 |-------|-------|--------|
@@ -23,8 +24,8 @@ See `Phases/Phase-5-Address-Decoder-RAM.md` for the goal and plan.
 | 3 | [Cabinet bus + UI](Phases/Phase-3-Cabinet-Bus.md) | ✅ complete |
 | 3.5 | [MAME bridge](Phases/Phase-3.5-MAME-Bridge.md) | ✅ complete |
 | 4 | [PSU + peripherals](Phases/Phase-4-PSU-Peripherals.md) | ✅ complete |
-| 5 | [Address decoder + RAM](Phases/Phase-5-Address-Decoder-RAM.md) | 🚧 next up |
-| 6 | [CRT + trackball + audio](Phases/Phase-6-CRT-Trackball-Audio.md) | ⏳ planned |
+| 5 | [Address decoder + RAM](Phases/Phase-5-Address-Decoder-RAM.md) | ✅ partial (5.5 deferred) |
+| 6 | [CRT + trackball + audio](Phases/Phase-6-CRT-Trackball-Audio.md) | 🚧 next up |
 | 7 | [Cabinet UI + training mode](Phases/Phase-7-Cabinet-UI-Training.md) | ⏳ planned |
 Full schedule and tier-expansion plan: [Roadmap](Roadmap.md).
 ### Reference
