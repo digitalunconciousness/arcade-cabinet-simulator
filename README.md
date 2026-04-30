@@ -49,11 +49,23 @@ Use the new sound system explicitly:
 ```bash
 ./mame -rompath ../../roms -window -sound pipewire centiped3
 ```
+## Demo (Phase 3)
+After the bootstrap finishes, you can launch the browser demo:
+```bash
+source .venv/bin/activate
+pip install flask                    # if not already done
+./tools/cabinet_bus/start.sh         # http://127.0.0.1:5050
+```
+Open the URL, click any pin on the sync-generator schematic, pick a
+fault mode, and watch the waveforms re-render. See
+[`wiki/Phases/Phase-3-Cabinet-Bus.md`](wiki/Phases/Phase-3-Cabinet-Bus.md)
+for the full demo script.
 ## Documentation
 - [`wiki/Home.md`](wiki/Home.md) — project wiki landing page; phase
   status, roadmap, devices, build notes, ADRs.
 - `docs/devices/fault_buffer.md` — the FAULT_BUFFER netlist device.
 - `tools/preprocessor/README.md` — auto-instrumentation preprocessor.
+- `tools/cabinet_bus/` — Phase 3 server + UI sources.
 - `patches/README.md` — patch series workflow.
 ## Wiki workflow
 The wiki is tracked in-repo at [`wiki/`](wiki/) so phase commits update

@@ -25,11 +25,16 @@ pins instrumented), and demonstrated a localized stuck-low fault on
 `FB_V_LO_QC` that knocks out VSYNC while leaving HSYNC untouched. See
 [Phase-2-Sync-Generator](Phases/Phase-2-Sync-Generator.md). Schematic-faithful pass
 deferred until TM-182 is downloaded.
-### 🚧 Phase 3 — Cabinet bus + minimal UI
-4-6 weekends. Lua TCP/JSON server inside MAME, schematic-view UI with
-fault-inject controls, one probe.
-### ⏳ Phase 4 — PSU model + simple peripherals
-6-8 weekends. Power supply, coin mech, buttons, lights, harness.
+### ✅ Phase 3 — Cabinet bus + minimal UI
+4-6 weekends estimated. **Actual: 1 evening.**
+Flask cabinet-bus + vanilla-JS browser UI. Click a pin in the SVG
+schematic, pick a fault mode, see the waveforms re-render. Demo recipe
+in [Phase-3-Cabinet-Bus](Phases/Phase-3-Cabinet-Bus.md). The MAME-side
+Lua plugin and live WebSocket streaming are deferred to a Phase 3.5
+follow-up; the cabinet-bus protocol is in place to swap in.
+### 🚧 Phase 4 — PSU model + simple peripherals
+6-8 weekends. Power supply, coin mech, buttons, lights, harness. See
+[Phase-4-PSU-Peripherals](Phases/Phase-4-PSU-Peripherals.md).
 ### ⏳ Phase 5 — Address decoder + RAM region
 4-6 weekends. Targets B and C from the project plan.
 ### ⏳ Phase 6 — CRT monitor + trackball + audio chain

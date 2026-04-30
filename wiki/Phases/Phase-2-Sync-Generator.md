@@ -6,26 +6,30 @@ signals built from 74161s and a few 74xx gates). Demonstrate one
 end-to-end PCB fault with visible symptoms (rolling picture, torn frames,
 or missing video).
 **Estimate:** 3–4 weekends. **Actual: 1 evening (representative pass).**
-## Caveat: representative, not schematic-faithful
-This phase delivers a *representative* sync generator that uses the
-same architecture (chained 74161 counters + NAND-gate sync decode) at
-the real Centipede 12.096 MHz master clock rate, but with simplified
-counter widths and decode boundaries.
-**Update:** TM-182 (service manual) and DP-182 (schematics) are now
-downloaded into `docs/centipede/` from public arcade-preservation
-archives — see [References](../References.md). The schematics are
-raster-scanned single-page PDFs (~4 MB each, ~2400×1600 pt). Programmatic
-text extraction recovers nothing, so the schematic-faithful pass still
-requires a human to read the relevant sheets and either:
-- update `sync_generator.cpp` directly with the real chip references
-  (e.g. `H_LO` becomes the actual reference designator on the schematic,
-  pins line up with the real net names), or
-- snip the relevant sheet sections as images and share them so they can
-  be jointly interpreted with an LLM in a follow-up session.
-The instrumentation, manifest, fault scenario, and verification harness
-on top of `sync_generator.cpp` all carry over unchanged when the netlist
-becomes schematic-faithful — the abstraction boundary is at the netlist
-file, not below it.
+## Current state of schematic integration
+**The Phase 2 deliverable is end-to-end working as a *representative*
+netlist**, not a schematic-faithful one. Here's where each piece stands:
+- TM-182 service manual (1st and 6th printings) and DP-182 schematics
+  (4 PDFs, sheets 01A/01B/02A/02B) are downloaded into
+  `docs/centipede/` from public arcade-preservation archives. Sourced
+  per repo policy in [References](../References.md); not redistributed
+  via this repo.
+- The DP-182 PDFs are single-page raster scans at ~2400×1600 pt with
+  no text layer. `pdftotext` extracts nothing; programmatic
+  schematic-to-netlist transcription is not feasible from these scans.
+- `tests/netlist/centiped/sync_generator.cpp` therefore remains the
+  *representative* netlist (chained 74161 counters + NAND-gate sync
+  decode at the real 12.096 MHz master clock, simplified counter widths
+  and decode boundaries). All Phase 2 deliverables built on top of it
+  — the instrumented netlist, the manifest, the fault scenario — work
+  as designed.
+- The path to schematic-faithful: a human reads the relevant DP-182
+  sheets and either edits `sync_generator.cpp` directly with the real
+  reference designators and net names, or shares snipped sheet sections
+  as images for joint interpretation. The abstraction boundary at the
+  netlist file means the instrumentation, manifest, fault scenarios,
+  and Phase 3 UI all carry over unchanged — only `sync_generator.cpp`
+  itself needs to change.
 ## What landed
 - `tests/netlist/centiped/sync_generator.cpp` — the base netlist:
   `H_LO`, `H_HI` (8-bit synchronous H counter chain), `V_LO` (4-bit V

@@ -5,21 +5,24 @@ user inject realistic faults at any subsystem. Initial target is the Atari
 Centipede.
 The master plan is in [`arcade_cabinet_fault_simulator_plan.md`](../arcade_cabinet_fault_simulator_plan.md).
 ## Current status
-**Phase 2 complete (representative pass).** The Centipede sync generator
-is netlisted with chained 74161 counters and NAND-gate sync decode at the
-real 12.096 MHz master clock. The auto-instrumentation preprocessor
-generates an 8-entry manifest, a STUCK_LO fault on `FB_V_LO_QC` reproduces
-the "no VSYNC / rolling picture" symptom, and HSYNC stays unaffected —
-fault propagation is localized as designed. The netlist is
-*representative*, not schematic-faithful; replace once TM-182 is on hand.
-Up next: Phase 3 — cabinet bus + minimal UI. Lua TCP/JSON server inside
-MAME, schematic-view UI with fault-inject controls, one waveform probe.
+**Phase 3 complete (showable demo).** A browser GUI at
+`http://127.0.0.1:5050` shows the sync generator schematic with eight
+clickable fault-injection pins and live HSYNC/VSYNC waveforms. Click
+`V_LO.QC`, pick STUCK_LO, and watch VSYNC freeze while HSYNC keeps
+ticking — the rolling-picture fault, end-to-end.
+Architecture: a small Flask cabinet-bus runs `nltool` per request
+against a generated scenario file rather than embedding a long-running
+Lua plugin inside MAME. That plugin work is deferred to a Phase 3.5
+follow-up; the UI and protocol stay the same when we swap the backend.
+Up next: Phase 4 — PSU model + simple peripherals (coin mech, buttons,
+lighting, harness).
 ## Quick links
 ### Phases
 - [Phase 0 — Bootstrap](Phases/Phase-0-Bootstrap.md) ✅
 - [Phase 1 — Fault buffer](Phases/Phase-1-Fault-Buffer.md) ✅
 - [Phase 2 — Sync generator](Phases/Phase-2-Sync-Generator.md) ✅
-- [Phase 3 — Cabinet bus + UI](Phases/Phase-3-Cabinet-Bus.md) 🚧 planned
+- [Phase 3 — Cabinet bus + UI](Phases/Phase-3-Cabinet-Bus.md) ✅
+- [Phase 4 — PSU + peripherals](Phases/Phase-4-PSU-Peripherals.md) 🚧 planned
 - [Roadmap](Roadmap.md)
 ### Reference
 - [Build notes](Build-Notes.md) — toolchain, build commands, audio config
