@@ -24,6 +24,8 @@
     mamePauseBtn:    document.getElementById("mame-pause"),
     mameResumeBtn:   document.getElementById("mame-resume"),
     mameResetBtn:    document.getElementById("mame-reset"),
+    periphGrid:      document.getElementById("peripherals-grid"),
+    periphReset:     document.getElementById("peripherals-reset"),
   };
 
   /** @type {{fault_targets: Array, log_nets: string[], duration_s: number, modes: object}} */
@@ -258,6 +260,165 @@
     await reloadWaveforms();
   });
 
+  // ---------- Peripherals (Phase 4) ----------
+
+  async function loadPeripherals() {
+    try {
+      const data = await fetchJSON("/api/peripherals/state");
+      renderPeripherals(data.peripherals);
+    } catch (err) {
+      console.error("peripherals load failed", err);
+    }
+  }
+
+  function renderPeripherals(items) {
+    els.periphGrid.innerHTML = "";
+    for (const p of items) {
+      els.periphGrid.appendChild(renderPeripheralCard(p));
+    }
+  }
+
+  function renderPeripheralCard(p) {
+    const card = document.createElement("div");
+    card.className = "periph-card" + (p.fault !== "NORMAL" ? " faulted" : "");
+
+    const head = document.createElement("div");
+    head.className = "periph-card-head";
+    head.innerHTML = `
+      <div>
+        <div class="periph-card-type">${p.type}</div>
+        <div class="periph-card-id">${p.id}${p.label ? " — " + p.label : ""}</div>
+      </div>
+      <div class="periph-card-status${p.fault !== "NORMAL" ? " faulted" : ""}">${p.fault}</div>
+    `;
+    card.appendChild(head);
+
+    if (p.type === "psu") {
+      // Rails readout.
+      const rails = document.createElement("div");
+      rails.className = "periph-rails";
+      for (const [name, v] of Object.entries(p.rails)) {
+        const cls = railClass(name, v);
+        rails.innerHTML += `
+          <div class="periph-rail">
+            <div class="periph-rail-name">${name}</div>
+            <div class="periph-rail-value ${cls}">${v.toFixed(2)} V</div>
+          </div>`;
+      }
+      card.appendChild(rails);
+
+      // Ripple.
+      const ripple = document.createElement("div");
+      ripple.className = "periph-stat";
+      const rcls = p.ripple_mv_pp > 200 ? (p.ripple_mv_pp > 1000 ? "bad" : "warn") : "";
+      ripple.innerHTML = `<span>ripple</span><span class="periph-stat-value ${rcls}">${p.ripple_mv_pp.toFixed(0)} mV pp</span>`;
+      card.appendChild(ripple);
+
+      // Trim pot slider.
+      const spec = p.supported_params.trim_5v;
+      const trimWrap = document.createElement("div");
+      trimWrap.className = "trim-row";
+      const trimLabel = document.createElement("div");
+      trimLabel.innerHTML = `<label>5 V trim pot</label>`;
+      const trimVal = document.createElement("span");
+      trimVal.className = "periph-stat-value";
+      trimVal.textContent = `${p.trim_5v.toFixed(2)} V`;
+      trimLabel.appendChild(trimVal);
+      const trim = document.createElement("input");
+      trim.type = "range";
+      trim.min = spec.min;  trim.max = spec.max;  trim.step = spec.step;
+      trim.value = p.trim_5v;
+      trim.addEventListener("input", () => { trimVal.textContent = `${parseFloat(trim.value).toFixed(2)} V`; });
+      trim.addEventListener("change", async () => {
+        await postJSON("/api/peripherals/adjust",
+                       { id: p.id, param: "trim_5v", value: parseFloat(trim.value) });
+        await loadPeripherals();
+      });
+      trimWrap.appendChild(trimLabel);
+      trimWrap.appendChild(trim);
+      card.appendChild(trimWrap);
+    }
+
+    if (p.type === "coin_mech") {
+      const stat = document.createElement("div");
+      stat.className = "periph-stat";
+      stat.innerHTML = `<span>credits</span><span class="periph-stat-value">${p.credits}</span>`;
+      card.appendChild(stat);
+      const last = document.createElement("div");
+      last.className = "periph-stat";
+      last.innerHTML = `<span>last event</span><span class="periph-stat-value">${p.last_event}</span>`;
+      card.appendChild(last);
+      const btn = document.createElement("button");
+      btn.className = "periph-action";
+      btn.textContent = "Insert coin";
+      btn.addEventListener("click", async () => {
+        await postJSON("/api/peripherals/coin", {});
+        await loadPeripherals();
+      });
+      card.appendChild(btn);
+    }
+
+    if (p.type === "marquee") {
+      const stat = document.createElement("div");
+      stat.className = "periph-stat";
+      const cls = p.visible_state === "on" ? "" : "warn";
+      stat.innerHTML = `<span>tube</span><span class="periph-stat-value ${cls}">${p.visible_state}</span>`;
+      card.appendChild(stat);
+    }
+
+    if (p.type === "harness") {
+      const stat = document.createElement("div");
+      stat.className = "periph-stat";
+      stat.innerHTML = `<span>${p.src} → ${p.dst}</span><span class="periph-stat-value"></span>`;
+      card.appendChild(stat);
+    }
+
+    // Fault dropdown for everything that has fault modes.
+    if (p.supported_faults && p.supported_faults.length) {
+      const wrap = document.createElement("div");
+      wrap.innerHTML = `<label for="flt-${p.id}">Fault mode</label>`;
+      const sel = document.createElement("select");
+      sel.id = `flt-${p.id}`;
+      sel.innerHTML = `<option value="">NORMAL</option>` +
+        p.supported_faults.map(f => `<option value="${f}">${f}</option>`).join("");
+      sel.value = p.fault === "NORMAL" ? "" : p.fault;
+      sel.addEventListener("change", async () => {
+        await postJSON("/api/peripherals/fault",
+                       { id: p.id, fault: sel.value });
+        await loadPeripherals();
+      });
+      wrap.appendChild(sel);
+      card.appendChild(wrap);
+    }
+
+    return card;
+  }
+
+  function railClass(name, v) {
+    if (v === 0) return "bad";
+    if (name === "5V") {
+      if (v < 4.75 || v > 5.25) return "warn";
+      if (v < 4.5  || v > 5.5)  return "bad";
+    } else if (name === "12V") {
+      if (v < 11.4 || v > 12.6) return "warn";
+    }
+    return "";
+  }
+
+  async function postJSON(url, body) {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    return res.ok ? await res.json() : null;
+  }
+
+  els.periphReset.addEventListener("click", async () => {
+    await postJSON("/api/peripherals/reset", {});
+    await loadPeripherals();
+  });
+
   // ---------- MAME bridge ----------
 
   async function pollMameOnce() {
@@ -328,8 +489,11 @@
     renderFaultPins();
     renderFaultsList();
     await reloadWaveforms();
+    await loadPeripherals();
     pollMameOnce();
     setInterval(pollMameOnce, 1000);
+    // Refresh peripherals every 2s so stuck_switch credits keep ticking.
+    setInterval(loadPeripherals, 2000);
   }
 
   init();

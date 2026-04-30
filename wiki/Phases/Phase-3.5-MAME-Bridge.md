@@ -129,3 +129,6 @@ curl -s http://127.0.0.1:5050/api/mame/state | python -m json.tool
   `/api/run`) and the live emulator (via `/api/mame/*`). Phase 4
   peripheral models slot in with a third surface (`/api/peripherals/*`)
   using the same JSON-over-HTTP pattern.
+## Navigation
+← Previous: [Phase 3 — Cabinet bus + UI](Phase-3-Cabinet-Bus.md) ·
+Next: [Phase 4 — PSU + peripherals](Phase-4-PSU-Peripherals.md) →

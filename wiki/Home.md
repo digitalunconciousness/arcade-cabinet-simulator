@@ -5,26 +5,28 @@ user inject realistic faults at any subsystem. Initial target is the Atari
 Centipede.
 The master plan is in [`arcade_cabinet_fault_simulator_plan.md`](../arcade_cabinet_fault_simulator_plan.md).
 ## Current status
-**Phase 3.5 complete.** A MAME Lua plugin (`vendor/mame/plugins/cabinet_bus/`)
-opens a TCP listener; the Flask cabinet-bus proxies
-`get_state / pause / resume / soft_reset` to it; the browser UI
-shows a live "Centipede emulator (MAME)" panel with ROM name, frame
-counter, and pause/resume/reset buttons that drive a running
-emulator next to the existing sync-generator fault demo.
-Up until Phase 3.5, the demo was: click a pin in the schematic, see
-VSYNC freeze. Now: that demo PLUS a real Centipede running in MAME
-in a separate window, controllable from the same browser tab.
-Up next: Phase 4 — PSU model + simple peripherals (coin mech, buttons,
-lighting, harness).
-## Quick links
-### Phases
-- [Phase 0 — Bootstrap](Phases/Phase-0-Bootstrap.md) ✅
-- [Phase 1 — Fault buffer](Phases/Phase-1-Fault-Buffer.md) ✅
-- [Phase 2 — Sync generator](Phases/Phase-2-Sync-Generator.md) ✅
-- [Phase 3 — Cabinet bus + UI](Phases/Phase-3-Cabinet-Bus.md) ✅
-- [Phase 3.5 — MAME bridge](Phases/Phase-3.5-MAME-Bridge.md) ✅
-- [Phase 4 — PSU + peripherals](Phases/Phase-4-PSU-Peripherals.md) 🚧 planned
-- [Roadmap](Roadmap.md)
+**Phase 4 complete.** The browser GUI now has a Cabinet (peripherals)
+panel with cards for the PSU, coin mech, marquee, buttons, and harness
+segments. The PSU card exposes the operator-adjustable 5 V trim pot as
+a live slider, alongside fault dropdowns for each peripheral. Trim
+over-adjustment color-warns the rail readout; some faults
+(`failed_regulator`, `overload_trip`) override the trim entirely — just
+like the real hardware.
+Up next: **Phase 5** — address decoder + RAM region netlist coverage.
+See `Phases/Phase-5-Address-Decoder-RAM.md` for the goal and plan.
+## Phase index
+| Phase | Title | Status |
+|-------|-------|--------|
+| 0 | [Bootstrap](Phases/Phase-0-Bootstrap.md) | ✅ complete |
+| 1 | [Fault buffer](Phases/Phase-1-Fault-Buffer.md) | ✅ complete |
+| 2 | [Sync generator](Phases/Phase-2-Sync-Generator.md) | ✅ complete |
+| 3 | [Cabinet bus + UI](Phases/Phase-3-Cabinet-Bus.md) | ✅ complete |
+| 3.5 | [MAME bridge](Phases/Phase-3.5-MAME-Bridge.md) | ✅ complete |
+| 4 | [PSU + peripherals](Phases/Phase-4-PSU-Peripherals.md) | ✅ complete |
+| 5 | [Address decoder + RAM](Phases/Phase-5-Address-Decoder-RAM.md) | 🚧 next up |
+| 6 | [CRT + trackball + audio](Phases/Phase-6-CRT-Trackball-Audio.md) | ⏳ planned |
+| 7 | [Cabinet UI + training mode](Phases/Phase-7-Cabinet-UI-Training.md) | ⏳ planned |
+Full schedule and tier-expansion plan: [Roadmap](Roadmap.md).
 ### Reference
 - [Build notes](Build-Notes.md) — toolchain, build commands, audio config
 - [Glossary](Glossary.md) — terminology cheat-sheet

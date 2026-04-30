@@ -108,3 +108,6 @@ kill %1
 - Phase 3.5 (long-running MAME plugin) can ride on top of this work
   without re-doing the UI — just swap the Flask `/api/run` handler from
   scenario-per-request to plugin RPC.
+## Navigation
+← Previous: [Phase 2 — Sync generator](Phase-2-Sync-Generator.md) ·
+Next: [Phase 3.5 — MAME bridge](Phase-3.5-MAME-Bridge.md) →

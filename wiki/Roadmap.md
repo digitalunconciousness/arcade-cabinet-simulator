@@ -39,15 +39,26 @@ shows a live emulator panel and switches state on demand. See
 [Phase-3.5-MAME-Bridge](Phases/Phase-3.5-MAME-Bridge.md). WebSocket
 streaming and netlist-into-centiped integration are still deferred to
 later phases.
-### 🚧 Phase 4 — PSU model + simple peripherals
-6-8 weekends. Power supply, coin mech, buttons, lights, harness. See
-[Phase-4-PSU-Peripherals](Phases/Phase-4-PSU-Peripherals.md).
-### ⏳ Phase 5 — Address decoder + RAM region
-4-6 weekends. Targets B and C from the project plan.
+### ✅ Phase 4 — PSU model + simple peripherals
+6-8 weekends estimated. **Actual: 1 evening.**
+PSU with operator-adjustable 5 V trim pot + 5 fault modes, coin mech,
+buttons, marquee, harness segments. Cabinet (peripherals) panel in the
+UI with a trim slider, color-coded rail readouts, fault dropdowns.
+See [Phase-4-PSU-Peripherals](Phases/Phase-4-PSU-Peripherals.md).
+### 🚧 Phase 5 — Address decoder + RAM region
+4-6 weekends. Targets B and C from the project plan: 74139/74138
+decoders for chip-selects, plus 2114 RAM bad-cell modeling. See
+[Phase-5-Address-Decoder-RAM](Phases/Phase-5-Address-Decoder-RAM.md).
 ### ⏳ Phase 6 — CRT monitor + trackball + audio chain
-8-12 weekends. Largest single phase.
+8-12 weekends. Largest single phase. Wells-Gardner 19K6100 chassis
+model as shader effects, trackball quadrature with fault categories,
+audio chain post-processing. See
+[Phase-6-CRT-Trackball-Audio](Phases/Phase-6-CRT-Trackball-Audio.md).
 ### ⏳ Phase 7 — Cabinet UI + scenario library + training mode
-8-12 weekends.
+8-12 weekends. v1 polish: cabinet-cutaway UI, KiCad SVG schematic,
+PCB-photo view, probe view, training-mode runner with realism-weighted
+scenarios. See
+[Phase-7-Cabinet-UI-Training](Phases/Phase-7-Cabinet-UI-Training.md).
 ## Explicit non-goals (frozen for v1)
 - 🧊 Generic any-board support beyond Centipede.
 - 🧊 Full analog fault realism (resistive faults, thermal intermittents,

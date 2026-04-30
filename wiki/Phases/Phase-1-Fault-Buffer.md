@@ -78,3 +78,6 @@ python tools/preprocessor/test_instrument.py
 - The preprocessor scaffold is enough for the trivial cases that arise
   in the sync generator; bus rewriting can be deferred until the address
   decoder phase forces it.
+## Navigation
+← Previous: [Phase 0 — Bootstrap](Phase-0-Bootstrap.md) ·
+Next: [Phase 2 — Sync generator](Phase-2-Sync-Generator.md) →

@@ -115,3 +115,6 @@ trivially when we transcribe the real schematic.
 - The fault-scenario file format (a copy of the instrumented netlist
   with `PARAM(FB_*.MODE, ...)` lines appended) is a viable serialization
   for the UI to drive when Phase 3 wires it up over the cabinet bus.
+## Navigation
+← Previous: [Phase 1 — Fault buffer](Phase-1-Fault-Buffer.md) ·
+Next: [Phase 3 — Cabinet bus + UI](Phase-3-Cabinet-Bus.md) →

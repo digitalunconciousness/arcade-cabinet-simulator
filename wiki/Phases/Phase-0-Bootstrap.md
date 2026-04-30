@@ -32,3 +32,5 @@ cd vendor/mame
 ./mame -rompath ../../roms -bench 10 centiped3 # ~13× real time
 ./mame -rompath ../../roms -window -sound pipewire centiped3
 ```
+## Navigation
+Next: [Phase 1 — Fault buffer](Phase-1-Fault-Buffer.md) →

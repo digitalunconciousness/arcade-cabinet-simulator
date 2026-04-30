@@ -205,6 +205,78 @@ section h2 { margin: 0 0 0.75rem 0; font-size: 0.9rem; font-weight: 600; color: 
 .mame-controls button:hover { background: var(--accent); border-color: var(--accent); color: white; }
 .mame-controls #mame-reset:hover { background: var(--warn); border-color: var(--warn); color: white; }
 
+/* Peripherals (Phase 4) */
+.peripherals-pane {
+  margin: 1rem 1.5rem 0;
+  background: var(--bg-2);
+  border: 1px solid var(--grid);
+  border-radius: 6px;
+  padding: 1rem;
+}
+.peripherals-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; }
+.peripherals-header h2 { margin: 0; }
+#peripherals-reset {
+  background: var(--bg-3); color: var(--fg);
+  border: 1px solid var(--grid); border-radius: 4px;
+  padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer;
+}
+#peripherals-reset:hover { background: var(--warn); border-color: var(--warn); color: white; }
+.peripherals-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.75rem;
+}
+.periph-card {
+  background: var(--bg-3);
+  border: 1px solid var(--grid);
+  border-radius: 4px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+}
+.periph-card.faulted { border-color: var(--warn); }
+.periph-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.periph-card-id { color: var(--fg); font-weight: 600; }
+.periph-card-type { color: var(--fg-dim); font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; }
+.periph-card-status {
+  font-size: 10px; padding: 2px 6px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.04em;
+  background: var(--good); color: #0d1117;
+}
+.periph-card-status.faulted { background: var(--warn); color: white; }
+.periph-stat { display: flex; justify-content: space-between; gap: 8px; color: var(--fg-dim); font-size: 11px; }
+.periph-stat-value { color: var(--fg); }
+.periph-stat-value.warn { color: var(--warn-2); }
+.periph-stat-value.bad  { color: var(--warn); }
+.periph-card label { color: var(--fg-dim); font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; }
+.periph-card select, .periph-card input[type=range] {
+  background: var(--bg-2); color: var(--fg);
+  border: 1px solid var(--grid); border-radius: 3px;
+  padding: 3px; font: inherit; font-size: 11px;
+}
+.periph-card input[type=range] { width: 100%; padding: 0; }
+.periph-card .trim-row { display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: center; }
+.periph-card .periph-action {
+  background: var(--bg-2); color: var(--fg);
+  border: 1px solid var(--grid); border-radius: 3px;
+  padding: 4px 8px; font: inherit; font-size: 11px; cursor: pointer;
+  margin-top: 2px;
+}
+.periph-card .periph-action:hover { background: var(--accent); border-color: var(--accent); color: white; }
+.periph-rails {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  font-size: 10px;
+}
+.periph-rail { background: var(--bg-2); border-radius: 3px; padding: 4px 6px; text-align: center; }
+.periph-rail-name { color: var(--fg-dim); font-size: 9px; }
+.periph-rail-value { color: var(--good); font-weight: 600; font-size: 11px; }
+.periph-rail-value.warn { color: var(--warn-2); }
+.periph-rail-value.bad  { color: var(--warn); }
+
 /* Pin-config popover */
 .popover {
   position: absolute;

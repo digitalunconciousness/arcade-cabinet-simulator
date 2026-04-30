@@ -25,6 +25,10 @@ sys.path.insert(0, str(Path(__file__).parent))
 import runner  # noqa: E402
 from mame_client import MameClient  # noqa: E402
 
+# Peripherals package lives one level up.
+sys.path.insert(0, str(Path(__file__).parent.parent / "peripherals"))
+from models import PeripheralRegistry  # noqa: E402
+
 from flask import Flask, jsonify, request, send_from_directory  # noqa: E402
 
 
@@ -55,6 +59,7 @@ def create_app(
 
     app = Flask(__name__, static_folder=None)
     mame = MameClient()
+    peripherals = PeripheralRegistry()
 
     # Cache the manifest at boot; it's small and rarely changes.
     if not manifest_path.exists():
@@ -168,6 +173,52 @@ def create_app(
     @app.route("/api/mame/soft_reset", methods=["POST"])
     def api_mame_reset():
         return _mame_request("soft_reset")
+
+    # ---------- Peripherals ----------
+    # In-process registry of cabinet-level peripherals (PSU, coin mech,
+    # buttons, marquee, harness segments). Faults applied here are pure
+    # state changes; the UI renders the resulting state. Phase 5+ work
+    # will couple PSU rail voltage back into the netlist solver.
+
+    @app.route("/api/peripherals/state")
+    def api_peripherals_state():
+        return jsonify({"peripherals": peripherals.all()})
+
+    @app.route("/api/peripherals/fault", methods=["POST"])
+    def api_peripherals_fault():
+        body = request.get_json(silent=True) or {}
+        ident = body.get("id")
+        fault = body.get("fault", "")
+        if not ident:
+            return jsonify({"error": "missing 'id'"}), 400
+        try:
+            return jsonify(peripherals.apply_fault(ident, fault))
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 400
+
+    @app.route("/api/peripherals/adjust", methods=["POST"])
+    def api_peripherals_adjust():
+        body = request.get_json(silent=True) or {}
+        ident = body.get("id")
+        param = body.get("param")
+        value = body.get("value")
+        if not ident or not param:
+            return jsonify({"error": "missing 'id' or 'param'"}), 400
+        try:
+            return jsonify(peripherals.adjust(ident, param, value))
+        except (ValueError, TypeError) as e:
+            return jsonify({"error": str(e)}), 400
+
+    @app.route("/api/peripherals/reset", methods=["POST"])
+    def api_peripherals_reset():
+        peripherals.reset_all()
+        return jsonify({"peripherals": peripherals.all()})
+
+    @app.route("/api/peripherals/coin", methods=["POST"])
+    def api_peripherals_coin():
+        """Drop a coin into the coin mech (action endpoint, not a fault)."""
+        peripherals.coin.insert_coin()
+        return jsonify(peripherals.coin.state())
 
     return app
 
