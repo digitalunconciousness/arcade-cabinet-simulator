@@ -1,37 +1,53 @@
-From 8e8407f4a8a6d893305eaadca1c807a06f76fb25 Mon Sep 17 00:00:00 2001
+From 55fb05dfde2b424c15bdb31292f229a179d3a944 Mon Sep 17 00:00:00 2001
 From: jackie grey <leftstick22@gmail.com>
 Date: Thu, 30 Apr 2026 00:28:11 -0500
 Subject: [PATCH 2/3] Add cabinet_bus plugin: socket bridge for the cabinet-bus
  server
 
-A Lua plugin that opens a TCP listener on 127.0.0.1:5051 and accepts
-newline-terminated JSON commands from the Arcade Cabinet Fault
-Simulator's Flask cabinet-bus. This lets the browser UI control the
-running emulator (pause / resume / soft reset / state query) alongside
-the existing fault-injection on the standalone netlist.
+Adds a Lua plugin (plugins/cabinet_bus/) that opens a TCP listener on
+127.0.0.1:5051 and accepts newline-terminated JSON commands. The
+companion Flask cabinet-bus server (in the workspace tree) drives it
+via a tiny Python client (mame_client.py).
 
-Protocol is newline-delimited JSON in both directions. Supported
-commands: ping, get_state, pause, resume, soft_reset. Replies always
-carry an 'ok' boolean.
+Supported commands:
+  ping          - liveness probe
+  get_state     - {rom, paused, frame, ...}
+  pause         - emu.pause()
+  resume        - emu.unpause()
+  soft_reset    - manager.machine:soft_reset()
+  poke_ram      - one-shot byte write to a CPU's program space
+  stuck_byte    - per-frame stuck-at fault on a memory cell; the
+                  plugin re-writes the cell every frame so the
+                  running game cannot overwrite the fault. Mirrors
+                  the BAD_RAM_CELL netlist device's fault model at
+                  the MAME-CPU layer.
+  clear_stuck   - disarm every armed stuck-byte fault.
 
-The plugin defaults to start='false' (per plugin.json) so it has no
-effect unless explicitly enabled with -plugin cabinet_bus on the MAME
-command line.
+The pause/resume implementation uses emu.pause()/emu.unpause()
+rather than machine:pause()/machine:resume() because in MAME 0.287
+the pause API is exposed on the emu module rather than on the
+machine instance.
+
+Stuck-byte faults are evaluated in the machine_frame_notifier
+callback; per-frame writes use the program-space accessor on the
+named CPU (defaulting to :maincpu). Centipede VRAM lives at
+0x0400-0x07BF in the maincpu program space; arming a stuck-byte
+there produces a visible glitch tile in the running game.
 
 Co-Authored-By: Oz <oz-agent@warp.dev>
 ---
- plugins/cabinet_bus/init.lua    | 156 ++++++++++++++++++++++++++++++++
+ plugins/cabinet_bus/init.lua    | 241 ++++++++++++++++++++++++++++++++
  plugins/cabinet_bus/plugin.json |  10 ++
- 2 files changed, 166 insertions(+)
+ 2 files changed, 251 insertions(+)
  create mode 100644 plugins/cabinet_bus/init.lua
  create mode 100644 plugins/cabinet_bus/plugin.json
 
 diff --git a/plugins/cabinet_bus/init.lua b/plugins/cabinet_bus/init.lua
 new file mode 100644
-index 00000000..be34259c
+index 00000000..522fdd44
 --- /dev/null
 +++ b/plugins/cabinet_bus/init.lua
-@@ -0,0 +1,156 @@
+@@ -0,0 +1,241 @@
 +-- license:BSD-3-Clause
 +-- copyright-holders:Arcade Cabinet Fault Simulator
 +--
@@ -51,6 +67,9 @@ index 00000000..be34259c
 +--   {"cmd":"pause"}                   -> {"ok":true,"paused":true}
 +--   {"cmd":"resume"}                  -> {"ok":true,"paused":false}
 +--   {"cmd":"soft_reset"}              -> {"ok":true}
++--   {"cmd":"poke_ram","addr":N,"value":N}                 -> one-shot byte write to the main CPU's program space
++--   {"cmd":"stuck_byte","addr":N,"value":N|null,"cpu":"maincpu"}  -> arm/disarm a per-frame stuck-at fault on a memory cell
++--   {"cmd":"clear_stuck"}             -> remove all armed stuck-at faults
 +--
 +-- Unknown commands return {"ok":false,"error":"..."}.
 +--
@@ -85,13 +104,53 @@ index 00000000..be34259c
 +    local buffer = ""        -- partial bytes pending newline
 +    local frame_count = 0
 +
-+    -- Update a frame counter so we can report progress to the UI.
++    -- Stuck-at fault table. Key is a string "<cpu_tag>:0x<addr>"; value is
++    -- a table {cpu = string, addr = int, value = int}. Every frame we walk
++    -- this and re-write the cell, so the running game can't "heal" it.
++    -- This is the same fault model BAD_RAM_CELL implements at the netlist
++    -- layer, applied here at the MAME-CPU layer where it actually shows up
++    -- in the rendered frame.
++    local stuck_bytes = {}
++
++    -- Resolve a CPU tag to its program-space memory accessor. We cache to
++    -- avoid hitting the device tree every frame.
++    local space_cache = {}
++    local function space_for(cpu_tag)
++        cpu_tag = cpu_tag or "maincpu"
++        if space_cache[cpu_tag] then return space_cache[cpu_tag] end
++        local mach = manager.machine
++        if not mach then return nil end
++        -- MAME 0.287 device-tree lookup: leading ':' is required.
++        local lookup = cpu_tag
++        if lookup:sub(1,1) ~= ":" then lookup = ":" .. lookup end
++        local dev = mach.devices[lookup]
++        if not dev then return nil end
++        local sp = dev.spaces and dev.spaces["program"]
++        if not sp then return nil end
++        space_cache[cpu_tag] = sp
++        return sp
++    end
++
++    local function reapply_stuck()
++        for _, e in pairs(stuck_bytes) do
++            local sp = space_for(e.cpu)
++            if sp then
++                sp:write_u8(e.addr, e.value)
++            end
++        end
++    end
++
++    -- Update a frame counter so we can report progress to the UI, and
++    -- re-apply any armed stuck-at faults so the running game keeps seeing
++    -- the corrupted cell.
 +    frame_subscription = emu.add_machine_frame_notifier(function ()
 +        frame_count = frame_count + 1
++        reapply_stuck()
 +    end)
 +
 +    reset_subscription = emu.add_machine_reset_notifier(function ()
 +        frame_count = 0
++        space_cache = {}
 +    end)
 +
 +    stop_subscription = emu.add_machine_stop_notifier(function ()
@@ -146,6 +205,48 @@ index 00000000..be34259c
 +            local mach = manager.machine
 +            if mach then mach:soft_reset() end
 +            return { ok = true, reset = "soft" }
++        elseif cmd == "poke_ram" then
++            -- One-shot write. Note that for game-managed regions like
++            -- VRAM the game will overwrite within a frame; use stuck_byte
++            -- for persistent faults.
++            local addr = tonumber(cmd_obj.addr)
++            local value = tonumber(cmd_obj.value)
++            local cpu = cmd_obj.cpu or "maincpu"
++            if not addr or not value then
++                return { ok = false, error = "poke_ram: addr and value are required" }
++            end
++            local sp = space_for(cpu)
++            if not sp then
++                return { ok = false, error = "poke_ram: no program space for cpu " .. tostring(cpu) }
++            end
++            sp:write_u8(addr, value & 0xff)
++            return { ok = true, addr = addr, value = value & 0xff, cpu = cpu }
++        elseif cmd == "stuck_byte" then
++            -- Arm or disarm a per-frame stuck-at fault. Pass value=null
++            -- (or omit) to clear that particular address.
++            local addr = tonumber(cmd_obj.addr)
++            local cpu = cmd_obj.cpu or "maincpu"
++            if not addr then
++                return { ok = false, error = "stuck_byte: addr is required" }
++            end
++            local key = cpu .. ":" .. string.format("0x%04x", addr)
++            if cmd_obj.value == nil or cmd_obj.value == json.null then
++                stuck_bytes[key] = nil
++                return { ok = true, action = "cleared", addr = addr, cpu = cpu }
++            end
++            local value = tonumber(cmd_obj.value)
++            if not value then
++                return { ok = false, error = "stuck_byte: value must be a number or null" }
++            end
++            stuck_bytes[key] = { cpu = cpu, addr = addr, value = value & 0xff }
++            -- Apply immediately so the user sees the fault even when paused.
++            reapply_stuck()
++            return { ok = true, action = "armed", addr = addr, value = value & 0xff, cpu = cpu }
++        elseif cmd == "clear_stuck" then
++            local n = 0
++            for _ in pairs(stuck_bytes) do n = n + 1 end
++            stuck_bytes = {}
++            return { ok = true, cleared = n }
 +        else
 +            return { ok = false, error = "unknown command: " .. tostring(cmd) }
 +        end

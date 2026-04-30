@@ -19,6 +19,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
+from typing import Optional
 
 # Local import; runner.py lives next to this file.
 sys.path.insert(0, str(Path(__file__).parent))
@@ -173,6 +174,78 @@ def create_app(
     @app.route("/api/mame/soft_reset", methods=["POST"])
     def api_mame_reset():
         return _mame_request("soft_reset")
+
+    # Centipede video-RAM map (centiped_state::centiped_base_map):
+    #   0x0400-0x07BF = 32 cols x 30 rows of tile indices, byte-per-cell.
+    # Translating (col, row) -> address lets the UI pin a stuck tile to
+    # an exact on-screen location regardless of what the game writes.
+    CENTIPED_VRAM_BASE = 0x0400
+    CENTIPED_VRAM_COLS = 32
+    CENTIPED_VRAM_ROWS = 30
+
+    def _vram_addr_for(col: int, row: int) -> int:
+        if not (0 <= col < CENTIPED_VRAM_COLS):
+            raise ValueError(f"col out of range 0..{CENTIPED_VRAM_COLS - 1}")
+        if not (0 <= row < CENTIPED_VRAM_ROWS):
+            raise ValueError(f"row out of range 0..{CENTIPED_VRAM_ROWS - 1}")
+        return CENTIPED_VRAM_BASE + row * CENTIPED_VRAM_COLS + col
+
+    @app.route("/api/mame/poke_ram", methods=["POST"])
+    def api_mame_poke_ram():
+        body = request.get_json(silent=True) or {}
+        try:
+            raw_addr = body["addr"]
+            raw_val = body["value"]
+            addr = int(raw_addr, 0) if isinstance(raw_addr, str) else int(raw_addr)
+            value = int(raw_val, 0) if isinstance(raw_val, str) else int(raw_val)
+        except (KeyError, TypeError, ValueError):
+            return jsonify({"error": "addr and value (int) are required"}), 400
+        cpu = body.get("cpu") or "maincpu"
+        try:
+            reply = mame.poke_ram(addr, value, cpu)
+            return jsonify({"available": True, **reply})
+        except ConnectionError as e:
+            return jsonify({"available": False, "error": str(e)}), 503
+
+    @app.route("/api/mame/stuck_byte", methods=["POST"])
+    def api_mame_stuck_byte():
+        """Arm or clear a per-frame stuck-at fault.
+
+        Body fields (one of two forms):
+          {addr: int|hex, value: int|null, cpu?: str}
+          {col: int, row: int, value: int|null}    # Centipede VRAM helper
+
+        Pass value=null to clear the fault.
+        """
+        body = request.get_json(silent=True) or {}
+        cpu = body.get("cpu") or "maincpu"
+        try:
+            if "col" in body and "row" in body:
+                addr = _vram_addr_for(int(body["col"]), int(body["row"]))
+            else:
+                raw = body.get("addr")
+                if raw is None:
+                    raise ValueError("addr or (col,row) is required")
+                addr = int(raw, 0) if isinstance(raw, str) else int(raw)
+        except (TypeError, ValueError) as e:
+            return jsonify({"error": str(e)}), 400
+        raw_value = body.get("value")
+        if raw_value is None:
+            value: Optional[int] = None
+        else:
+            try:
+                value = int(raw_value, 0) if isinstance(raw_value, str) else int(raw_value)
+            except (TypeError, ValueError):
+                return jsonify({"error": "value must be int or null"}), 400
+        try:
+            reply = mame.stuck_byte(addr, value, cpu)
+            return jsonify({"available": True, "addr_resolved": addr, **reply})
+        except ConnectionError as e:
+            return jsonify({"available": False, "error": str(e)}), 503
+
+    @app.route("/api/mame/clear_stuck", methods=["POST"])
+    def api_mame_clear_stuck():
+        return _mame_request("clear_stuck")
 
     # ---------- Peripherals ----------
     # In-process registry of cabinet-level peripherals (PSU, coin mech,

@@ -115,6 +115,40 @@ class MameClient:
     def soft_reset(self) -> dict:
         return self.send({"cmd": "soft_reset"})
 
+    def poke_ram(self, addr: int, value: int, cpu: str = "maincpu") -> dict:
+        """One-shot byte write to the named CPU's program space.
+
+        For game-managed regions like VRAM the running game will overwrite
+        within a frame; use stuck_byte() instead for persistent faults.
+        """
+        return self.send({
+            "cmd": "poke_ram",
+            "addr": int(addr),
+            "value": int(value),
+            "cpu": cpu,
+        })
+
+    def stuck_byte(
+        self,
+        addr: int,
+        value: Optional[int],
+        cpu: str = "maincpu",
+    ) -> dict:
+        """Arm or clear a per-frame stuck-at fault on a memory cell.
+
+        Pass value=None to clear the fault on this address. Otherwise the
+        plugin re-writes value to addr on every emulator frame, so the
+        running game can never overwrite it. Same fault model as the
+        BAD_RAM_CELL netlist device, applied at the MAME-CPU layer.
+        """
+        cmd: dict = {"cmd": "stuck_byte", "addr": int(addr), "cpu": cpu}
+        cmd["value"] = None if value is None else int(value)
+        return self.send(cmd)
+
+    def clear_stuck(self) -> dict:
+        """Disarm every armed stuck-byte fault."""
+        return self.send({"cmd": "clear_stuck"})
+
     def _ensure_connection(self) -> None:
         """Open the cached socket if not already up."""
         if self._sock is not None:
