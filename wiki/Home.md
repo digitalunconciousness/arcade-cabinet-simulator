@@ -11,7 +11,7 @@ real 12.096 MHz master clock. The auto-instrumentation preprocessor
 generates an 8-entry manifest, a STUCK_LO fault on `FB_V_LO_QC` reproduces
 the "no VSYNC / rolling picture" symptom, and HSYNC stays unaffected —
 fault propagation is localized as designed. The netlist is
-*representative*, not schematic-faithful; replace once TM-179 is on hand.
+*representative*, not schematic-faithful; replace once TM-182 is on hand.
 Up next: Phase 3 — cabinet bus + minimal UI. Lua TCP/JSON server inside
 MAME, schematic-view UI with fault-inject controls, one waveform probe.
 ## Quick links
@@ -24,6 +24,7 @@ MAME, schematic-view UI with fault-inject controls, one waveform probe.
 ### Reference
 - [Build notes](Build-Notes.md) — toolchain, build commands, audio config
 - [Glossary](Glossary.md) — terminology cheat-sheet
+- [References](References.md) — source materials (TM-182, DP-182, etc.)
 - [Devices/FAULT_BUFFER](Devices/FAULT_BUFFER.md) — fault-injection buffer
 ### Decisions
 - [ADR-0001 — Wiki workflow](Decisions/ADR-0001-wiki-workflow.md)

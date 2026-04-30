@@ -39,7 +39,7 @@ Project-specific terms and arcade jargon that show up across the docs.
 - **CRT chassis** — the analog board that drives a CRT monitor (deflection,
   HV, video amp). For Centipede this is a Wells-Gardner 19K6100.
 - **Service manual** — the official paper documentation arcade ops used
-  for repair. We rely on TM-179 (Centipede) as the source of truth for
+  for repair. We rely on TM-182 (Centipede) as the source of truth for
   schematics and fault categories.
 - **Sean Riddle** — well-known archivist of arcade PCB scans. We use his
   Centipede board photos as the basis for the PCB-photo UI view.

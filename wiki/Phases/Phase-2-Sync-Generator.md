@@ -7,14 +7,25 @@ end-to-end PCB fault with visible symptoms (rolling picture, torn frames,
 or missing video).
 **Estimate:** 3–4 weekends. **Actual: 1 evening (representative pass).**
 ## Caveat: representative, not schematic-faithful
-We don't have TM-179 in `docs/centipede/` yet, so this phase delivers a
-*representative* sync generator that uses the same architecture (chained
-74161 counters + NAND-gate sync decode) at the real Centipede 12.096 MHz
-master clock rate, but with simplified counter widths and decode
-boundaries. Once TM-179 is on hand, replace `sync_generator.cpp` with a
-schematic-faithful version. The instrumentation, manifest, fault
-scenario, and verification harness on top of it all carry over
-unchanged.
+This phase delivers a *representative* sync generator that uses the
+same architecture (chained 74161 counters + NAND-gate sync decode) at
+the real Centipede 12.096 MHz master clock rate, but with simplified
+counter widths and decode boundaries.
+**Update:** TM-182 (service manual) and DP-182 (schematics) are now
+downloaded into `docs/centipede/` from public arcade-preservation
+archives — see [References](../References.md). The schematics are
+raster-scanned single-page PDFs (~4 MB each, ~2400×1600 pt). Programmatic
+text extraction recovers nothing, so the schematic-faithful pass still
+requires a human to read the relevant sheets and either:
+- update `sync_generator.cpp` directly with the real chip references
+  (e.g. `H_LO` becomes the actual reference designator on the schematic,
+  pins line up with the real net names), or
+- snip the relevant sheet sections as images and share them so they can
+  be jointly interpreted with an LLM in a follow-up session.
+The instrumentation, manifest, fault scenario, and verification harness
+on top of `sync_generator.cpp` all carry over unchanged when the netlist
+becomes schematic-faithful — the abstraction boundary is at the netlist
+file, not below it.
 ## What landed
 - `tests/netlist/centiped/sync_generator.cpp` — the base netlist:
   `H_LO`, `H_HI` (8-bit synchronous H counter chain), `V_LO` (4-bit V

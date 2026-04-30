@@ -4,14 +4,14 @@
 // Centipede sync generator — REPRESENTATIVE, NOT SCHEMATIC-FAITHFUL.
 //
 // Phase 2 of the project plan calls for transcribing the sync generator
-// from sheets 4-5 of the Atari TM-179 service manual. We don't have
-// TM-179 in `docs/centipede/` yet, so this file implements the same
+// from sheets 4-5 of the Atari TM-182 service manual. We don't have
+// TM-182 in `docs/centipede/` yet, so this file implements the same
 // architecture (chained 74161 counters + NAND-gate sync decode) at the
 // real Centipede master clock rate (12.096 MHz). It produces HSYNC and
 // VSYNC pulses at the right *kind* of rates, but the exact decode
 // boundaries and counter widths are simplified for tractability.
 //
-// Once TM-179 is on hand, this file should be replaced with a
+// Once TM-182 is on hand, this file should be replaced with a
 // schematic-faithful version. The instrumentation, fault-injection, and
 // verification harness on top of it will all carry over unchanged.
 //
