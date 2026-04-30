@@ -1,0 +1,198 @@
+From 8e4127024d86cbf0279dd3f1623b3f7396ac92b6 Mon Sep 17 00:00:00 2001
+From: jackie grey <leftstick22@gmail.com>
+Date: Wed, 29 Apr 2026 23:18:35 -0500
+Subject: [PATCH] Add FAULT_BUFFER netlist device for runtime fault injection
+
+Adds a transparent buffer with a runtime MODE parameter that lets the
+Arcade Cabinet Fault Simulator project inject the four primary digital
+fault primitives at any instrumented pin:
+
+  MODE 0 = NORMAL    (Y follows A; default pass-through)
+  MODE 1 = STUCK_HI  (Y driven high regardless of A)
+  MODE 2 = STUCK_LO  (Y driven low  regardless of A)
+  MODE 3 = OPEN      (Y high-impedance; pin appears disconnected)
+
+Implementation reuses MAME's existing tristate_output_t pattern from
+nld_74125.cpp, so the netlist solver does not need any FAULT_BUFFER-aware
+code paths. Auto-instrumentation will insert one FAULT_BUFFER per
+fault-eligible pin in a separate preprocessor pass.
+
+Verified end-to-end with nltool against tests/netlist/fault_buffer_test.cpp:
+all four modes produce the expected output signatures.
+
+Files changed:
+  src/lib/netlist/devices/nld_fault_buffer.cpp   (new device)
+  scripts/src/netlist.lua                        (add to build)
+  src/lib/netlist/generated/nld_devinc.h         (FAULT_BUFFER macro)
+  src/lib/netlist/generated/lib_entries.hxx      (LIB_ENTRY)
+
+Co-Authored-By: Oz <oz-agent@warp.dev>
+---
+ scripts/src/netlist.lua                      |   1 +
+ src/lib/netlist/devices/nld_fault_buffer.cpp | 107 +++++++++++++++++++
+ src/lib/netlist/generated/lib_entries.hxx    |   1 +
+ src/lib/netlist/generated/nld_devinc.h       |  10 ++
+ 4 files changed, 119 insertions(+)
+ create mode 100644 src/lib/netlist/devices/nld_fault_buffer.cpp
+
+diff --git a/scripts/src/netlist.lua b/scripts/src/netlist.lua
+index 9c70cace..e916b04e 100644
+--- a/scripts/src/netlist.lua
++++ b/scripts/src/netlist.lua
+@@ -194,6 +194,7 @@ project "netlist"
+ 		MAME_DIR .. "src/lib/netlist/devices/nld_am2847.cpp",
+ 		MAME_DIR .. "src/lib/netlist/devices/nld_dm9314.cpp",
+ 		MAME_DIR .. "src/lib/netlist/devices/nld_dm9334.cpp",
++		MAME_DIR .. "src/lib/netlist/devices/nld_fault_buffer.cpp",
+ 		MAME_DIR .. "src/lib/netlist/devices/nld_ne555.cpp",
+ 		MAME_DIR .. "src/lib/netlist/devices/nld_mm5837.cpp",
+ 		MAME_DIR .. "src/lib/netlist/devices/nld_r2r_dac.cpp",
+diff --git a/src/lib/netlist/devices/nld_fault_buffer.cpp b/src/lib/netlist/devices/nld_fault_buffer.cpp
+new file mode 100644
+index 00000000..39a7948b
+--- /dev/null
++++ b/src/lib/netlist/devices/nld_fault_buffer.cpp
+@@ -0,0 +1,107 @@
++// license:BSD-3-Clause
++// copyright-holders:Arcade Cabinet Fault Simulator
++/*
++ * nld_fault_buffer.cpp
++ *
++ *  Transparent buffer with runtime fault injection. In MODE_NORMAL, output Y
++ *  tracks input A. Other modes simulate the digital fault primitives the
++ *  Arcade Cabinet Fault Simulator project relies on.
++ *
++ *          +--------------+
++ *      VCC |1     ++     4| Y
++ *        A |2            3| GND
++ *          +--------------+
++ *
++ *  Runtime parameter:
++ *    MODE 0 = NORMAL    (Y follows A)
++ *    MODE 1 = STUCK_HI  (Y driven high regardless of A)
++ *    MODE 2 = STUCK_LO  (Y driven low  regardless of A)
++ *    MODE 3 = OPEN      (Y high-impedance — pin appears disconnected)
++ *
++ *  Inserted by the auto-instrumentation preprocessor on every fault-eligible
++ *  net pin in the Centipede netlist. Pass-through default keeps solver
++ *  overhead minimal until a fault is actually activated.
++ */
++
++#include "nl_base.h"
++
++namespace netlist::devices {
++
++	NETLIB_OBJECT(fault_buffer)
++	{
++		NETLIB_CONSTRUCTOR(fault_buffer)
++		, m_FT(*this, "FORCE_TRISTATE_LOGIC", 1)
++		, m_A(*this, "A", NETLIB_DELEGATE(input_changed))
++		, m_mode(*this, "MODE", 0)
++		, m_Y(*this, "Y", m_FT())
++		, m_power_pins(*this)
++		{
++		}
++
++	private:
++		// Mode encoding — keep in sync with the preprocessor manifest.
++		static constexpr int MODE_NORMAL   = 0;
++		static constexpr int MODE_STUCK_HI = 1;
++		static constexpr int MODE_STUCK_LO = 2;
++		static constexpr int MODE_OPEN     = 3;
++
++		// Switching delays (typical 74xx buffer figures; tune later).
++		static constexpr netlist_time TS_OFF_ON = NLTIME_FROM_NS(11);
++		static constexpr netlist_time TS_ON_OFF = NLTIME_FROM_NS(13);
++		static constexpr netlist_time SIG_DELAY = NLTIME_FROM_NS(1);
++
++		NETLIB_RESETI()
++		{
++			m_Y.set_tristate(0, TS_OFF_ON, TS_ON_OFF);
++			m_Y.push(0, SIG_DELAY);
++		}
++
++		// Called once at startup and on any runtime change to MODE.
++		NETLIB_UPDATE_PARAMI()
++		{
++			drive_output();
++		}
++
++		// Called whenever input A toggles.
++		NETLIB_HANDLERI(input_changed)
++		{
++			drive_output();
++		}
++
++		void drive_output()
++		{
++			switch (m_mode())
++			{
++				case MODE_NORMAL:
++					m_Y.set_tristate(0, TS_OFF_ON, TS_ON_OFF);
++					m_Y.push(m_A() ? 1 : 0, SIG_DELAY);
++					break;
++				case MODE_STUCK_HI:
++					m_Y.set_tristate(0, TS_OFF_ON, TS_ON_OFF);
++					m_Y.push(1, SIG_DELAY);
++					break;
++				case MODE_STUCK_LO:
++					m_Y.set_tristate(0, TS_OFF_ON, TS_ON_OFF);
++					m_Y.push(0, SIG_DELAY);
++					break;
++				case MODE_OPEN:
++					m_Y.set_tristate(1, TS_OFF_ON, TS_ON_OFF);
++					break;
++				default:
++					// Unknown mode: behave as NORMAL to avoid silent breakage.
++					m_Y.set_tristate(0, TS_OFF_ON, TS_ON_OFF);
++					m_Y.push(m_A() ? 1 : 0, SIG_DELAY);
++					break;
++			}
++		}
++
++		param_logic_t      m_FT;
++		logic_input_t      m_A;
++		param_int_t        m_mode;
++		tristate_output_t  m_Y;
++		nld_power_pins     m_power_pins;
++	};
++
++	NETLIB_DEVICE_IMPL(fault_buffer, "FAULT_BUFFER", "+A,@VCC,@GND")
++
++} // namespace netlist::devices
+diff --git a/src/lib/netlist/generated/lib_entries.hxx b/src/lib/netlist/generated/lib_entries.hxx
+index 66407355..1d09585a 100644
+--- a/src/lib/netlist/generated/lib_entries.hxx
++++ b/src/lib/netlist/generated/lib_entries.hxx
+@@ -90,6 +90,7 @@ LIB_ENTRY(Z)
+ LIB_ENTRY(analog_input)
+ LIB_ENTRY(clock)
+ LIB_ENTRY(extclock)
++LIB_ENTRY(fault_buffer)
+ LIB_ENTRY(frontier)
+ LIB_ENTRY(function)
+ LIB_ENTRY(gnd)
+diff --git a/src/lib/netlist/generated/nld_devinc.h b/src/lib/netlist/generated/nld_devinc.h
+index 88ed9022..36496d2b 100644
+--- a/src/lib/netlist/generated/nld_devinc.h
++++ b/src/lib/netlist/generated/nld_devinc.h
+@@ -655,6 +655,16 @@
+ 	__VA_OPT__(NET_CHECK_PARAM_COUNT(TTL_AM2847, PNARGS(__VA_ARGS__), 9)) \
+ 	NET_REGISTER_DEV(TTL_AM2847, name __VA_OPT__(,) __VA_ARGS__)
+ 
++// ---------------------------------------------------------------------
++// Source: ../devices/nld_fault_buffer.cpp
++// ---------------------------------------------------------------------
++
++// usage       : FAULT_BUFFER(name, A)
++// auto connect: VCC, GND
++#define FAULT_BUFFER(name, ...) \
++	__VA_OPT__(NET_CHECK_PARAM_COUNT(FAULT_BUFFER, PNARGS(__VA_ARGS__), 1)) \
++	NET_REGISTER_DEV(FAULT_BUFFER, name __VA_OPT__(,) __VA_ARGS__)
++
+ // ---------------------------------------------------------------------
+ // Source: ../devices/nld_dm9314.cpp
+ // ---------------------------------------------------------------------
+-- 
+2.54.0
+

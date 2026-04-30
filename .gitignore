@@ -1,0 +1,27 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+# Upstream vendored sources — track via patches/ instead.
+vendor/
+# Build artifacts
+build/
+# ROMs (legal sourcing required, never check in)
+roms/*
+!roms/.gitkeep
+# Service manuals / scans (downloaded out-of-band, large binaries)
+docs/centipede/*
+!docs/centipede/.gitkeep
+docs/wells-gardner/*
+!docs/wells-gardner/.gitkeep
+docs/cojag/*
+!docs/cojag/.gitkeep
+scans/centipede/*
+!scans/centipede/.gitkeep
+# Throwaway experiments
+scratch/
+# Test outputs
+log_*.log
+# Generic large binary types
+*.pdf
+*.zip
