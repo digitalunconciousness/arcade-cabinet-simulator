@@ -1,0 +1,58 @@
+[
+  {
+    "refdes": "CLK",
+    "pin": "Q",
+    "fault_device": "FB_CLK_Q",
+    "source_line": 73,
+    "original_net": "NET_C(CLK.Q,  H_LO.CLK)"
+  },
+  {
+    "refdes": "H_LO",
+    "pin": "RC",
+    "fault_device": "FB_H_LO_RC",
+    "source_line": 85,
+    "original_net": "NET_C(H_LO.RC,  H_HI.ENP)"
+  },
+  {
+    "refdes": "H_HI",
+    "pin": "RC",
+    "fault_device": "FB_H_HI_RC",
+    "source_line": 97,
+    "original_net": "NET_C(H_HI.RC,  V_LO.ENT)"
+  },
+  {
+    "refdes": "H_HI",
+    "pin": "QD",
+    "fault_device": "FB_H_HI_QD",
+    "source_line": 106,
+    "original_net": "NET_C(H_HI.QD, HSYNC_DEC.A)"
+  },
+  {
+    "refdes": "H_HI",
+    "pin": "QC",
+    "fault_device": "FB_H_HI_QC",
+    "source_line": 107,
+    "original_net": "NET_C(H_HI.QC, HSYNC_DEC.B)"
+  },
+  {
+    "refdes": "H_HI",
+    "pin": "QB",
+    "fault_device": "FB_H_HI_QB",
+    "source_line": 108,
+    "original_net": "NET_C(H_HI.QB, HSYNC_DEC.C)"
+  },
+  {
+    "refdes": "V_LO",
+    "pin": "QD",
+    "fault_device": "FB_V_LO_QD",
+    "source_line": 112,
+    "original_net": "NET_C(V_LO.QD, VSYNC_DEC.A)"
+  },
+  {
+    "refdes": "V_LO",
+    "pin": "QC",
+    "fault_device": "FB_V_LO_QC",
+    "source_line": 113,
+    "original_net": "NET_C(V_LO.QC, VSYNC_DEC.B)"
+  }
+]

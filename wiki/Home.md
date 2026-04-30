@@ -5,17 +5,21 @@ user inject realistic faults at any subsystem. Initial target is the Atari
 Centipede.
 The master plan is in [`arcade_cabinet_fault_simulator_plan.md`](../arcade_cabinet_fault_simulator_plan.md).
 ## Current status
-**Phase 1 complete.** `FAULT_BUFFER` netlist device is implemented,
-verified, documented, and shipped as a portable patch series on top of
-upstream MAME. The auto-instrumentation preprocessor scaffold is in place.
-Up next: Phase 2 — netlist coverage of the Centipede sync generator (the
-TTL counter chain on schematic sheets 4–5 that produces HSYNC, VSYNC, and
-timing signals).
+**Phase 2 complete (representative pass).** The Centipede sync generator
+is netlisted with chained 74161 counters and NAND-gate sync decode at the
+real 12.096 MHz master clock. The auto-instrumentation preprocessor
+generates an 8-entry manifest, a STUCK_LO fault on `FB_V_LO_QC` reproduces
+the "no VSYNC / rolling picture" symptom, and HSYNC stays unaffected —
+fault propagation is localized as designed. The netlist is
+*representative*, not schematic-faithful; replace once TM-179 is on hand.
+Up next: Phase 3 — cabinet bus + minimal UI. Lua TCP/JSON server inside
+MAME, schematic-view UI with fault-inject controls, one waveform probe.
 ## Quick links
 ### Phases
 - [Phase 0 — Bootstrap](Phases/Phase-0-Bootstrap.md) ✅
 - [Phase 1 — Fault buffer](Phases/Phase-1-Fault-Buffer.md) ✅
-- [Phase 2 — Sync generator](Phases/Phase-2-Sync-Generator.md) 🚧 planned
+- [Phase 2 — Sync generator](Phases/Phase-2-Sync-Generator.md) ✅
+- [Phase 3 — Cabinet bus + UI](Phases/Phase-3-Cabinet-Bus.md) 🚧 planned
 - [Roadmap](Roadmap.md)
 ### Reference
 - [Build notes](Build-Notes.md) — toolchain, build commands, audio config

@@ -17,13 +17,15 @@ MAME's netlist runtime. See [Phase-0-Bootstrap](Phases/Phase-0-Bootstrap.md).
 modes, registered into MAME and verified with nltool. Auto-instrumentation
 preprocessor scaffold with CLI, manifest, unit tests. See
 [Phase-1-Fault-Buffer](Phases/Phase-1-Fault-Buffer.md).
-### 🚧 Phase 2 — Sync generator netlist coverage
-3-4 weekends estimated.
-Netlist the Centipede sync generator (sheets 4–5 — TTL counter chain
-producing HSYNC/VSYNC). Run the auto-instrumentation preprocessor across
-the resulting `.cpp`. Demonstrate one fault end-to-end (e.g., stuck VSYNC →
-visible roll). See [Phase-2-Sync-Generator](Phases/Phase-2-Sync-Generator.md).
-### ⏳ Phase 3 — Cabinet bus + minimal UI
+### ✅ Phase 2 — Sync generator netlist coverage
+3-4 weekends estimated. **Actual: 1 evening (representative pass).**
+Netlisted the Centipede sync generator (chained 74161s + NAND sync
+decode), ran the auto-instrumentation preprocessor (8 fault-eligible
+pins instrumented), and demonstrated a localized stuck-low fault on
+`FB_V_LO_QC` that knocks out VSYNC while leaving HSYNC untouched. See
+[Phase-2-Sync-Generator](Phases/Phase-2-Sync-Generator.md). Schematic-faithful pass
+deferred until TM-179 is downloaded.
+### 🚧 Phase 3 — Cabinet bus + minimal UI
 4-6 weekends. Lua TCP/JSON server inside MAME, schematic-view UI with
 fault-inject controls, one probe.
 ### ⏳ Phase 4 — PSU model + simple peripherals

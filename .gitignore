@@ -4,8 +4,10 @@ __pycache__/
 *.pyc
 # Upstream vendored sources — track via patches/ instead.
 vendor/
-# Build artifacts
-build/
+# MAME build artifacts (we don't run that build inside the workspace tree,
+# but be defensive). Workspace `build/` is tracked because it holds
+# preprocessor outputs.
+vendor/*/build/
 # ROMs (legal sourcing required, never check in)
 roms/*
 !roms/.gitkeep
