@@ -12,6 +12,42 @@
     <div class="status" id="status">loading…</div>
   </header>
 
+  <section class="mame-pane" id="mame-pane" hidden>
+    <h2>Centipede emulator (MAME)</h2>
+    <div class="mame-grid">
+      <div class="mame-stat">
+        <div class="mame-stat-label">ROM</div>
+        <div class="mame-stat-value" id="mame-rom">—</div>
+      </div>
+      <div class="mame-stat">
+        <div class="mame-stat-label">State</div>
+        <div class="mame-stat-value" id="mame-paused">—</div>
+      </div>
+      <div class="mame-stat">
+        <div class="mame-stat-label">Frame</div>
+        <div class="mame-stat-value" id="mame-frame">—</div>
+      </div>
+      <div class="mame-stat">
+        <div class="mame-stat-label">Build</div>
+        <div class="mame-stat-value" id="mame-version">—</div>
+      </div>
+    </div>
+    <div class="mame-controls">
+      <button id="mame-pause"  type="button">Pause</button>
+      <button id="mame-resume" type="button">Resume</button>
+      <button id="mame-reset"  type="button">Soft reset</button>
+    </div>
+  </section>
+
+  <section class="mame-pane mame-pane-offline" id="mame-pane-offline">
+    <h2>Centipede emulator (MAME)</h2>
+    <div class="empty-faults">
+      MAME isn't running with the <code>cabinet_bus</code> plugin yet. Start it with:
+      <pre>./vendor/mame/mame -rompath ./roms -plugin cabinet_bus -window -sound pipewire centiped3</pre>
+      The bridge listens on <code>127.0.0.1:5051</code>; this panel will activate automatically.
+    </div>
+  </section>
+
   <main>
     <section class="schematic-pane">
       <h2>Sync generator (representative)</h2>

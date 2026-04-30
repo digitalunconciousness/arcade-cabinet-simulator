@@ -29,9 +29,16 @@ deferred until TM-182 is downloaded.
 4-6 weekends estimated. **Actual: 1 evening.**
 Flask cabinet-bus + vanilla-JS browser UI. Click a pin in the SVG
 schematic, pick a fault mode, see the waveforms re-render. Demo recipe
-in [Phase-3-Cabinet-Bus](Phases/Phase-3-Cabinet-Bus.md). The MAME-side
-Lua plugin and live WebSocket streaming are deferred to a Phase 3.5
-follow-up; the cabinet-bus protocol is in place to swap in.
+in [Phase-3-Cabinet-Bus](Phases/Phase-3-Cabinet-Bus.md).
+### ✅ Phase 3.5 — MAME bridge
+**Actual: 1 evening.** A MAME Lua plugin
+(`vendor/mame/plugins/cabinet_bus/`) accepts JSON-line commands over a
+TCP socket; the Flask cabinet-bus exposes them as `/api/mame/*`
+endpoints (`get_state`, `pause`, `resume`, `soft_reset`); the UI
+shows a live emulator panel and switches state on demand. See
+[Phase-3.5-MAME-Bridge](Phases/Phase-3.5-MAME-Bridge.md). WebSocket
+streaming and netlist-into-centiped integration are still deferred to
+later phases.
 ### 🚧 Phase 4 — PSU model + simple peripherals
 6-8 weekends. Power supply, coin mech, buttons, lights, harness. See
 [Phase-4-PSU-Peripherals](Phases/Phase-4-PSU-Peripherals.md).

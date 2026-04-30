@@ -1,0 +1,209 @@
+From 0ea667085535bf3ab8f7fae4d0b351afe509443c Mon Sep 17 00:00:00 2001
+From: jackie grey <leftstick22@gmail.com>
+Date: Thu, 30 Apr 2026 00:28:11 -0500
+Subject: [PATCH 2/2] Add cabinet_bus plugin: socket bridge for the cabinet-bus
+ server
+
+A Lua plugin that opens a TCP listener on 127.0.0.1:5051 and accepts
+newline-terminated JSON commands from the Arcade Cabinet Fault
+Simulator's Flask cabinet-bus. This lets the browser UI control the
+running emulator (pause / resume / soft reset / state query) alongside
+the existing fault-injection on the standalone netlist.
+
+Protocol is newline-delimited JSON in both directions. Supported
+commands: ping, get_state, pause, resume, soft_reset. Replies always
+carry an 'ok' boolean.
+
+The plugin defaults to start='false' (per plugin.json) so it has no
+effect unless explicitly enabled with -plugin cabinet_bus on the MAME
+command line.
+
+Co-Authored-By: Oz <oz-agent@warp.dev>
+---
+ plugins/cabinet_bus/init.lua    | 156 ++++++++++++++++++++++++++++++++
+ plugins/cabinet_bus/plugin.json |  10 ++
+ 2 files changed, 166 insertions(+)
+ create mode 100644 plugins/cabinet_bus/init.lua
+ create mode 100644 plugins/cabinet_bus/plugin.json
+
+diff --git a/plugins/cabinet_bus/init.lua b/plugins/cabinet_bus/init.lua
+new file mode 100644
+index 00000000..db2cb30a
+--- /dev/null
++++ b/plugins/cabinet_bus/init.lua
+@@ -0,0 +1,156 @@
++-- license:BSD-3-Clause
++-- copyright-holders:Arcade Cabinet Fault Simulator
++--
++-- Cabinet-bus plugin for MAME. Opens a TCP listener on 127.0.0.1:5051
++-- and accepts JSON-line commands from the cabinet-bus Flask server,
++-- letting the browser UI control the running emulator (pause / resume /
++-- soft reset / state query).
++--
++-- Protocol
++-- --------
++-- Both directions speak newline-terminated JSON objects. One request
++-- yields one reply; replies always include an `ok` boolean.
++--
++-- Supported commands:
++--   {"cmd":"ping"}                    -> {"ok":true,"pong":true,"app":"...","version":"..."}
++--   {"cmd":"get_state"}               -> {"ok":true,"rom":"centiped3","paused":false,"frame":12345,...}
++--   {"cmd":"pause"}                   -> {"ok":true,"paused":true}
++--   {"cmd":"resume"}                  -> {"ok":true,"paused":false}
++--   {"cmd":"soft_reset"}              -> {"ok":true}
++--
++-- Unknown commands return {"ok":false,"error":"..."}.
++--
++-- Loaded with: ./mame -plugin cabinet_bus ...
++
++local exports = {
++    name        = "cabinet_bus",
++    version     = "0.1.0",
++    description = "Cabinet bus bridge for the Arcade Cabinet Fault Simulator",
++    license     = "BSD-3-Clause",
++    author      = { name = "Arcade Cabinet Fault Simulator" },
++}
++
++local cabinet_bus = exports
++
++local LISTEN_ADDR = "socket.127.0.0.1:5051"
++local READ_CHUNK  = 4096
++
++local reset_subscription, stop_subscription, frame_subscription
++
++function cabinet_bus.startplugin()
++    local json = require("json")
++
++    local socket = emu.file("", 7)  -- flag 7 == socket
++    local err = socket:open(LISTEN_ADDR)
++    if err then
++        emu.print_error("cabinet_bus: failed to open " .. LISTEN_ADDR .. ": " .. tostring(err))
++        return
++    end
++    emu.print_info("cabinet_bus: listening on " .. LISTEN_ADDR)
++
++    local buffer = ""        -- partial bytes pending newline
++    local frame_count = 0
++
++    -- Update a frame counter so we can report progress to the UI.
++    frame_subscription = emu.add_machine_frame_notifier(function ()
++        frame_count = frame_count + 1
++    end)
++
++    reset_subscription = emu.add_machine_reset_notifier(function ()
++        frame_count = 0
++    end)
++
++    stop_subscription = emu.add_machine_stop_notifier(function ()
++        if socket then
++            socket:close()
++            socket = nil
++        end
++    end)
++
++    -- Compose a state snapshot for replies.
++    local function snapshot_state()
++        local mach = manager.machine
++        local rom = emu.romname() or ""
++        if rom == "___empty" then rom = "" end
++        local paused = false
++        if mach and mach.paused ~= nil then paused = mach.paused end
++        return {
++            ok      = true,
++            rom     = rom,
++            paused  = paused,
++            frame   = frame_count,
++            app     = emu.app_name(),
++            version = emu.app_version(),
++        }
++    end
++
++    local function send_json(obj)
++        if not socket then return end
++        local line = json.stringify(obj) .. "\n"
++        socket:write(line)
++    end
++
++    local function handle_command(cmd_obj)
++        local cmd = cmd_obj.cmd
++        if cmd == "ping" then
++            return { ok = true, pong = true, app = emu.app_name(), version = emu.app_version() }
++        elseif cmd == "get_state" then
++            return snapshot_state()
++        elseif cmd == "pause" then
++            local mach = manager.machine
++            if mach then mach:pause() end
++            local s = snapshot_state()
++            s.paused = true
++            return s
++        elseif cmd == "resume" then
++            local mach = manager.machine
++            if mach then mach:resume() end
++            local s = snapshot_state()
++            s.paused = false
++            return s
++        elseif cmd == "soft_reset" then
++            local mach = manager.machine
++            if mach then mach:soft_reset() end
++            return { ok = true, reset = "soft" }
++        else
++            return { ok = false, error = "unknown command: " .. tostring(cmd) }
++        end
++    end
++
++    -- Pump the socket once per emulator periodic tick (≈ once per frame
++    -- when running, more often when paused). One read, parse newline-
++    -- delimited JSON objects out of the buffer, dispatch each.
++    emu.register_periodic(function ()
++        if not socket then return end
++
++        -- Drain pending bytes.
++        repeat
++            local chunk = socket:read(READ_CHUNK)
++            if chunk and #chunk > 0 then
++                buffer = buffer .. chunk
++            end
++        until not chunk or #chunk < READ_CHUNK
++
++        while true do
++            local nl = buffer:find("\n", 1, true)
++            if not nl then break end
++            local line = buffer:sub(1, nl - 1)
++            buffer = buffer:sub(nl + 1)
++            if #line > 0 then
++                local ok_parse, cmd_obj = pcall(json.parse, line)
++                if not ok_parse or type(cmd_obj) ~= "table" then
++                    send_json({ ok = false, error = "invalid JSON: " .. tostring(cmd_obj) })
++                else
++                    local ok_handle, reply = pcall(handle_command, cmd_obj)
++                    if not ok_handle then
++                        send_json({ ok = false, error = "handler failed: " .. tostring(reply) })
++                    else
++                        send_json(reply)
++                    end
++                end
++            end
++        end
++    end)
++end
++
++return exports
+diff --git a/plugins/cabinet_bus/plugin.json b/plugins/cabinet_bus/plugin.json
+new file mode 100644
+index 00000000..a7ec62b3
+--- /dev/null
++++ b/plugins/cabinet_bus/plugin.json
+@@ -0,0 +1,10 @@
++{
++  "plugin": {
++    "name": "cabinet_bus",
++    "description": "Cabinet bus bridge for the Arcade Cabinet Fault Simulator",
++    "version": "0.1.0",
++    "author": "Arcade Cabinet Fault Simulator",
++    "type": "plugin",
++    "start": "false"
++  }
++}
+-- 
+2.54.0
+

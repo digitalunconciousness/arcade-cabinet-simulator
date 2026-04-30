@@ -1,7 +1,8 @@
 From 8e4127024d86cbf0279dd3f1623b3f7396ac92b6 Mon Sep 17 00:00:00 2001
 From: jackie grey <leftstick22@gmail.com>
 Date: Wed, 29 Apr 2026 23:18:35 -0500
-Subject: [PATCH] Add FAULT_BUFFER netlist device for runtime fault injection
+Subject: [PATCH 1/2] Add FAULT_BUFFER netlist device for runtime fault
+ injection
 
 Adds a transparent buffer with a runtime MODE parameter that lets the
 Arcade Cabinet Fault Simulator project inject the four primary digital

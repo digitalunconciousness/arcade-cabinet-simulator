@@ -22,3 +22,8 @@ git format-patch -o /home/jackie/arcade-sim/patches/ \\
   - Adds `FAULT_BUFFER` netlist device with stuck-hi / stuck-lo / open modes.
   - Registers it in the build (`netlist.lua`) and the two checked-in
     generated files (`nld_devinc.h`, `lib_entries.hxx`).
+- `0002-Add-cabinet_bus-plugin-socket-bridge-for-the-cabinet.patch`
+  - Adds `plugins/cabinet_bus/` (Lua plugin + `plugin.json`).
+  - Opens `127.0.0.1:5051`, accepts JSON-line commands
+    (`ping / get_state / pause / resume / soft_reset`), returns JSON-line
+    replies. Defaults to `start: false`; load with `-plugin cabinet_bus`.

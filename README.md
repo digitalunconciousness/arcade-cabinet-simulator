@@ -49,17 +49,30 @@ Use the new sound system explicitly:
 ```bash
 ./mame -rompath ../../roms -window -sound pipewire centiped3
 ```
-## Demo (Phase 3)
-After the bootstrap finishes, you can launch the browser demo:
+## Demo (Phase 3 + 3.5)
+The full demo wants two terminals — one for MAME, one for the cabinet bus.
+**Terminal 1 — MAME with the cabinet_bus plugin:**
+```bash
+cd vendor/mame
+./mame -plugin cabinet_bus -rompath ../../roms -window -sound pipewire centiped3
+```
+**Terminal 2 — cabinet bus + UI:**
 ```bash
 source .venv/bin/activate
 pip install flask                    # if not already done
 ./tools/cabinet_bus/start.sh         # http://127.0.0.1:5050
 ```
-Open the URL, click any pin on the sync-generator schematic, pick a
-fault mode, and watch the waveforms re-render. See
+Open the URL. The page shows:
+- a **Centipede emulator** panel with live state from MAME (ROM, frame
+  counter, paused/running) and Pause / Resume / Soft-reset buttons,
+- the **sync generator schematic** with clickable fault-injection
+  pins and live HSYNC/VSYNC waveforms.
+If MAME isn't running, the emulator panel shows an offline placeholder
+with the launch command; the schematic + faults still work standalone.
+Full walkthroughs:
 [`wiki/Phases/Phase-3-Cabinet-Bus.md`](wiki/Phases/Phase-3-Cabinet-Bus.md)
-for the full demo script.
+and
+[`wiki/Phases/Phase-3.5-MAME-Bridge.md`](wiki/Phases/Phase-3.5-MAME-Bridge.md).
 ## Documentation
 - [`wiki/Home.md`](wiki/Home.md) — project wiki landing page; phase
   status, roadmap, devices, build notes, ADRs.

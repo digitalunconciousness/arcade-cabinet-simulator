@@ -23,6 +23,7 @@ from pathlib import Path
 # Local import; runner.py lives next to this file.
 sys.path.insert(0, str(Path(__file__).parent))
 import runner  # noqa: E402
+from mame_client import MameClient  # noqa: E402
 
 from flask import Flask, jsonify, request, send_from_directory  # noqa: E402
 
@@ -53,6 +54,7 @@ def create_app(
         log_nets = DEFAULT_LOG_NETS
 
     app = Flask(__name__, static_folder=None)
+    mame = MameClient()
 
     # Cache the manifest at boot; it's small and rarely changes.
     if not manifest_path.exists():
@@ -131,6 +133,41 @@ def create_app(
             "fault_mode_count": result.fault_mode_count,
             "stderr_tail": result.stderr.splitlines()[-5:],
         })
+
+    # ---------- MAME bridge ----------
+    # All endpoints below proxy to the cabinet_bus Lua plugin running
+    # inside MAME. They return 503 with `{available: false}` when MAME
+    # isn't reachable; the UI uses that to hide the panel gracefully.
+
+    def _mame_request(cmd: str):
+        try:
+            method = getattr(mame, cmd)
+            reply = method()
+            return jsonify({"available": True, **reply})
+        except ConnectionError as e:
+            return jsonify({"available": False, "error": str(e)}), 503
+        except Exception as e:  # noqa: BLE001
+            return jsonify({"available": True, "ok": False, "error": str(e)}), 502
+
+    @app.route("/api/mame/state")
+    def api_mame_state():
+        return _mame_request("get_state")
+
+    @app.route("/api/mame/ping")
+    def api_mame_ping():
+        return _mame_request("ping")
+
+    @app.route("/api/mame/pause", methods=["POST"])
+    def api_mame_pause():
+        return _mame_request("pause")
+
+    @app.route("/api/mame/resume", methods=["POST"])
+    def api_mame_resume():
+        return _mame_request("resume")
+
+    @app.route("/api/mame/soft_reset", methods=["POST"])
+    def api_mame_reset():
+        return _mame_request("soft_reset")
 
     return app
 

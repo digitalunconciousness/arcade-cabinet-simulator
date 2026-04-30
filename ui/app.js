@@ -15,6 +15,15 @@
     popoverMeta:   document.getElementById("popover-meta"),
     popoverMode:   document.getElementById("popover-mode"),
     popoverClose:  document.getElementById("popover-close"),
+    mamePane:        document.getElementById("mame-pane"),
+    mameOffline:     document.getElementById("mame-pane-offline"),
+    mameRom:         document.getElementById("mame-rom"),
+    mamePaused:      document.getElementById("mame-paused"),
+    mameFrame:       document.getElementById("mame-frame"),
+    mameVersion:     document.getElementById("mame-version"),
+    mamePauseBtn:    document.getElementById("mame-pause"),
+    mameResumeBtn:   document.getElementById("mame-resume"),
+    mameResetBtn:    document.getElementById("mame-reset"),
   };
 
   /** @type {{fault_targets: Array, log_nets: string[], duration_s: number, modes: object}} */
@@ -249,6 +258,63 @@
     await reloadWaveforms();
   });
 
+  // ---------- MAME bridge ----------
+
+  async function pollMameOnce() {
+    try {
+      const res = await fetch("/api/mame/state");
+      if (res.status === 503) {
+        showMame(null);
+        return;
+      }
+      if (!res.ok) {
+        showMame(null);
+        return;
+      }
+      const data = await res.json();
+      if (data.available === false) {
+        showMame(null);
+      } else {
+        showMame(data);
+      }
+    } catch {
+      showMame(null);
+    }
+  }
+
+  function showMame(data) {
+    if (!data) {
+      els.mamePane.hidden = true;
+      els.mameOffline.hidden = false;
+      return;
+    }
+    els.mamePane.hidden = false;
+    els.mameOffline.hidden = true;
+    els.mameRom.textContent = data.rom || "—";
+    els.mamePaused.textContent = data.paused ? "PAUSED" : "running";
+    els.mamePaused.classList.toggle("paused", !!data.paused);
+    els.mameFrame.textContent = data.frame ?? "—";
+    els.mameVersion.textContent = `${data.app || "mame"} ${data.version || ""}`.trim();
+    els.mamePauseBtn.disabled  = !!data.paused;
+    els.mameResumeBtn.disabled = !data.paused;
+  }
+
+  async function mameAction(path) {
+    try {
+      const res = await fetch(`/api/mame/${path}`, { method: "POST" });
+      if (res.ok) {
+        const data = await res.json();
+        showMame(data.available === false ? null : data);
+      }
+    } catch (e) {
+      console.error("mame action", path, e);
+    }
+  }
+
+  els.mamePauseBtn.addEventListener("click",  () => mameAction("pause"));
+  els.mameResumeBtn.addEventListener("click", () => mameAction("resume"));
+  els.mameResetBtn.addEventListener("click",  () => mameAction("soft_reset"));
+
   // ---------- bootstrap ----------
 
   async function init() {
@@ -262,6 +328,8 @@
     renderFaultPins();
     renderFaultsList();
     await reloadWaveforms();
+    pollMameOnce();
+    setInterval(pollMameOnce, 1000);
   }
 
   init();
