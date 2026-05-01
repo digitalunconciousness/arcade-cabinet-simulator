@@ -1,0 +1,15 @@
+{
+  "id": "vertical-collapse",
+  "title": "Screen collapses to a horizontal bar",
+  "difficulty": 1,
+  "subsystems": ["CRT"],
+  "backstory": "Suddenly the whole screen has collapsed into a bright horizontal line near the middle. The game is still running — you can hear the attract music.",
+  "faults": [
+    {"type": "peripheral", "target": "CRT1", "fault": "vertical_collapse"}
+  ],
+  "visible_effect": "MAME framebuffer shows only a slim horizontal strip; top and bottom are blacked out by Lua overlay",
+  "diagnosis_hint": "Vertical collapse almost always points to the vertical output IC or its associated electrolytic caps. On a Wells-Gardner 19K6100, check C412 (vertical coupling) and IC U3 (vertical deflection).",
+  "clear_faults": [
+    {"type": "peripheral", "target": "CRT1", "fault": ""}
+  ]
+}

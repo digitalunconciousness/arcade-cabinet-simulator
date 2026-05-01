@@ -1,0 +1,15 @@
+{
+  "id": "dead-amp",
+  "title": "Complete silence — no game audio",
+  "difficulty": 1,
+  "subsystems": ["Audio"],
+  "backstory": "Sound worked yesterday. Today: nothing. The game runs normally and the POKEY chip produces signals on the board, but the speaker is dead.",
+  "faults": [
+    {"type": "peripheral", "target": "AUDIO1", "fault": "dead_amp"}
+  ],
+  "visible_effect": "WebAudio output gain drops to zero; test tone is silent; audio-meta shows 'fault: dead_amp'",
+  "diagnosis_hint": "No audio downstream of POKEY usually means the LM380 audio amplifier has failed. Probe the output pin (pin 8) of U10 with a scope — you should see the POKEY signal amplified. No output means the LM380 is dead. Check +12 V supply to pin 14 first.",
+  "clear_faults": [
+    {"type": "peripheral", "target": "AUDIO1", "fault": ""}
+  ]
+}

@@ -42,6 +42,7 @@ class MameClient:
     def __init__(self, config: Optional[MameClientConfig] = None):
         self.config = config or MameClientConfig()
         self._sock: Optional[socket.socket] = None
+        self._recv_buffer: bytes = b""
 
     def close(self) -> None:
         if self._sock is not None:
@@ -50,6 +51,7 @@ class MameClient:
             except OSError:
                 pass
             self._sock = None
+        self._recv_buffer = b""
 
     def is_available(self) -> bool:
         """Quick reachability probe. Returns True if we have or can open a connection."""
@@ -70,18 +72,7 @@ class MameClient:
                 self._ensure_connection()
                 assert self._sock is not None
                 self._sock.sendall((json.dumps(cmd) + "\n").encode("utf-8"))
-                buf = b""
-                while b"\n" not in buf:
-                    chunk = self._sock.recv(4096)
-                    if not chunk:
-                        # Peer closed; drop and (on attempt 1) retry.
-                        self.close()
-                        raise ConnectionResetError("MAME closed the connection")
-                    buf += chunk
-                    if len(buf) > 64 * 1024:
-                        self.close()
-                        raise ValueError("reply exceeds 64KB; protocol desync?")
-                line, _, _ = buf.partition(b"\n")
+                line = self._readline()
                 return json.loads(line.decode("utf-8"))
             except (ConnectionResetError, BrokenPipeError, TimeoutError) as e:
                 self.close()
@@ -157,6 +148,19 @@ class MameClient:
             "dy": int(dy),
         })
 
+    def set_crt_fault(self, effect: str, brightness: float = 1.0) -> dict:
+        """Set the active CRT overlay in the running MAME session.
+
+        effect:     CRT fault name (e.g. "dim_picture") or "normal" to clear.
+        brightness: effective brightness multiplier 0.0..1.2; values below 1.0
+                    add an additional dark veil on top of the named effect.
+        """
+        return self.send({
+            "cmd": "set_crt_fault",
+            "effect": str(effect),
+            "brightness": float(brightness),
+        })
+
     def _ensure_connection(self) -> None:
         """Open the cached socket if not already up."""
         if self._sock is not None:
@@ -167,6 +171,22 @@ class MameClient:
         )
         s.settimeout(self.config.timeout_s)
         self._sock = s
+
+    def _readline(self) -> bytes:
+        """Read exactly one newline-delimited reply, preserving overflow bytes."""
+        assert self._sock is not None
+        while b"\n" not in self._recv_buffer:
+            chunk = self._sock.recv(4096)
+            if not chunk:
+                self.close()
+                raise ConnectionResetError("MAME closed the connection")
+            self._recv_buffer += chunk
+            if len(self._recv_buffer) > 256 * 1024:
+                self.close()
+                raise ValueError("reply buffer exceeds 256KB; protocol desync?")
+        line, _, rest = self._recv_buffer.partition(b"\n")
+        self._recv_buffer = rest
+        return line
 
 
 __all__ = ["MameClient", "MameClientConfig"]

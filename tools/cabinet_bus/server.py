@@ -17,7 +17,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import subprocess
 import sys
+import threading
+import time
 from pathlib import Path
 from typing import Optional
 
@@ -30,7 +34,11 @@ from mame_client import MameClient  # noqa: E402
 sys.path.insert(0, str(Path(__file__).parent.parent / "peripherals"))
 from models import PeripheralRegistry  # noqa: E402
 
-from flask import Flask, jsonify, request, send_from_directory  # noqa: E402
+# Training / scenario runner.
+sys.path.insert(0, str(Path(__file__).parent.parent / "training"))
+import scenario_runner as _scenario_runner  # noqa: E402
+
+from flask import Flask, Response, abort, jsonify, request, send_from_directory  # noqa: E402
 
 
 # Repo layout. Discovered relative to this file.
@@ -297,6 +305,399 @@ def create_app(
     def api_crt_preview():
         """Expose CRT state for the standalone preview pane."""
         return jsonify(peripherals.crt.state())
+
+    @app.route("/api/mame/video")
+    def api_mame_video():
+        """MJPEG stream of the MAME virtual display.
+
+        Requires MAME_DISPLAY env var pointing at an X11 display (typically
+        set by run-demo.sh when Xvfb is available).  Returns 503 JSON when
+        the display is not configured.  The stream is per-connection; each
+        browser tab that loads the <img> tag gets its own ffmpeg instance.
+        """
+        display = os.environ.get("MAME_DISPLAY", "")
+        display_target = _normalize_x11_display(display)
+        if not display:
+            return jsonify({
+                "error": "MAME video stream not available",
+                "hint": "Install xorg-server-xvfb and launch via tools/run-demo.sh",
+            }), 503
+        if not _ffmpeg_available():
+            return jsonify({"error": "ffmpeg not found in PATH"}), 503
+        window_id = _find_mame_window_id(display)
+        if not window_id:
+            return jsonify({
+                "error": "MAME window not found on display",
+                "hint": "ensure MAME is running and opened on the configured display",
+            }), 503
+        if not _x11_grab_available(display_target, window_id):
+            return jsonify({
+                "error": f"display {display_target} is not capturable",
+                "hint": "restart via tools/run-demo.sh so MAME and Xvfb share the same display",
+            }), 503
+
+        # Build a best-effort visual filter chain from current CRT state.
+        crt_state = peripherals.crt.state()
+        effect = crt_state["shader_effect"].replace("crt_", "")
+        brightness = float(crt_state.get("effective_brightness", 1.0))
+
+        def stream():
+            vf_chain = _video_filter_chain(effect, brightness)
+            cmd = [
+                "ffmpeg", "-hide_banner", "-loglevel", "quiet",
+                "-f", "x11grab", "-framerate", "15",
+                "-window_id", window_id,
+                "-i", display_target,
+                "-vf", vf_chain,
+                "-f", "mpjpeg", "-q:v", "5",
+                "pipe:1",
+            ]
+            proc = subprocess.Popen(
+                cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL
+            )
+            try:
+                while True:
+                    chunk = proc.stdout.read(4096)
+                    if not chunk:
+                        break
+                    yield chunk
+            finally:
+                proc.terminate()
+                try:
+                    proc.wait(timeout=2)
+                except subprocess.TimeoutExpired:
+                    proc.kill()
+
+        return Response(
+            stream(),
+            mimetype="multipart/x-mixed-replace; boundary=ffmpeg",
+        )
+
+    def _ffmpeg_available() -> bool:
+        import shutil
+        return shutil.which("ffmpeg") is not None
+
+    def _normalize_x11_display(display: str) -> str:
+        """Normalize ':99' -> ':99.0+0,0' for ffmpeg x11grab."""
+        if not display:
+            return ""
+        if "+" in display:
+            return display
+        if "." not in display:
+            return f"{display}.0+0,0"
+        return f"{display}+0,0"
+
+    def _find_mame_window_id(display: str) -> Optional[str]:
+        """Return first X11 window id for WM_CLASS 'mame' on the display."""
+        if not display:
+            return None
+        try:
+            r = subprocess.run(
+                ["xdotool", "search", "--class", "mame"],
+                env={**os.environ, "DISPLAY": display},
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                text=True,
+                timeout=1.5,
+                check=False,
+            )
+            if r.returncode != 0:
+                return None
+            wid = (r.stdout or "").splitlines()[0].strip()
+            return wid or None
+        except (OSError, subprocess.TimeoutExpired, IndexError):
+            return None
+
+    def _x11_grab_available(display_target: str, window_id: Optional[str] = None) -> bool:
+        """Return True when ffmpeg can capture at least one frame from display."""
+        if not display_target or not _ffmpeg_available():
+            return False
+        try:
+            cmd = [
+                "ffmpeg", "-hide_banner", "-loglevel", "error",
+                "-f", "x11grab",
+            ]
+            if window_id:
+                cmd += ["-window_id", str(window_id)]
+            else:
+                cmd += ["-video_size", "16x16"]
+            cmd += [
+                "-i", display_target,
+                "-frames:v", "1",
+                "-f", "null", "-",
+            ]
+            r = subprocess.run(
+                cmd,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=2,
+                check=False,
+            )
+            return r.returncode == 0
+        except (OSError, subprocess.TimeoutExpired):
+            return False
+
+    def _video_filter_chain(effect: str, brightness: float) -> str:
+        """Build ffmpeg -vf chain for browser preview CRT effects.
+
+        This is a fallback visual path for the embedded video panel when
+        MAME's Lua UI overlay is not visible in the captured output.
+        """
+        # Global brightness scale from CRT/PSU model.
+        filters: list[str] = []
+        b = max(0.0, min(1.2, brightness))
+        if abs(b - 1.0) > 0.01:
+            # ffmpeg eq brightness is additive in [-1,1].
+            filters.append(f"eq=brightness={max(-1.0, min(1.0, b - 1.0)):.3f}")
+
+        if effect == "no_hv":
+            filters.append("eq=brightness=-1:saturation=0")
+        elif effect == "vertical_collapse":
+            filters.append("scale=iw:ih*0.08:flags=neighbor,pad=iw:ih:(ow-iw)/2:(oh-ih)/2:black")
+        elif effect == "horizontal_collapse":
+            filters.append("scale=iw*0.08:ih:flags=neighbor,pad=iw:ih:(ow-iw)/2:(oh-ih)/2:black")
+        elif effect == "dim_picture":
+            filters.append("eq=brightness=-0.35")
+        elif effect == "weak_focus":
+            filters.append("gblur=sigma=1.2")
+        elif effect == "ringing_ghosting":
+            filters.append("tblend=all_mode=average")
+        elif effect == "sync_lock_failure":
+            # Cheap approximation: slight jitter via horizontal shear.
+            filters.append("shear=xh=0.05")
+
+        # Always scale to a stable panel size.
+        filters.append("scale=640:480:flags=neighbor")
+        return ",".join(filters)
+
+    @app.route("/api/mame/video/available")
+    def api_mame_video_available():
+        """Quick probe: is the video stream available?"""
+        display = os.environ.get("MAME_DISPLAY", "")
+        display_target = _normalize_x11_display(display)
+        window_id = _find_mame_window_id(display)
+        ffmpeg_ok = _ffmpeg_available()
+        grab_ok = _x11_grab_available(display_target, window_id) if display and ffmpeg_ok else False
+        return jsonify({
+            "available": bool(display) and bool(window_id) and ffmpeg_ok and grab_ok,
+            "display": display_target or None,
+            "window_id": window_id,
+            "ffmpeg": ffmpeg_ok,
+            "grab": grab_ok,
+        })
+
+    @app.route("/api/crt/apply", methods=["POST"])
+    def api_crt_apply():
+        """Push the current CRT fault state into MAME's UI overlay.
+
+        Reads the CRT peripheral state (respecting PSU coupling) and sends a
+        set_crt_fault command to the MAME plugin so the game framebuffer
+        shows the matching visual effect immediately.
+
+        Optionally accepts {effect, brightness} in the request body to
+        override the peripheral state (useful for scenario direct-apply).
+        """
+        body = request.get_json(silent=True) or {}
+        if "effect" in body:
+            effect = str(body["effect"])
+            brightness = float(body.get("brightness", 1.0))
+        else:
+            crt_state = peripherals.crt.state()
+            effect = crt_state["shader_effect"].replace("crt_", "")
+            if effect == "normal":
+                effect = "normal"
+            brightness = crt_state["effective_brightness"]
+        try:
+            reply = mame.set_crt_fault(effect, brightness)
+            return jsonify({"available": True, "effect": effect,
+                            "brightness": brightness, "mame": reply})
+        except ConnectionError as e:
+            return jsonify({"available": False, "effect": effect,
+                            "brightness": brightness, "error": str(e)}), 503
+
+    # ------------------------------------------------------------------
+    # PSU fault propagation
+    # A background thread watches the PSU rail and pushes CRT + stuck-byte
+    # updates into MAME whenever the 5 V rail deviates from nominal.
+    # ------------------------------------------------------------------
+
+    _psu_watcher_stop = threading.Event()
+
+    def _psu_watcher_loop():
+        """Push PSU-coupled CRT state to MAME once per second."""
+        prev_fault = None
+        prev_brightness = None
+        # Centipede work-RAM range used to inject transient errors on low 5 V.
+        TRANSIENT_ADDR = 0x0700  # scratch RAM, typically zeroed by game init
+        transient_armed = False
+        while not _psu_watcher_stop.wait(timeout=1.0):
+            try:
+                # In headless/Xvfb runs MAME may auto-pause on focus loss.
+                # Force it back to running so scenario effects are visible.
+                try:
+                    st = mame.get_state()
+                    if bool(st.get("paused")):
+                        mame.resume()
+                except ConnectionError:
+                    pass
+
+                crt_state = peripherals.crt.state()
+                effect = crt_state["shader_effect"].replace("crt_", "")
+                if effect == "normal":
+                    effect = "normal"
+                brightness = crt_state["effective_brightness"]
+                rail_5v = peripherals.psu.state()["rails"]["5V"]
+
+                # Only push to MAME when state changes, to avoid spamming.
+                if effect != prev_fault or abs(brightness - (prev_brightness or 0)) > 0.02:
+                    prev_fault = effect
+                    prev_brightness = brightness
+                    try:
+                        mame.set_crt_fault(effect, brightness)
+                    except ConnectionError:
+                        pass  # MAME not running yet; silently skip
+
+                # Arm a transient stuck byte when 5 V sags below 4.7 V.
+                if rail_5v < 4.7 and not transient_armed:
+                    try:
+                        mame.stuck_byte(TRANSIENT_ADDR, 0xFF)
+                        transient_armed = True
+                    except ConnectionError:
+                        pass
+                elif rail_5v >= 4.7 and transient_armed:
+                    try:
+                        mame.stuck_byte(TRANSIENT_ADDR, None)
+                        transient_armed = False
+                    except ConnectionError:
+                        pass
+            except Exception:  # noqa: BLE001
+                pass  # never crash the watcher; log silently
+
+    _watcher_thread = threading.Thread(
+        target=_psu_watcher_loop, daemon=True, name="psu_watcher"
+    )
+    _watcher_thread.start()
+
+    # ------------------------------------------------------------------
+    # Scenarios
+    # ------------------------------------------------------------------
+
+    # Load all scenarios at startup so we can serve the list immediately.
+    _scenarios: list[dict] = _scenario_runner.load_all_scenarios()
+    _scenario_index: dict[str, dict] = {s["id"]: s for s in _scenarios}
+
+    @app.route("/api/scenarios")
+    def api_scenarios_list():
+        """Return metadata for all available scenarios."""
+        return jsonify({
+            "scenarios": [_scenario_runner.scenario_metadata(s) for s in _scenarios]
+        })
+
+    @app.route("/api/scenarios/<scenario_id>/apply", methods=["POST"])
+    def api_scenario_apply(scenario_id: str):
+        """Apply all faults in the named scenario.
+
+        Peripheral faults are applied in-process (no HTTP round-trip).
+        MAME-level faults (stuck_byte, clear_stuck, crt_overlay) are forwarded
+        to the MAME plugin; they return {available: false} gracefully if MAME
+        isn't running.
+        """
+        scenario = _scenario_index.get(scenario_id)
+        if scenario is None:
+            return jsonify({"error": f"unknown scenario: {scenario_id!r}"}), 404
+        mame_pre = _ensure_mame_running()
+        results = _apply_scenario_faults(scenario["faults"])
+        return jsonify({"id": scenario_id, "applied": True, "faults": results, "mame": mame_pre})
+
+    @app.route("/api/scenarios/<scenario_id>/clear", methods=["POST"])
+    def api_scenario_clear(scenario_id: str):
+        """Clear all faults from the named scenario."""
+        scenario = _scenario_index.get(scenario_id)
+        if scenario is None:
+            return jsonify({"error": f"unknown scenario: {scenario_id!r}"}), 404
+        mame_pre = _ensure_mame_running()
+        results = _apply_scenario_faults(scenario.get("clear_faults", []))
+        return jsonify({"id": scenario_id, "cleared": True, "faults": results, "mame": mame_pre})
+
+    def _ensure_mame_running() -> dict:
+        """Best-effort: if MAME is paused, try to resume before applying faults."""
+        try:
+            st = mame.get_state()
+            was_paused = bool(st.get("paused"))
+            resumed = False
+            if was_paused:
+                try:
+                    mame.resume()
+                    resumed = True
+                except ConnectionError:
+                    resumed = False
+            return {"available": True, "was_paused": was_paused, "resume_attempted": was_paused, "resumed": resumed}
+        except ConnectionError as e:
+            return {"available": False, "error": str(e)}
+
+    def _apply_scenario_faults(fault_list: list) -> list:
+        """Apply a list of fault dicts in-process. Returns per-fault outcomes."""
+        results = []
+        for fault in fault_list:
+            fault_type = fault.get("type", "peripheral")
+            try:
+                if fault_type == "peripheral":
+                    peripherals.apply_fault(fault["target"], fault["fault"])
+                    result: dict = {"type": fault_type, "target": fault["target"], "ok": True}
+                    if fault["target"].startswith("CRT"):
+                        reached = _push_crt_to_mame()
+                        result["mame_available"] = reached
+                        if not reached:
+                            result["warning"] = "CRT state updated but MAME is not connected"
+                    results.append(result)
+
+                elif fault_type == "mame_stuck_byte":
+                    raw_addr = fault["addr"]
+                    addr = int(raw_addr, 0) if isinstance(raw_addr, str) else int(raw_addr)
+                    try:
+                        mame.stuck_byte(addr, int(fault["value"]))
+                        results.append({"type": fault_type, "addr": raw_addr,
+                                        "ok": True})
+                    except ConnectionError as e:
+                        results.append({"type": fault_type, "addr": raw_addr,
+                                        "ok": False, "available": False,
+                                        "error": str(e)})
+
+                elif fault_type == "mame_clear_stuck":
+                    try:
+                        mame.clear_stuck()
+                        results.append({"type": fault_type, "ok": True})
+                    except ConnectionError as e:
+                        results.append({"type": fault_type, "ok": False,
+                                        "available": False, "error": str(e)})
+
+                elif fault_type == "crt_overlay":
+                    effect = fault.get("effect", "normal")
+                    brightness = float(fault.get("brightness", 1.0))
+                    try:
+                        mame.set_crt_fault(effect, brightness)
+                        results.append({"type": fault_type, "effect": effect,
+                                        "ok": True})
+                    except ConnectionError as e:
+                        results.append({"type": fault_type, "effect": effect,
+                                        "ok": False, "available": False,
+                                        "error": str(e)})
+                else:
+                    results.append({"type": fault_type, "ok": False,
+                                    "error": f"unknown fault type: {fault_type!r}"})
+            except (ValueError, KeyError) as e:
+                results.append({"type": fault_type, "ok": False, "error": str(e)})
+        return results
+
+    def _push_crt_to_mame() -> bool:
+        """Push the current CRT peripheral state to MAME.  Returns True if MAME was reached."""
+        try:
+            crt_state = peripherals.crt.state()
+            effect = crt_state["shader_effect"].replace("crt_", "")
+            mame.set_crt_fault(effect, crt_state["effective_brightness"])
+            return True
+        except ConnectionError:
+            return False
 
     @app.route("/api/trackball/motion", methods=["POST"])
     def api_trackball_motion():

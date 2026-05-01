@@ -1,0 +1,36 @@
+{
+  "files": {
+    "code": [
+      "/home/jackie/arcade-sim/tools/__init__.py",
+      "/home/jackie/arcade-sim/tools/cabinet_bus/test_runner.py",
+      "/home/jackie/arcade-sim/tools/cabinet_bus/__init__.py",
+      "/home/jackie/arcade-sim/tools/cabinet_bus/mame_client.py",
+      "/home/jackie/arcade-sim/tools/cabinet_bus/server.py",
+      "/home/jackie/arcade-sim/tools/cabinet_bus/runner.py",
+      "/home/jackie/arcade-sim/tools/peripherals/crt.py",
+      "/home/jackie/arcade-sim/tools/peripherals/__init__.py",
+      "/home/jackie/arcade-sim/tools/peripherals/audio.py",
+      "/home/jackie/arcade-sim/tools/peripherals/test_models.py",
+      "/home/jackie/arcade-sim/tools/peripherals/models.py",
+      "/home/jackie/arcade-sim/tools/peripherals/trackball.py",
+      "/home/jackie/arcade-sim/tools/training/__init__.py",
+      "/home/jackie/arcade-sim/tools/training/scenario_runner.py",
+      "/home/jackie/arcade-sim/tools/training/test_scenario_runner.py",
+      "/home/jackie/arcade-sim/tools/preprocessor/test_instrument.py",
+      "/home/jackie/arcade-sim/tools/preprocessor/instrument.py"
+    ],
+    "document": [
+      "/home/jackie/arcade-sim/tools/cabinet_bus/requirements.txt",
+      "/home/jackie/arcade-sim/tools/preprocessor/README.md"
+    ],
+    "paper": [],
+    "image": [],
+    "video": []
+  },
+  "total_files": 19,
+  "total_words": 9602,
+  "needs_graph": false,
+  "warning": "Corpus is ~9,602 words - fits in a single context window. You may not need a graph.",
+  "skipped_sensitive": [],
+  "graphifyignore_patterns": 0
+}

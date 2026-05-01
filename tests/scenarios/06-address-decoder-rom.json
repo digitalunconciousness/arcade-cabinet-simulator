@@ -1,0 +1,17 @@
+{
+  "id": "address-decoder-rom",
+  "title": "Game freezes on startup — ROM bank missing",
+  "difficulty": 3,
+  "subsystems": ["AddrDecoder"],
+  "backstory": "The cabinet boots to a blank or frozen screen. The game never reaches attract mode.",
+  "faults": [
+    {"type": "mame_stuck_byte", "addr": "0x2000", "value": 255},
+    {"type": "mame_stuck_byte", "addr": "0x2001", "value": 255},
+    {"type": "mame_stuck_byte", "addr": "0x2010", "value": 255}
+  ],
+  "visible_effect": "Program ROM address space corrupted — the CPU fetches garbage opcodes. MAME will misexecute or hang within a few frames.",
+  "diagnosis_hint": "Blank screen at boot almost always means the CPU can't fetch valid code. Check the ROM chip-select line from the address decoder (74155A output pin 4). A stuck-low CS will float the data bus. Reseat the address decoder IC first; if the fault persists, replace it.",
+  "clear_faults": [
+    {"type": "mame_clear_stuck"}
+  ]
+}

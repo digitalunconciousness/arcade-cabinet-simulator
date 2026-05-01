@@ -1,0 +1,15 @@
+{
+  "id": "dead-trackball-x",
+  "title": "Can't steer left or right",
+  "difficulty": 1,
+  "subsystems": ["Trackball"],
+  "backstory": "A player complains that the spider can only move up and down. Rotating the trackball left or right does nothing.",
+  "faults": [
+    {"type": "peripheral", "target": "TRACK1", "fault": "dead_opto_x"}
+  ],
+  "visible_effect": "Dragging the trackball pad left/right sends zero dx to MAME; only vertical movement works",
+  "diagnosis_hint": "With the cabinet open, watch the X-axis opto-interrupter LED with the trackball rolling. Dead LED = dead opto. Replace the opto or clean the encoder disc slot.",
+  "clear_faults": [
+    {"type": "peripheral", "target": "TRACK1", "fault": ""}
+  ]
+}

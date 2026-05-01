@@ -1,0 +1,15 @@
+{
+  "id": "weak-focus",
+  "title": "Everything looks blurry",
+  "difficulty": 1,
+  "subsystems": ["CRT"],
+  "backstory": "The picture used to be razor sharp. Now it looks soft all over, like the resolution has dropped. Turning the focus pot on the flyback doesn't help much.",
+  "faults": [
+    {"type": "peripheral", "target": "CRT1", "fault": "weak_focus"}
+  ],
+  "visible_effect": "Lua overlay adds a vignette darkening at the edges and a soft overall tint; CRT preview shows weak_focus shader",
+  "diagnosis_hint": "Persistent soft focus that doesn't respond to the focus pot almost always means the focus voltage from the flyback transformer is sagging. Measure the focus pin with a high-voltage probe — should be around 4–6 kV. Low voltage means either the flyback itself or the HV divider network is failing.",
+  "clear_faults": [
+    {"type": "peripheral", "target": "CRT1", "fault": ""}
+  ]
+}

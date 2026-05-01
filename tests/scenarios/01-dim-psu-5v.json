@@ -1,0 +1,19 @@
+{
+  "id": "dim-psu-5v",
+  "title": "Dim picture, sluggish controls",
+  "difficulty": 1,
+  "subsystems": ["PSU", "CRT", "Trackball"],
+  "backstory": "Operator reports the picture looks washed out and the trackball feels heavy. Cabinet has been running for several years without a cap refresh.",
+  "faults": [
+    {"type": "peripheral", "target": "PSU1",   "fault": "sagging_mains"},
+    {"type": "peripheral", "target": "CRT1",   "fault": "dim_picture"},
+    {"type": "peripheral", "target": "TRACK1", "fault": "dirty_roller"}
+  ],
+  "visible_effect": "MAME framebuffer darkened by Lua overlay; trackball dx/dy reduced in-game",
+  "diagnosis_hint": "Measure 5 V rail at J1 pin 4 with a DMM. Should read 5.05 V; anything below 4.8 V indicates a sagging supply.",
+  "clear_faults": [
+    {"type": "peripheral", "target": "PSU1",   "fault": ""},
+    {"type": "peripheral", "target": "CRT1",   "fault": ""},
+    {"type": "peripheral", "target": "TRACK1", "fault": ""}
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "id": "multi-fault",
+  "title": "\"The whole thing's broken\" — cascading failure",
+  "difficulty": 4,
+  "subsystems": ["PSU", "CRT", "RAM", "Audio"],
+  "backstory": "A cabinet that's been sitting in a garage for 10 years. Everything looks wrong. The picture is dim and rolling, there's a hum from the speaker, and random garbage tiles appear on screen. Where do you even start?",
+  "faults": [
+    {"type": "peripheral", "target": "PSU1",   "fault": "dried_filter_cap"},
+    {"type": "peripheral", "target": "CRT1",   "fault": "sync_lock_failure"},
+    {"type": "peripheral", "target": "AUDIO1", "fault": "hum"},
+    {"type": "mame_stuck_byte", "addr": "0x0500", "value": 255},
+    {"type": "mame_stuck_byte", "addr": "0x0520", "value": 0}
+  ],
+  "visible_effect": "Rolling dark band from sync fault + dim overlay from PSU + stuck tile in VRAM + audio hum in test tone",
+  "diagnosis_hint": "Start with the PSU. A 800 mV ripple on the 5 V rail will cause every downstream symptom. Replace the main filter caps (4 × 4700 µF, 16 V) on the PSU board first. Once power is clean, the other symptoms often resolve or become easier to isolate.",
+  "clear_faults": [
+    {"type": "peripheral", "target": "PSU1",   "fault": ""},
+    {"type": "peripheral", "target": "CRT1",   "fault": ""},
+    {"type": "peripheral", "target": "AUDIO1", "fault": ""},
+    {"type": "mame_clear_stuck"}
+  ]
+}

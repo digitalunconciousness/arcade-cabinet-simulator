@@ -61,7 +61,7 @@ state. Test netlist `tests/netlist/centiped/ram_region.cpp` walks
 line dips LOW once per 16-address sweep while the other 15 cells read
 back the written 1. See
 [Phase-5.5-RAM-Region](Phases/Phase-5.5-RAM-Region.md).
-### 🚧 Phase 6 — CRT monitor + trackball + audio chain
+### ✅ Phase 6 — CRT monitor + trackball + audio chain
 8-12 weekends. Largest single phase. Wells-Gardner 19K6100 chassis
 model as shader effects, trackball quadrature with fault categories,
 audio chain post-processing. See
@@ -69,7 +69,7 @@ audio chain post-processing. See
 Initial implementation is now landed: Phase 6 peripheral models,
 standalone CRT preview pane, WebAudio-based fault controls, and
 direct-push `trackball_delta` bridge command.
-### ⏳ Phase 7 — Complete vertical-slice demo
+### 🚧 Phase 7 — Complete vertical-slice demo
 Focused prototype milestone. Named scenario library (12 scenarios),
 BGFX CRT shader integration, PSU→MAME fault propagation, one-command
 launch. Goal: pick a fault, click Apply, see/hear/feel it in the

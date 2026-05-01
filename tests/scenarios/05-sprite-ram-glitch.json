@@ -1,0 +1,17 @@
+{
+  "id": "sprite-ram-glitch",
+  "title": "Tile corruption mid-screen",
+  "difficulty": 2,
+  "subsystems": ["RAM"],
+  "backstory": "Random garbage tiles keep appearing in the middle third of the playfield. The game is otherwise playable but the display is clearly wrong.",
+  "faults": [
+    {"type": "mame_stuck_byte", "addr": "0x0540", "value": 255},
+    {"type": "mame_stuck_byte", "addr": "0x0560", "value": 255},
+    {"type": "mame_stuck_byte", "addr": "0x0580", "value": 170}
+  ],
+  "visible_effect": "Three tile cells in the VRAM tile map are stuck at specific values; the corresponding screen tiles show garbage patterns",
+  "diagnosis_hint": "Corrupted tiles that don't change during gameplay point to stuck bits in the video tile RAM. Use a logic probe to check the data bus pins of the 2114 RAM at location E8/F8 on the Centipede board while the game runs.",
+  "clear_faults": [
+    {"type": "mame_clear_stuck"}
+  ]
+}

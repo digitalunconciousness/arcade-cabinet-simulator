@@ -17,6 +17,8 @@
     popoverClose:  document.getElementById("popover-close"),
     mamePane:        document.getElementById("mame-pane"),
     mameOffline:     document.getElementById("mame-pane-offline"),
+    mameVideoFeed:   document.getElementById("mame-video-feed"),
+    mameVideoUnavail: document.getElementById("mame-video-unavail"),
     mameRom:         document.getElementById("mame-rom"),
     mamePaused:      document.getElementById("mame-paused"),
     mameFrame:       document.getElementById("mame-frame"),
@@ -33,6 +35,17 @@
     audioMeta:       document.getElementById("audio-meta"),
     audioToneStart:  document.getElementById("audio-tone-start"),
     audioToneStop:   document.getElementById("audio-tone-stop"),
+    // Scenario bar
+    scenarioSelect:   document.getElementById("scenario-select"),
+    scenarioApply:    document.getElementById("scenario-apply"),
+    scenarioClear:    document.getElementById("scenario-clear"),
+    scenarioInfo:     document.getElementById("scenario-info"),
+    scenarioTitle:    document.getElementById("scenario-title"),
+    scenarioSubs:     document.getElementById("scenario-subs"),
+    scenarioStory:    document.getElementById("scenario-story"),
+    scenarioBanner:   document.getElementById("scenario-active-banner"),
+    bannerTitle:      document.getElementById("banner-title"),
+    bannerSubs:       document.getElementById("banner-subs"),
   };
 
   /** @type {{fault_targets: Array, log_nets: string[], duration_s: number, modes: object}} */
@@ -541,6 +554,7 @@
       els.mameOffline.hidden = false;
       return;
     }
+    initMameVideo();
     els.mamePane.hidden = false;
     els.mameOffline.hidden = true;
     els.mameRom.textContent = data.rom || "—";
@@ -552,6 +566,40 @@
     els.mameResumeBtn.disabled = !data.paused;
   }
 
+    // Probe /api/mame/video/available once and wire up the MJPEG <img> feed.
+    let _videoInitDone = false;
+    async function initMameVideo() {
+      if (_videoInitDone) return;
+      _videoInitDone = true;
+      try {
+        const res = await fetch("/api/mame/video/available");
+        const data = res.ok ? await res.json() : { available: false };
+        if (data.available) {
+          els.mameVideoFeed.src = "/api/mame/video";
+          els.mameVideoFeed.hidden = false;
+          els.mameVideoUnavail.hidden = true;
+          // Reload the stream if the browser drops it (Xvfb restart, etc.)
+          els.mameVideoFeed.addEventListener("error", () => {
+            els.mameVideoFeed.hidden = true;
+            els.mameVideoUnavail.hidden = false;
+          });
+        } else {
+          els.mameVideoFeed.hidden = true;
+          els.mameVideoUnavail.hidden = false;
+          const parts = [];
+          if (data.display) parts.push(`display ${data.display}`);
+          if (data.ffmpeg === false) parts.push("ffmpeg missing");
+          if (data.grab === false) parts.push("display not capturable");
+          if (parts.length) {
+            setStatus(`MAME video unavailable: ${parts.join(", ")}`, true);
+          }
+        }
+      } catch {
+        els.mameVideoFeed.hidden = true;
+        els.mameVideoUnavail.hidden = false;
+      }
+    }
+
   async function mameAction(path) {
     try {
       const res = await fetch(`/api/mame/${path}`, { method: "POST" });
@@ -562,6 +610,12 @@
     } catch (e) {
       console.error("mame action", path, e);
     }
+  }
+
+  function refreshMameVideoStream() {
+    if (!els.mameVideoFeed) return;
+    // Reconnect so the server can rebuild ffmpeg filters from current CRT state.
+    els.mameVideoFeed.src = `/api/mame/video?t=${Date.now()}`;
   }
 
   els.mamePauseBtn.addEventListener("click",  () => mameAction("pause"));
@@ -758,6 +812,124 @@
     audioToneGain.gain.value = 0;
   }
 
+  // ---------- Scenarios (Phase 7) ----------
+
+  /** @type {Array<{id:string,title:string,difficulty:number,subsystems:string[],backstory:string}>} */
+  let scenarios = [];
+  let activeScenarioId = null;
+
+  async function loadScenarios() {
+    try {
+      const data = await fetchJSON("/api/scenarios");
+      scenarios = data.scenarios || [];
+      if (!els.scenarioSelect) return;
+      els.scenarioSelect.innerHTML = `<option value="">— choose a scenario —</option>`;
+      for (const s of scenarios) {
+        const stars = "★".repeat(s.difficulty || 1);
+        const opt = document.createElement("option");
+        opt.value = s.id;
+        opt.textContent = `${stars}  ${s.title}`;
+        els.scenarioSelect.appendChild(opt);
+      }
+    } catch (err) {
+      console.error("scenarios load failed", err);
+    }
+  }
+
+  function getSelectedScenario() {
+    const id = els.scenarioSelect?.value;
+    return scenarios.find(s => s.id === id) || null;
+  }
+
+  function renderScenarioInfo(scenario) {
+    if (!els.scenarioInfo) return;
+    if (!scenario) {
+      els.scenarioInfo.hidden = true;
+      return;
+    }
+    els.scenarioTitle.textContent = scenario.title;
+    els.scenarioSubs.textContent  = (scenario.subsystems || []).join(", ");
+    els.scenarioStory.textContent = scenario.backstory || "";
+    els.scenarioInfo.hidden = false;
+  }
+
+  function renderScenarioBanner(scenario) {
+    if (!els.scenarioBanner) return;
+    if (!scenario) {
+      els.scenarioBanner.hidden = true;
+      return;
+    }
+    els.bannerTitle.textContent = scenario.title;
+    els.bannerSubs.textContent  = (scenario.subsystems || []).join(", ");
+    els.scenarioBanner.hidden = false;
+  }
+
+  if (els.scenarioSelect) {
+    els.scenarioSelect.addEventListener("change", () => {
+      const s = getSelectedScenario();
+      renderScenarioInfo(s);
+      els.scenarioApply.disabled = !s;
+      els.scenarioClear.disabled = !s;
+    });
+  }
+
+  if (els.scenarioApply) {
+    els.scenarioApply.addEventListener("click", async () => {
+      const s = getSelectedScenario();
+      if (!s) return;
+      els.scenarioApply.disabled = true;
+      els.scenarioApply.textContent = "Applying…";
+      try {
+        const result = await postJSON(`/api/scenarios/${encodeURIComponent(s.id)}/apply`, {});
+        activeScenarioId = s.id;
+        renderScenarioBanner(s);
+        refreshMameVideoStream();
+        await loadPeripherals();
+        if (result && result.mame && result.mame.was_paused) {
+          if (result.mame.resumed) {
+            setStatus("MAME was paused; resumed automatically before applying fault");
+          } else {
+            setStatus("MAME is paused; fault may not be visually obvious until resumed", true);
+          }
+        }
+        // Warn if any CRT fault couldn't reach MAME.
+        const mameUnreachable = (result.faults || []).some(
+          f => f.mame_available === false
+        );
+        if (mameUnreachable) {
+          setStatus("Fault applied — but MAME isn't connected (start via run-demo.sh)", true);
+          setTimeout(() => setStatus("ready"), 5000);
+        }
+      } catch (err) {
+        console.error("apply scenario failed", err);
+      } finally {
+        els.scenarioApply.disabled = false;
+        els.scenarioApply.textContent = "Apply";
+      }
+    });
+  }
+
+  if (els.scenarioClear) {
+    els.scenarioClear.addEventListener("click", async () => {
+      const s = getSelectedScenario();
+      if (!s) return;
+      els.scenarioClear.disabled = true;
+      els.scenarioClear.textContent = "Clearing…";
+      try {
+        await postJSON(`/api/scenarios/${encodeURIComponent(s.id)}/clear`, {});
+        activeScenarioId = null;
+        renderScenarioBanner(null);
+        refreshMameVideoStream();
+        await loadPeripherals();
+      } catch (err) {
+        console.error("clear scenario failed", err);
+      } finally {
+        els.scenarioClear.disabled = false;
+        els.scenarioClear.textContent = "Clear";
+      }
+    });
+  }
+
   // ---------- bootstrap ----------
 
   async function init() {
@@ -772,6 +944,7 @@
     renderFaultsList();
     await reloadWaveforms();
     await loadPeripherals();
+    await loadScenarios();
     initTrackballPad();
     if (els.audioToneStart) {
       els.audioToneStart.addEventListener("click", () => { void startTone(); });

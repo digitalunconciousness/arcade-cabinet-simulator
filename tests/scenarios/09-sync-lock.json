@@ -1,0 +1,15 @@
+{
+  "id": "sync-lock",
+  "title": "Rolling picture / screen tears diagonally",
+  "difficulty": 2,
+  "subsystems": ["CRT"],
+  "backstory": "The picture rolls slowly upward. Adjusting the vertical hold control on the monitor chassis has no effect.",
+  "faults": [
+    {"type": "peripheral", "target": "CRT1", "fault": "sync_lock_failure"}
+  ],
+  "visible_effect": "Lua overlay draws a dark rolling band scrolling down MAME's output every ~2 seconds",
+  "diagnosis_hint": "Sync lock failure that can't be corrected with the hold control means the chassis isn't receiving a stable VSYNC signal. Trace the VSYNC line from the PCB connector (J1 pin 9) to the chassis sync separator. A 0.1 µF coupling capacitor often dries out on older chassis.",
+  "clear_faults": [
+    {"type": "peripheral", "target": "CRT1", "fault": ""}
+  ]
+}

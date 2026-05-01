@@ -8,34 +8,69 @@
 <body>
   <header>
     <h1>Arcade Cabinet Fault Simulator</h1>
-    <div class="subtitle">Phase 3 demo · Centipede sync generator · click a pin to break it</div>
+    <div class="subtitle">Phase 7 vertical-slice demo · Centipede · pick a scenario and click Apply</div>
     <div class="status" id="status">loading…</div>
   </header>
 
+  <!-- Scenario bar — always visible at the top of the page -->
+  <section class="scenario-bar" id="scenario-bar">
+    <div class="scenario-bar-row">
+      <label for="scenario-select" class="scenario-label">Fault scenario</label>
+      <select id="scenario-select">
+        <option value="">— choose a scenario —</option>
+      </select>
+      <button id="scenario-apply"  type="button" disabled>Apply</button>
+      <button id="scenario-clear"  type="button" disabled>Clear</button>
+    </div>
+    <div class="scenario-info" id="scenario-info" hidden>
+      <span class="scenario-title"  id="scenario-title"></span>
+      <span class="scenario-subs"   id="scenario-subs"></span>
+      <span class="scenario-story"  id="scenario-story"></span>
+    </div>
+    <div class="scenario-active-banner" id="scenario-active-banner" hidden>
+      <span class="banner-label">ACTIVE FAULT</span>
+      <span id="banner-title"></span>
+      <span id="banner-subs"></span>
+    </div>
+  </section>
+
   <section class="mame-pane" id="mame-pane" hidden>
     <h2>Centipede emulator (MAME)</h2>
-    <div class="mame-grid">
-      <div class="mame-stat">
-        <div class="mame-stat-label">ROM</div>
-        <div class="mame-stat-value" id="mame-rom">—</div>
+    <div class="mame-pane-inner">
+      <!-- Live video feed (Xvfb + ffmpeg MJPEG stream) -->
+      <div class="mame-video-col" id="mame-video-col">
+        <img id="mame-video-feed" class="mame-video-feed"
+             alt="MAME live view" aria-label="Live MAME game video">
+        <div class="mame-video-unavail" id="mame-video-unavail" hidden>
+          no video stream —<br>install <code>xorg-server-xvfb</code>
+        </div>
       </div>
-      <div class="mame-stat">
-        <div class="mame-stat-label">State</div>
-        <div class="mame-stat-value" id="mame-paused">—</div>
+      <!-- Stats + controls -->
+      <div class="mame-controls-col">
+        <div class="mame-grid">
+          <div class="mame-stat">
+            <div class="mame-stat-label">ROM</div>
+            <div class="mame-stat-value" id="mame-rom">—</div>
+          </div>
+          <div class="mame-stat">
+            <div class="mame-stat-label">State</div>
+            <div class="mame-stat-value" id="mame-paused">—</div>
+          </div>
+          <div class="mame-stat">
+            <div class="mame-stat-label">Frame</div>
+            <div class="mame-stat-value" id="mame-frame">—</div>
+          </div>
+          <div class="mame-stat">
+            <div class="mame-stat-label">Build</div>
+            <div class="mame-stat-value" id="mame-version">—</div>
+          </div>
+        </div>
+        <div class="mame-controls">
+          <button id="mame-pause"  type="button">Pause</button>
+          <button id="mame-resume" type="button">Resume</button>
+          <button id="mame-reset"  type="button">Soft reset</button>
+        </div>
       </div>
-      <div class="mame-stat">
-        <div class="mame-stat-label">Frame</div>
-        <div class="mame-stat-value" id="mame-frame">—</div>
-      </div>
-      <div class="mame-stat">
-        <div class="mame-stat-label">Build</div>
-        <div class="mame-stat-value" id="mame-version">—</div>
-      </div>
-    </div>
-    <div class="mame-controls">
-      <button id="mame-pause"  type="button">Pause</button>
-      <button id="mame-resume" type="button">Resume</button>
-      <button id="mame-reset"  type="button">Soft reset</button>
     </div>
   </section>
 

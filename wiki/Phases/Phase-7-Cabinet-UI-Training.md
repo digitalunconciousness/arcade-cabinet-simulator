@@ -1,5 +1,5 @@
 # Phase 7 — Complete vertical-slice demo
-**Status:** ⏳ planned
+**Status:** 🚧 in progress — all deliverables implemented; awaiting end-to-end smoke test against a live MAME build
 **Goal:** A working prototype you can hand to someone unfamiliar with
 the project. Centipede runs in MAME; you pick a fault from a named
 scenario list; the effect is immediately visible (or audible, or tactile

@@ -1,0 +1,417 @@
+{
+  "communities": {
+    "0": [
+      "peripherals_audio_audiochain",
+      "peripherals_audio_audiochain_adjust",
+      "peripherals_audio_audiochain_apply_fault",
+      "peripherals_audio_audiochain_clear_fault",
+      "peripherals_audio_audiochain_init",
+      "peripherals_audio_audiochain_state",
+      "peripherals_audio_py",
+      "peripherals_models_button",
+      "peripherals_models_button_adjust",
+      "peripherals_models_button_apply_fault",
+      "peripherals_models_button_clear_fault",
+      "peripherals_models_button_init",
+      "peripherals_models_button_state",
+      "peripherals_models_coinmech",
+      "peripherals_models_coinmech_adjust",
+      "peripherals_models_coinmech_apply_fault",
+      "peripherals_models_coinmech_clear_fault",
+      "peripherals_models_coinmech_init",
+      "peripherals_models_coinmech_insert_coin",
+      "peripherals_models_coinmech_state",
+      "peripherals_models_harnesssegment",
+      "peripherals_models_harnesssegment_adjust",
+      "peripherals_models_harnesssegment_apply_fault",
+      "peripherals_models_harnesssegment_clear_fault",
+      "peripherals_models_harnesssegment_init",
+      "peripherals_models_marquee",
+      "peripherals_models_marquee_adjust",
+      "peripherals_models_marquee_apply_fault",
+      "peripherals_models_marquee_clear_fault",
+      "peripherals_models_marquee_init",
+      "peripherals_models_marquee_state",
+      "peripherals_models_peripheralregistry_init",
+      "peripherals_models_py",
+      "peripherals_models_rationale_131",
+      "peripherals_models_rationale_164",
+      "peripherals_models_rationale_198",
+      "peripherals_models_rationale_240",
+      "peripherals_models_rationale_290",
+      "peripherals_test_models_test_audio_blown_speaker_limits_bandwidth",
+      "peripherals_test_models_test_audio_dead_amp_mutes_output_gain",
+      "peripherals_test_models_test_button_fault_is_recorded",
+      "peripherals_test_models_test_button_rejects_unknown_fault",
+      "peripherals_test_models_test_coin_mech_jammed_rejects_all",
+      "peripherals_test_models_test_coin_mech_normal_accepts_coins",
+      "peripherals_test_models_test_coin_mech_stuck_switch_streams_credits",
+      "peripherals_test_models_test_harness_records_endpoints",
+      "peripherals_test_models_test_marquee_visible_state_changes_with_fault",
+      "peripherals_test_models_test_trackball_dead_opto_x_zeroes_x_axis",
+      "peripherals_test_models_test_trackball_phase_fault_reverses_direction",
+      "peripherals_trackball_py",
+      "peripherals_trackball_trackball",
+      "peripherals_trackball_trackball_adjust",
+      "peripherals_trackball_trackball_apply_fault",
+      "peripherals_trackball_trackball_apply_motion",
+      "peripherals_trackball_trackball_clear_fault",
+      "peripherals_trackball_trackball_init",
+      "peripherals_trackball_trackball_state"
+    ],
+    "1": [
+      "peripherals_models_harnesssegment_state",
+      "peripherals_models_peripheralregistry",
+      "peripherals_models_peripheralregistry_adjust",
+      "peripherals_models_peripheralregistry_all",
+      "peripherals_models_peripheralregistry_apply_fault",
+      "peripherals_models_peripheralregistry_clear_fault",
+      "peripherals_models_peripheralregistry_find",
+      "peripherals_models_peripheralregistry_reset_all",
+      "peripherals_models_powersupply",
+      "peripherals_models_powersupply_adjust",
+      "peripherals_models_powersupply_apply_fault",
+      "peripherals_models_powersupply_clear_fault",
+      "peripherals_models_powersupply_init",
+      "peripherals_models_powersupply_rails",
+      "peripherals_models_powersupply_ripple_mv_pp",
+      "peripherals_models_powersupply_state",
+      "peripherals_models_rationale_30",
+      "peripherals_models_rationale_334",
+      "peripherals_test_models_py",
+      "peripherals_test_models_test_crt_brightness_couples_to_psu",
+      "peripherals_test_models_test_psu_clear_fault_returns_to_normal",
+      "peripherals_test_models_test_psu_default_rails_use_trim_pot",
+      "peripherals_test_models_test_psu_dried_cap_shows_ripple",
+      "peripherals_test_models_test_psu_failed_regulator_overrides_trim",
+      "peripherals_test_models_test_psu_overload_trip_collapses_rails",
+      "peripherals_test_models_test_psu_trim_pot_adjusts_5v_rail",
+      "peripherals_test_models_test_psu_trim_pot_rejects_out_of_range",
+      "peripherals_test_models_test_registry_adjust_routes_to_target",
+      "peripherals_test_models_test_registry_apply_fault_routes_to_target",
+      "peripherals_test_models_test_registry_lists_all_peripherals",
+      "peripherals_test_models_test_registry_reset_all_clears_faults_and_restores_trim",
+      "peripherals_test_models_test_registry_unknown_id_raises"
+    ],
+    "2": [
+      "cabinet_bus_mame_client_mameclient",
+      "cabinet_bus_mame_client_mameclient_clear_stuck",
+      "cabinet_bus_mame_client_mameclient_close",
+      "cabinet_bus_mame_client_mameclient_ensure_connection",
+      "cabinet_bus_mame_client_mameclient_get_state",
+      "cabinet_bus_mame_client_mameclient_init",
+      "cabinet_bus_mame_client_mameclient_is_available",
+      "cabinet_bus_mame_client_mameclient_pause",
+      "cabinet_bus_mame_client_mameclient_ping",
+      "cabinet_bus_mame_client_mameclient_poke_ram",
+      "cabinet_bus_mame_client_mameclient_readline",
+      "cabinet_bus_mame_client_mameclient_resume",
+      "cabinet_bus_mame_client_mameclient_send",
+      "cabinet_bus_mame_client_mameclient_set_crt_fault",
+      "cabinet_bus_mame_client_mameclient_soft_reset",
+      "cabinet_bus_mame_client_mameclient_stuck_byte",
+      "cabinet_bus_mame_client_mameclient_trackball_delta",
+      "cabinet_bus_mame_client_mameclientconfig",
+      "cabinet_bus_mame_client_py",
+      "cabinet_bus_mame_client_rationale_110",
+      "cabinet_bus_mame_client_rationale_128",
+      "cabinet_bus_mame_client_rationale_140",
+      "cabinet_bus_mame_client_rationale_144",
+      "cabinet_bus_mame_client_rationale_152",
+      "cabinet_bus_mame_client_rationale_165",
+      "cabinet_bus_mame_client_rationale_176",
+      "cabinet_bus_mame_client_rationale_32",
+      "cabinet_bus_mame_client_rationale_57",
+      "cabinet_bus_mame_client_rationale_65"
+    ],
+    "3": [
+      "cabinet_bus_runner_build_scenario",
+      "cabinet_bus_runner_is_safe_identifier",
+      "cabinet_bus_runner_parse_log",
+      "cabinet_bus_runner_py",
+      "cabinet_bus_runner_rationale_146",
+      "cabinet_bus_runner_rationale_156",
+      "cabinet_bus_runner_rationale_31",
+      "cabinet_bus_runner_rationale_41",
+      "cabinet_bus_runner_rationale_60",
+      "cabinet_bus_runner_rationale_93",
+      "cabinet_bus_runner_rationale_99",
+      "cabinet_bus_runner_run",
+      "cabinet_bus_runner_runresult",
+      "cabinet_bus_runner_runspec",
+      "cabinet_bus_runner_waveforms_to_json",
+      "cabinet_bus_test_runner_py",
+      "cabinet_bus_test_runner_test_build_scenario_handles_multiple_faults",
+      "cabinet_bus_test_runner_test_build_scenario_injects_param_before_closing_brace",
+      "cabinet_bus_test_runner_test_build_scenario_no_faults_is_passthrough",
+      "cabinet_bus_test_runner_test_build_scenario_rejects_injection_attempts",
+      "cabinet_bus_test_runner_test_build_scenario_rejects_unknown_mode",
+      "cabinet_bus_test_runner_test_is_safe_identifier_accepts_plain_names",
+      "cabinet_bus_test_runner_test_is_safe_identifier_rejects_bad_input",
+      "cabinet_bus_test_runner_test_modes_match_device_constants",
+      "cabinet_bus_test_runner_test_parse_log_handles_scientific_notation",
+      "cabinet_bus_test_runner_test_waveforms_to_json_uses_plain_lists"
+    ],
+    "4": [
+      "preprocessor_instrument_fault_device_name",
+      "preprocessor_instrument_faultentry",
+      "preprocessor_instrument_faultentry_key",
+      "preprocessor_instrument_instrument",
+      "preprocessor_instrument_instrumentresult",
+      "preprocessor_instrument_is_pin_ref",
+      "preprocessor_instrument_main",
+      "preprocessor_instrument_parse_net_c_args",
+      "preprocessor_instrument_py",
+      "preprocessor_instrument_rationale_41",
+      "preprocessor_instrument_rationale_54",
+      "preprocessor_instrument_rationale_60",
+      "preprocessor_instrument_rationale_65",
+      "preprocessor_instrument_rationale_70",
+      "preprocessor_instrument_rationale_78",
+      "preprocessor_test_instrument_py",
+      "preprocessor_test_instrument_test_fault_device_name_is_stable",
+      "preprocessor_test_instrument_test_instrument_preserves_lines_with_more_than_two_pins",
+      "preprocessor_test_instrument_test_instrument_skips_power_rails",
+      "preprocessor_test_instrument_test_instrument_two_pin_net_c_inserts_fault_buffer",
+      "preprocessor_test_instrument_test_instrument_whitelist_filters_pins",
+      "preprocessor_test_instrument_test_is_pin_ref_accepts_refdes_pin",
+      "preprocessor_test_instrument_test_is_pin_ref_rejects_bare_words",
+      "preprocessor_test_instrument_test_manifest_entry_key",
+      "preprocessor_test_instrument_test_parse_net_c_args_simple",
+      "preprocessor_test_instrument_test_parse_net_c_args_with_whitespace_and_empties"
+    ],
+    "5": [
+      "cab_bus_runner",
+      "cab_bus_server",
+      "cab_requirements",
+      "cabinet_bus_server_create_app",
+      "cabinet_bus_server_main",
+      "cabinet_bus_server_py",
+      "fault_buffer_device",
+      "fault_entry",
+      "instrument_result",
+      "instrumented_netlist",
+      "mame_client",
+      "mame_lua_plugin",
+      "nltool_binary",
+      "preprocessor_instrument",
+      "preprocessor_readme",
+      "run_result",
+      "run_spec",
+      "scenario_json_files",
+      "scenario_runner",
+      "test_instrument",
+      "test_runner",
+      "test_scenario_runner",
+      "ui_frontend"
+    ],
+    "6": [
+      "training_test_scenario_runner_mock_response",
+      "training_test_scenario_runner_py",
+      "training_test_scenario_runner_rationale_165",
+      "training_test_scenario_runner_test_apply_all_scenarios_no_crash",
+      "training_test_scenario_runner_test_apply_crt_overlay",
+      "training_test_scenario_runner_test_apply_mame_clear_stuck",
+      "training_test_scenario_runner_test_apply_mame_stuck_byte",
+      "training_test_scenario_runner_test_apply_peripheral_fault",
+      "training_test_scenario_runner_test_apply_returns_id_and_applied",
+      "training_test_scenario_runner_test_clear_returns_id_and_cleared",
+      "training_test_scenario_runner_test_connection_error_handled",
+      "training_test_scenario_runner_test_http_error_marked_not_ok",
+      "training_test_scenario_runner_testapplyscenario",
+      "training_test_scenario_runner_testapplyscenario_first_scenario_with_type",
+      "training_test_scenario_runner_testloadallscenarios",
+      "training_test_scenario_runner_testloadallscenarios_test_empty_directory",
+      "training_test_scenario_runner_testloadallscenarios_test_skips_invalid_json",
+      "training_test_scenario_runner_testloadallscenarios_test_sorted_order",
+      "training_test_scenario_runner_testscenariometadata",
+      "training_test_scenario_runner_testscenariometadata_load_first",
+      "training_test_scenario_runner_testscenariometadata_test_metadata_keys",
+      "training_test_scenario_runner_testscenariometadata_test_metadata_omits_faults"
+    ],
+    "7": [
+      "training_scenario_runner_apply_fault",
+      "training_scenario_runner_apply_scenario",
+      "training_scenario_runner_clear_scenario",
+      "training_scenario_runner_load_all_scenarios",
+      "training_scenario_runner_load_scenario",
+      "training_scenario_runner_main",
+      "training_scenario_runner_py",
+      "training_scenario_runner_rationale_30",
+      "training_scenario_runner_rationale_40",
+      "training_scenario_runner_rationale_53",
+      "training_scenario_runner_rationale_68",
+      "training_scenario_runner_rationale_84",
+      "training_scenario_runner_rationale_97",
+      "training_scenario_runner_scenario_metadata"
+    ],
+    "8": [
+      "peripherals_crt_crtchassis",
+      "peripherals_crt_crtchassis_adjust",
+      "peripherals_crt_crtchassis_apply_fault",
+      "peripherals_crt_crtchassis_clear_fault",
+      "peripherals_crt_crtchassis_effective_brightness",
+      "peripherals_crt_crtchassis_init",
+      "peripherals_crt_crtchassis_psu_5v_scale",
+      "peripherals_crt_crtchassis_shader_effect_name",
+      "peripherals_crt_crtchassis_state",
+      "peripherals_crt_py",
+      "peripherals_crt_rationale_16",
+      "peripherals_test_models_test_crt_fault_selects_shader"
+    ],
+    "9": [
+      "training_test_scenario_runner_rationale_31",
+      "training_test_scenario_runner_testschemavalidation",
+      "training_test_scenario_runner_testschemavalidation_scenario_files",
+      "training_test_scenario_runner_testschemavalidation_test_all_12_scenario_ids_present",
+      "training_test_scenario_runner_testschemavalidation_test_all_scenarios_load",
+      "training_test_scenario_runner_testschemavalidation_test_difficulty_range",
+      "training_test_scenario_runner_testschemavalidation_test_fault_types_valid",
+      "training_test_scenario_runner_testschemavalidation_test_required_metadata_fields",
+      "training_test_scenario_runner_testschemavalidation_test_scenario_files_exist",
+      "training_test_scenario_runner_testschemavalidation_test_subsystems_list"
+    ],
+    "10": [
+      "model_audio",
+      "model_button",
+      "model_coinmech",
+      "model_crt",
+      "model_marquee",
+      "model_psu",
+      "model_trackball",
+      "peripherals_models",
+      "test_models"
+    ],
+    "11": [
+      "cab_bus_pkg",
+      "peripherals_pkg",
+      "tools_pkg",
+      "training_pkg"
+    ],
+    "12": [
+      "init_py"
+    ],
+    "13": [
+      "cabinet_bus_init_py"
+    ],
+    "14": [
+      "peripherals_init_py"
+    ],
+    "15": [
+      "training_init_py"
+    ],
+    "16": [
+      "training_test_scenario_runner_rationale_241"
+    ]
+  },
+  "cohesion": {},
+  "god_nodes": [
+    {
+      "id": "peripherals_crt_crtchassis",
+      "label": "CRTChassis",
+      "degree": 26
+    },
+    {
+      "id": "peripherals_trackball_trackball",
+      "label": "Trackball",
+      "degree": 23
+    },
+    {
+      "id": "peripherals_audio_audiochain",
+      "label": "AudioChain",
+      "degree": 22
+    },
+    {
+      "id": "peripherals_models_powersupply",
+      "label": "PowerSupply",
+      "degree": 21
+    },
+    {
+      "id": "cabinet_bus_mame_client_mameclient",
+      "label": "MameClient",
+      "degree": 19
+    },
+    {
+      "id": "peripherals_models_peripheralregistry",
+      "label": "PeripheralRegistry",
+      "degree": 18
+    },
+    {
+      "id": "peripherals_models_coinmech",
+      "label": "CoinMech",
+      "degree": 15
+    },
+    {
+      "id": "peripherals_models_button",
+      "label": "Button",
+      "degree": 13
+    },
+    {
+      "id": "peripherals_models_marquee",
+      "label": "Marquee",
+      "degree": 12
+    },
+    {
+      "id": "peripherals_models_harnesssegment",
+      "label": "HarnessSegment",
+      "degree": 12
+    }
+  ],
+  "surprises": [
+    {
+      "source": "create_app()",
+      "target": "PeripheralRegistry",
+      "source_files": [
+        "cabinet_bus/server.py",
+        "peripherals/models.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "calls",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "test_build_scenario_no_faults_is_passthrough()",
+      "target": "build_scenario()",
+      "source_files": [
+        "cabinet_bus/test_runner.py",
+        "cabinet_bus/runner.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "calls",
+      "why": "inferred connection - not explicitly stated in source; peripheral node `test_build_scenario_no_faults_is_passthrough()` unexpectedly reaches hub `build_scenario()`"
+    },
+    {
+      "source": "test_build_scenario_injects_param_before_closing_brace()",
+      "target": "build_scenario()",
+      "source_files": [
+        "cabinet_bus/test_runner.py",
+        "cabinet_bus/runner.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "calls",
+      "why": "inferred connection - not explicitly stated in source; peripheral node `test_build_scenario_injects_param_before_closing_brace()` unexpectedly reaches hub `build_scenario()`"
+    },
+    {
+      "source": "test_build_scenario_handles_multiple_faults()",
+      "target": "build_scenario()",
+      "source_files": [
+        "cabinet_bus/test_runner.py",
+        "cabinet_bus/runner.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "calls",
+      "why": "inferred connection - not explicitly stated in source; peripheral node `test_build_scenario_handles_multiple_faults()` unexpectedly reaches hub `build_scenario()`"
+    },
+    {
+      "source": "test_build_scenario_rejects_injection_attempts()",
+      "target": "build_scenario()",
+      "source_files": [
+        "cabinet_bus/test_runner.py",
+        "cabinet_bus/runner.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "calls",
+      "why": "inferred connection - not explicitly stated in source; peripheral node `test_build_scenario_rejects_injection_attempts()` unexpectedly reaches hub `build_scenario()`"
+    }
+  ]
+}

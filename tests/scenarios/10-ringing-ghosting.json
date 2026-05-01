@@ -1,0 +1,15 @@
+{
+  "id": "ringing-ghosting",
+  "title": "Fuzzy double-image on sprites",
+  "difficulty": 2,
+  "subsystems": ["CRT"],
+  "backstory": "All the sprites have a faint ghost image slightly to their right. At first glance it looks like the game is at the wrong resolution, but it's actually ringing on the video signal.",
+  "faults": [
+    {"type": "peripheral", "target": "CRT1", "fault": "ringing_ghosting"}
+  ],
+  "visible_effect": "Lua overlay adds a pale rightward ghost tint; CRT preview shows ringing_ghosting shader",
+  "diagnosis_hint": "Video ringing is almost always a bad peaking coil or video amplifier overshoot. On the Centipede PCB, look at the video output path between the RGB resistor network and J1. A bad termination resistor (75 Ω) at the video connector causes reflections that show up as ghosting.",
+  "clear_faults": [
+    {"type": "peripheral", "target": "CRT1", "fault": ""}
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "id": "reversed-trackball",
+  "title": "Controls move the wrong way",
+  "difficulty": 2,
+  "subsystems": ["Trackball"],
+  "backstory": "After a control panel swap, every player notices the spider moves backwards. Rolling the ball up makes it go down and right makes it go left.",
+  "faults": [
+    {"type": "peripheral", "target": "TRACK1", "fault": "failed_quadrature_phase"}
+  ],
+  "visible_effect": "Dragging the trackball pad sends negated dx/dy to MAME — the spider moves in the opposite direction",
+  "diagnosis_hint": "Failed quadrature phase (A/B swap) reverses perceived direction. Most likely the encoder connector was re-seated 180 degrees out after the panel swap. Try flipping the harness connector on the trackball PCB.",
+  "clear_faults": [
+    {"type": "peripheral", "target": "TRACK1", "fault": ""}
+  ]
+}

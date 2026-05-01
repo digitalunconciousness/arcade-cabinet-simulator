@@ -5,12 +5,22 @@ user inject realistic faults at any subsystem. Initial target is the Atari
 Centipede.
 The master plan is in [`arcade_cabinet_fault_simulator_plan.md`](../arcade_cabinet_fault_simulator_plan.md).
 ## Current status
-**Phase 6 in progress — CRT/trackball/audio implementation started.**
-Phase 6 now has working scaffolding in the codebase: new CRT/trackball/
-audio peripheral models, CRT preview + trackball + audio controls in the
-UI, initial shader set under `ui/shaders/`, and direct-push
-`trackball_delta` plumbing through the cabinet-bus bridge.
-Latest details: `Phases/Phase-6-CRT-Trackball-Audio.md`.
+**Phase 7 in progress — complete vertical-slice demo.**
+Phase 6 is complete: CRT/trackball/audio peripheral models, Lua overlay
+effects, WebAudio controls, and `trackball_delta` bridge plumbing all
+landed. Phase 7 implements the full one-command demo loop:
+
+- `tools/run-demo.sh` — launches MAME with the `cabinet_fault` BGFX chain
+  and the cabinet-bus Flask server, then opens the browser automatically.
+- 12 named fault scenarios (`tests/scenarios/*.json`) covering PSU sag,
+  CRT faults, RAM glitches, address-decoder errors, and audio faults.
+- UI scenario dropdown: pick a scenario, click **Apply**, fault takes
+  effect in the running game within one second. Click **Clear** to reset.
+- PSU watcher thread propagates voltage sag → CRT dim + stuck-byte
+  transient automatically.
+- 21-test suite in `tools/training/test_scenario_runner.py` (all pass).
+
+Latest details: `Phases/Phase-7-Cabinet-UI-Training.md`.
 
 Phase 5.5 (RAM region with cell-level fault modeling) remains complete:
 A new `BAD_RAM_CELL` netlist device wraps a 16-cell SRAM with stuck-at
@@ -22,9 +32,9 @@ Phase 5 itself (address decoder, Target B) shipped earlier this run; a
 stuck-low fault on the QB address bit demonstrates the "sound and
 high-score memory go dead, rest of the bus fine" symptom. See
 `Phases/Phase-5-Address-Decoder-RAM.md`.
-Current focus: **Phase 6** — CRT monitor + trackball + audio chain. The
-largest single phase per the project plan: shader-level chassis fault
-effects, trackball quadrature with fault categories, audio post-processing.
+Current focus: **Phase 7** — complete vertical-slice demo. All Phase 7
+deliverables are implemented. Next: end-to-end smoke test with a live MAME build.
+
 ## Phase index
 | Phase | Title | Status |
 |-------|-------|--------|
@@ -36,8 +46,8 @@ effects, trackball quadrature with fault categories, audio post-processing.
 | 4 | [PSU + peripherals](Phases/Phase-4-PSU-Peripherals.md) | ✅ complete |
 | 5 | [Address decoder + RAM](Phases/Phase-5-Address-Decoder-RAM.md) | ✅ complete |
 | 5.5 | [RAM region (cell-level faults)](Phases/Phase-5.5-RAM-Region.md) | ✅ complete |
-| 6 | [CRT + trackball + audio](Phases/Phase-6-CRT-Trackball-Audio.md) | 🚧 in progress |
-| 7 | [Cabinet UI + training mode](Phases/Phase-7-Cabinet-UI-Training.md) | ⏳ planned |
+| 6 | [CRT + trackball + audio](Phases/Phase-6-CRT-Trackball-Audio.md) | ✅ complete |
+| 7 | [Cabinet UI + training mode](Phases/Phase-7-Cabinet-UI-Training.md) | 🚧 in progress |
 Full schedule and tier-expansion plan: [Roadmap](Roadmap.md).
 ### Reference
 - [Build notes](Build-Notes.md) — toolchain, build commands, audio config
