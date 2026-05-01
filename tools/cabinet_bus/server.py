@@ -22,6 +22,7 @@ import subprocess
 import sys
 import threading
 import time
+from collections.abc import Callable
 from pathlib import Path
 from typing import Optional
 
@@ -54,6 +55,7 @@ UI_DIR = REPO_ROOT / "ui"
 # more probes to the netlist.
 DEFAULT_LOG_NETS = ["HSYNC_n", "VSYNC_n"]
 DEFAULT_DURATION_S = 0.001
+MANIFEST_VERSION = 1
 
 
 def create_app(
@@ -62,13 +64,20 @@ def create_app(
     nltool_path: Path = DEFAULT_NLTOOL,
     ui_dir: Path = UI_DIR,
     log_nets: list[str] | None = None,
+    mame_client: MameClient | None = None,
+    peripheral_registry: PeripheralRegistry | None = None,
+    scenario_loader: Callable[[], list[dict]] | None = None,
 ) -> Flask:
     if log_nets is None:
         log_nets = DEFAULT_LOG_NETS
 
     app = Flask(__name__, static_folder=None)
-    mame = MameClient()
-    peripherals = PeripheralRegistry()
+    mame = mame_client if mame_client is not None else MameClient()
+    peripherals = (
+        peripheral_registry
+        if peripheral_registry is not None
+        else PeripheralRegistry()
+    )
 
     # Cache the manifest at boot; it's small and rarely changes.
     if not manifest_path.exists():
@@ -101,6 +110,7 @@ def create_app(
     @app.route("/api/manifest")
     def api_manifest():
         return jsonify({
+            "manifest_version": MANIFEST_VERSION,
             "fault_targets": manifest,
             "log_nets": log_nets,
             "duration_s": DEFAULT_DURATION_S,
@@ -583,7 +593,11 @@ def create_app(
     # ------------------------------------------------------------------
 
     # Load all scenarios at startup so we can serve the list immediately.
-    _scenarios: list[dict] = _scenario_runner.load_all_scenarios()
+    load_scenarios = (
+        scenario_loader if scenario_loader is not None
+        else _scenario_runner.load_all_scenarios
+    )
+    _scenarios: list[dict] = load_scenarios()
     _scenario_index: dict[str, dict] = {s["id"]: s for s in _scenarios}
 
     @app.route("/api/scenarios")

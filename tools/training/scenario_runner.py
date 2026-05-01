@@ -29,10 +29,19 @@ DEFAULT_BASE_URL = "http://127.0.0.1:5050"
 def load_scenario(path: Path) -> dict:
     """Load and validate a single scenario JSON file."""
     data = json.loads(path.read_text())
-    required = ("id", "title", "faults", "clear_faults")
+    required = ("id", "title", "faults", "clear_faults", "coverage")
     for key in required:
         if key not in data:
             raise ValueError(f"scenario {path.name}: missing required field {key!r}")
+    if not isinstance(data["coverage"], list) or not data["coverage"]:
+        raise ValueError(
+            f"scenario {path.name}: coverage must be a non-empty list"
+        )
+    for entry in data["coverage"]:
+        if not isinstance(entry, str) or not entry.strip():
+            raise ValueError(
+                f"scenario {path.name}: coverage entries must be non-empty strings"
+            )
     return data
 
 
@@ -56,6 +65,7 @@ def scenario_metadata(scenario: dict) -> dict:
         "title":       scenario["title"],
         "difficulty":  scenario.get("difficulty", 1),
         "subsystems":  scenario.get("subsystems", []),
+        "coverage":    scenario["coverage"],
         "backstory":   scenario.get("backstory", ""),
     }
 

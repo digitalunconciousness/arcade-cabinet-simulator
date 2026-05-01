@@ -3,6 +3,10 @@
   "title": "Tile corruption mid-screen",
   "difficulty": 2,
   "subsystems": ["RAM"],
+  "coverage": [
+    "tests/netlist/centiped/ram_region.cpp",
+    "tools/cabinet_bus/server.py:/api/mame/stuck_byte"
+  ],
   "backstory": "Random garbage tiles keep appearing in the middle third of the playfield. The game is otherwise playable but the display is clearly wrong.",
   "faults": [
     {"type": "mame_stuck_byte", "addr": "0x0540", "value": 255},

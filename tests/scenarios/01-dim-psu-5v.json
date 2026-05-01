@@ -3,6 +3,12 @@
   "title": "Dim picture, sluggish controls",
   "difficulty": 1,
   "subsystems": ["PSU", "CRT", "Trackball"],
+  "coverage": [
+    "tools/peripherals/models.py:PowerSupply",
+    "tools/peripherals/crt.py:CRTChassis",
+    "tools/peripherals/trackball.py:Trackball",
+    "tools/cabinet_bus/server.py:/api/scenarios/<id>/apply"
+  ],
   "backstory": "Operator reports the picture looks washed out and the trackball feels heavy. Cabinet has been running for several years without a cap refresh.",
   "faults": [
     {"type": "peripheral", "target": "PSU1",   "fault": "sagging_mains"},

@@ -157,6 +157,25 @@ def test_crt_brightness_couples_to_psu():
     assert dark < normal
 
 
+def test_crt_brightness_drops_on_sagging_mains_path():
+    psu = PowerSupply()
+    crt = CRTChassis(psu=psu)
+    nominal = crt.state()["effective_brightness"]
+    psu.apply_fault("sagging_mains")
+    sagged = crt.state()["effective_brightness"]
+    assert sagged < nominal
+
+
+def test_crt_dim_picture_stacks_with_psu_sag():
+    psu = PowerSupply()
+    crt = CRTChassis(psu=psu)
+    psu.apply_fault("sagging_mains")
+    sag_only = crt.state()["effective_brightness"]
+    crt.apply_fault("dim_picture")
+    sag_plus_dim = crt.state()["effective_brightness"]
+    assert sag_plus_dim < sag_only
+
+
 def test_crt_fault_selects_shader():
     crt = CRTChassis()
     crt.apply_fault("vertical_collapse")

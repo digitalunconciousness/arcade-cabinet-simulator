@@ -3,6 +3,10 @@
   "title": "Fuzzy double-image on sprites",
   "difficulty": 2,
   "subsystems": ["CRT"],
+  "coverage": [
+    "tools/peripherals/crt.py:CRTChassis",
+    "ui/shaders/crt_ringing_ghosting.glsl"
+  ],
   "backstory": "All the sprites have a faint ghost image slightly to their right. At first glance it looks like the game is at the wrong resolution, but it's actually ringing on the video signal.",
   "faults": [
     {"type": "peripheral", "target": "CRT1", "fault": "ringing_ghosting"}

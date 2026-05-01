@@ -3,6 +3,10 @@
   "title": "Everything looks blurry",
   "difficulty": 1,
   "subsystems": ["CRT"],
+  "coverage": [
+    "tools/peripherals/crt.py:CRTChassis",
+    "ui/shaders/crt_weak_focus.glsl"
+  ],
   "backstory": "The picture used to be razor sharp. Now it looks soft all over, like the resolution has dropped. Turning the focus pot on the flyback doesn't help much.",
   "faults": [
     {"type": "peripheral", "target": "CRT1", "fault": "weak_focus"}

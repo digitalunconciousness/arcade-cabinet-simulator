@@ -3,6 +3,9 @@
   "title": "Can't steer left or right",
   "difficulty": 1,
   "subsystems": ["Trackball"],
+  "coverage": [
+    "tools/peripherals/trackball.py:Trackball"
+  ],
   "backstory": "A player complains that the spider can only move up and down. Rotating the trackball left or right does nothing.",
   "faults": [
     {"type": "peripheral", "target": "TRACK1", "fault": "dead_opto_x"}

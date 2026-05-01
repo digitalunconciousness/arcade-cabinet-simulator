@@ -3,6 +3,13 @@
   "title": "\"The whole thing's broken\" — cascading failure",
   "difficulty": 4,
   "subsystems": ["PSU", "CRT", "RAM", "Audio"],
+  "coverage": [
+    "tools/peripherals/models.py:PowerSupply",
+    "tools/peripherals/crt.py:CRTChassis",
+    "tools/peripherals/audio.py:AudioChain",
+    "tests/netlist/centiped/ram_region.cpp",
+    "tools/cabinet_bus/server.py:/api/scenarios/<id>/apply"
+  ],
   "backstory": "A cabinet that's been sitting in a garage for 10 years. Everything looks wrong. The picture is dim and rolling, there's a hum from the speaker, and random garbage tiles appear on screen. Where do you even start?",
   "faults": [
     {"type": "peripheral", "target": "PSU1",   "fault": "dried_filter_cap"},

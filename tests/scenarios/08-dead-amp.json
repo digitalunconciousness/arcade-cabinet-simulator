@@ -3,6 +3,10 @@
   "title": "Complete silence — no game audio",
   "difficulty": 1,
   "subsystems": ["Audio"],
+  "coverage": [
+    "tools/peripherals/audio.py:AudioChain",
+    "ui/app.js:applyAudioFaultProfile"
+  ],
   "backstory": "Sound worked yesterday. Today: nothing. The game runs normally and the POKEY chip produces signals on the board, but the speaker is dead.",
   "faults": [
     {"type": "peripheral", "target": "AUDIO1", "fault": "dead_amp"}

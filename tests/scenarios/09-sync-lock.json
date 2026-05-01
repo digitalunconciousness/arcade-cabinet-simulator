@@ -3,6 +3,10 @@
   "title": "Rolling picture / screen tears diagonally",
   "difficulty": 2,
   "subsystems": ["CRT"],
+  "coverage": [
+    "tools/peripherals/crt.py:CRTChassis",
+    "ui/shaders/crt_sync_lock_failure.glsl"
+  ],
   "backstory": "The picture rolls slowly upward. Adjusting the vertical hold control on the monitor chassis has no effect.",
   "faults": [
     {"type": "peripheral", "target": "CRT1", "fault": "sync_lock_failure"}

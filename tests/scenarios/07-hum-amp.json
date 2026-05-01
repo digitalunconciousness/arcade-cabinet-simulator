@@ -3,6 +3,10 @@
   "title": "Loud 60 Hz hum from the speaker",
   "difficulty": 1,
   "subsystems": ["Audio"],
+  "coverage": [
+    "tools/peripherals/audio.py:AudioChain",
+    "ui/app.js:applyAudioFaultProfile"
+  ],
   "backstory": "The game sounds fine but there is an annoying 60 Hz hum underneath everything. Gets worse when the game is idle.",
   "faults": [
     {"type": "peripheral", "target": "AUDIO1", "fault": "hum"}

@@ -3,6 +3,9 @@
   "title": "Screen collapses to a horizontal bar",
   "difficulty": 1,
   "subsystems": ["CRT"],
+  "coverage": [
+    "tools/peripherals/crt.py:CRTChassis"
+  ],
   "backstory": "Suddenly the whole screen has collapsed into a bright horizontal line near the middle. The game is still running — you can hear the attract music.",
   "faults": [
     {"type": "peripheral", "target": "CRT1", "fault": "vertical_collapse"}

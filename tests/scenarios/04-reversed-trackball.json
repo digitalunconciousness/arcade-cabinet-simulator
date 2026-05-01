@@ -3,6 +3,9 @@
   "title": "Controls move the wrong way",
   "difficulty": 2,
   "subsystems": ["Trackball"],
+  "coverage": [
+    "tools/peripherals/trackball.py:Trackball"
+  ],
   "backstory": "After a control panel swap, every player notices the spider moves backwards. Rolling the ball up makes it go down and right makes it go left.",
   "faults": [
     {"type": "peripheral", "target": "TRACK1", "fault": "failed_quadrature_phase"}

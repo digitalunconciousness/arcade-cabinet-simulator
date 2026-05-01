@@ -45,6 +45,7 @@ class TestSchemaValidation(unittest.TestCase):
                 self.assertIn("title", scenario)
                 self.assertIn("faults", scenario)
                 self.assertIn("clear_faults", scenario)
+                self.assertIn("coverage", scenario)
 
     def test_required_metadata_fields(self):
         for path in self._scenario_files():
@@ -56,6 +57,16 @@ class TestSchemaValidation(unittest.TestCase):
                 self.assertTrue(scenario["title"], "title must be non-empty")
                 self.assertIsInstance(scenario["faults"], list)
                 self.assertIsInstance(scenario["clear_faults"], list)
+                self.assertIsInstance(scenario["coverage"], list)
+                self.assertGreater(len(scenario["coverage"]), 0)
+
+    def test_coverage_entries_are_non_empty_strings(self):
+        for path in self._scenario_files():
+            with self.subTest(file=path.name):
+                scenario = sr.load_scenario(path)
+                for entry in scenario["coverage"]:
+                    self.assertIsInstance(entry, str)
+                    self.assertTrue(entry.strip())
 
     def test_difficulty_range(self):
         for path in self._scenario_files():
@@ -115,7 +126,7 @@ class TestScenarioMetadata(unittest.TestCase):
     def test_metadata_keys(self):
         scenario = self._load_first()
         meta = sr.scenario_metadata(scenario)
-        for key in ("id", "title", "difficulty", "subsystems", "backstory"):
+        for key in ("id", "title", "difficulty", "subsystems", "coverage", "backstory"):
             self.assertIn(key, meta)
 
     def test_metadata_omits_faults(self):

@@ -69,6 +69,7 @@
   let audioDrive = null;
   let audioLowpass = null;
   let audioMaster = null;
+  let lastAudioProfileSig = "";
 
   // Layout for the fault-pin badges. Keyed by fault_device. The (x, y) is the
   // SVG coordinate where the badge should sit. Tuned to match index.html.
@@ -89,6 +90,8 @@
     2: "stuck-lo",
     3: "open",
   };
+
+  const EXPECTED_MANIFEST_VERSION = 1;
 
   // ---------- networking ----------
 
@@ -307,7 +310,16 @@
       audioState = data.peripherals.find(p => p.type === "audio_chain") || null;
       renderCrtPreview();
       renderTrackballMeta();
-      applyAudioFaultProfile();
+      const nextAudioSig = audioState
+        ? JSON.stringify({
+            fault: audioState.fault,
+            filter_params: audioState.filter_params,
+          })
+        : "";
+      if (nextAudioSig !== lastAudioProfileSig) {
+        applyAudioFaultProfile();
+        lastAudioProfileSig = nextAudioSig;
+      }
     } catch (err) {
       console.error("peripherals load failed", err);
     }
@@ -814,7 +826,7 @@
 
   // ---------- Scenarios (Phase 7) ----------
 
-  /** @type {Array<{id:string,title:string,difficulty:number,subsystems:string[],backstory:string}>} */
+  /** @type {Array<{id:string,title:string,difficulty:number,subsystems:string[],coverage:string[],backstory:string}>} */
   let scenarios = [];
   let activeScenarioId = null;
 
@@ -931,11 +943,25 @@
   }
 
   // ---------- bootstrap ----------
-
+      if (
+        !Array.isArray(manifest.fault_targets) ||
+        !Array.isArray(manifest.log_nets) ||
+        typeof manifest.modes !== "object" ||
+        manifest.modes === null ||
+        Array.isArray(manifest.modes)
+      ) {
   async function init() {
     setStatus("fetching manifest…");
     try {
       manifest = await fetchJSON("/api/manifest");
+      if (manifest.manifest_version !== EXPECTED_MANIFEST_VERSION) {
+        throw new Error(
+          `manifest version mismatch: expected ${EXPECTED_MANIFEST_VERSION}, got ${manifest.manifest_version}`
+        );
+      }
+      if (!Array.isArray(manifest.fault_targets) || !Array.isArray(manifest.log_nets) || !manifest.modes) {
+        throw new Error("manifest payload missing required fields");
+      }
     } catch (err) {
       setStatus("manifest error: " + err.message, true);
       return;

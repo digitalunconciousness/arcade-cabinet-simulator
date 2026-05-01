@@ -27,3 +27,7 @@ log_*.log
 # Generic large binary types
 *.pdf
 *.zip
+
+# Graphify generated artifacts
+graphify-out/
+**/graphify-out/

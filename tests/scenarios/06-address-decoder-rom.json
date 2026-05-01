@@ -3,6 +3,10 @@
   "title": "Game freezes on startup — ROM bank missing",
   "difficulty": 3,
   "subsystems": ["AddrDecoder"],
+  "coverage": [
+    "tests/netlist/centiped/address_decoder.cpp",
+    "tools/cabinet_bus/server.py:/api/mame/stuck_byte"
+  ],
   "backstory": "The cabinet boots to a blank or frozen screen. The game never reaches attract mode.",
   "faults": [
     {"type": "mame_stuck_byte", "addr": "0x2000", "value": 255},
