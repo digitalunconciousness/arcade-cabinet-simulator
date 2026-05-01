@@ -1,0 +1,8 @@
+{
+  "board_id": "centipede",
+  "revision": "1.0",
+  "source_file": "boards/centipede/kicad/centipede.net",
+  "components": {},
+  "nets": {},
+  "_note": "Placeholder — populate by running: python -m tools.schematic.model boards/centipede/kicad/centipede.net boards/centipede/schematic.board.json"
+}

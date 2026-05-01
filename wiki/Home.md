@@ -5,7 +5,7 @@ user inject realistic faults at any subsystem. Initial target is the Atari
 Centipede.
 The master plan is in [`arcade_cabinet_fault_simulator_plan.md`](../arcade_cabinet_fault_simulator_plan.md).
 ## Current status
-**Phase 7 in progress — complete vertical-slice demo.**
+**Phase 7 complete — vertical-slice demo validated.**
 Phase 6 is complete: CRT/trackball/audio peripheral models, Lua overlay
 effects, WebAudio controls, and `trackball_delta` bridge plumbing all
 landed. Phase 7 implements the full one-command demo loop:
@@ -32,8 +32,9 @@ Phase 5 itself (address decoder, Target B) shipped earlier this run; a
 stuck-low fault on the QB address bit demonstrates the "sound and
 high-score memory go dead, rest of the bus fine" symptom. See
 `Phases/Phase-5-Address-Decoder-RAM.md`.
-Current focus: **Phase 7** — complete vertical-slice demo. All Phase 7
-deliverables are implemented. Next: end-to-end smoke test with a live MAME build.
+Current focus: **Phase 8** — Cabinet UI + training mode. Scope is unchanged;
+construction has started with KiCad netlist import and schematic fault-routing
+foundations.
 
 ## Phase index
 | Phase | Title | Status |
@@ -47,7 +48,7 @@ deliverables are implemented. Next: end-to-end smoke test with a live MAME build
 | 5 | [Address decoder + RAM](Phases/Phase-5-Address-Decoder-RAM.md) | ✅ complete |
 | 5.5 | [RAM region (cell-level faults)](Phases/Phase-5.5-RAM-Region.md) | ✅ complete |
 | 6 | [CRT + trackball + audio](Phases/Phase-6-CRT-Trackball-Audio.md) | ✅ complete |
-| 7 | [Cabinet UI + training mode](Phases/Phase-7-Cabinet-UI-Training.md) | 🚧 in progress |
+| 7 | [Cabinet UI + training mode](Phases/Phase-7-Cabinet-UI-Training.md) | ✅ complete |
 Full schedule and tier-expansion plan: [Roadmap](Roadmap.md).
 ### Reference
 - [Build notes](Build-Notes.md) — toolchain, build commands, audio config

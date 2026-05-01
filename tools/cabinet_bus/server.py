@@ -39,6 +39,14 @@ from models import PeripheralRegistry  # noqa: E402
 sys.path.insert(0, str(Path(__file__).parent.parent / "training"))
 import scenario_runner as _scenario_runner  # noqa: E402
 
+# Schematic/KiCad import helpers.
+sys.path.insert(0, str(Path(__file__).parent.parent / "schematic"))
+try:
+    from kicad_netlist import load_kicad_netlist, summarize_model  # noqa: E402
+except Exception:  # noqa: BLE001
+    load_kicad_netlist = None
+    summarize_model = None
+
 from flask import Flask, Response, abort, jsonify, request, send_from_directory  # noqa: E402
 
 
@@ -67,6 +75,7 @@ def create_app(
     mame_client: MameClient | None = None,
     peripheral_registry: PeripheralRegistry | None = None,
     scenario_loader: Callable[[], list[dict]] | None = None,
+    kicad_netlist_path: Path | None = None,
 ) -> Flask:
     if log_nets is None:
         log_nets = DEFAULT_LOG_NETS
@@ -86,6 +95,27 @@ def create_app(
             f"run tools/preprocessor/instrument.py first"
         )
     manifest = json.loads(manifest_path.read_text())
+    manifest_by_refpin = {
+        (e.get("refdes", ""), e.get("pin", "")): e.get("fault_device", "")
+        for e in manifest
+    }
+    schematic_faults: dict[str, int] = {}
+
+    # Optional KiCad netlist import path (Stage 8 foundation).
+    netlist_path = kicad_netlist_path
+    if netlist_path is None:
+        raw = os.environ.get("CABINET_KICAD_NETLIST", "").strip()
+        netlist_path = Path(raw) if raw else None
+
+    schematic_model = None
+    schematic_load_error = ""
+    if netlist_path is not None:
+        try:
+            if load_kicad_netlist is None:
+                raise RuntimeError("kicad parser unavailable")
+            schematic_model = load_kicad_netlist(netlist_path)
+        except Exception as e:  # noqa: BLE001
+            schematic_load_error = str(e)
 
     if not template_path.exists():
         raise FileNotFoundError(
@@ -123,7 +153,7 @@ def create_app(
         faults_in = body.get("faults", {}) or {}
         # Normalize: only allow keys that appear in the manifest.
         manifest_devices = {e["fault_device"] for e in manifest}
-        faults = {}
+        faults = dict(schematic_faults)
         for k, v in faults_in.items():
             if k not in manifest_devices:
                 return jsonify({"error": f"unknown fault device: {k}"}), 400
@@ -155,8 +185,78 @@ def create_app(
             "waveforms": runner.waveforms_to_json(result.waveforms),
             "duration_s": result.duration_s,
             "fault_mode_count": result.fault_mode_count,
+            "schematic_fault_count": len([m for m in schematic_faults.values() if m != 0]),
             "stderr_tail": result.stderr.splitlines()[-5:],
         })
+
+    # ---------- Schematic import + click-to-fault foundations ----------
+
+    @app.route("/api/schematic/summary")
+    def api_schematic_summary():
+        if schematic_model is None:
+            return jsonify({
+                "available": False,
+                "error": schematic_load_error or "no KiCad netlist loaded",
+                "hint": "set CABINET_KICAD_NETLIST to a KiCad XML netlist path",
+            }), 404
+        if summarize_model is None:
+            return jsonify({"available": False, "error": "summary unavailable"}), 500
+        return jsonify({"available": True, **summarize_model(schematic_model)})
+
+    @app.route("/api/schematic/faults")
+    def api_schematic_faults():
+        return jsonify({"faults": schematic_faults})
+
+    @app.route("/api/schematic/fault/apply", methods=["POST"])
+    def api_schematic_fault_apply():
+        body = request.get_json(silent=True) or {}
+        refdes = str(body.get("refdes", "")).strip()
+        pin = str(body.get("pin", "")).strip()
+        if not refdes or not pin:
+            return jsonify({"error": "refdes and pin are required"}), 400
+        try:
+            mode = int(body.get("mode", 0))
+        except (TypeError, ValueError):
+            return jsonify({"error": "mode must be integer"}), 400
+        if mode not in runner.MODE_LABELS:
+            return jsonify({"error": f"unsupported mode: {mode}"}), 400
+
+        fault_device = manifest_by_refpin.get((refdes, pin), "")
+        if not fault_device:
+            return jsonify({
+                "error": f"no instrumented fault target for {refdes}.{pin}",
+                "hint": "instrument the target net so it appears in manifest",
+            }), 404
+
+        if mode == 0:
+            schematic_faults.pop(fault_device, None)
+        else:
+            schematic_faults[fault_device] = mode
+
+        return jsonify({
+            "ok": True,
+            "refdes": refdes,
+            "pin": pin,
+            "fault_device": fault_device,
+            "mode": mode,
+            "label": runner.MODE_LABELS[mode],
+            "active_faults": schematic_faults,
+        })
+
+    @app.route("/api/schematic/fault/clear", methods=["POST"])
+    def api_schematic_fault_clear():
+        body = request.get_json(silent=True) or {}
+        refdes = str(body.get("refdes", "")).strip()
+        pin = str(body.get("pin", "")).strip()
+        if refdes and pin:
+            fault_device = manifest_by_refpin.get((refdes, pin), "")
+            if not fault_device:
+                return jsonify({"error": f"no instrumented fault target for {refdes}.{pin}"}), 404
+            schematic_faults.pop(fault_device, None)
+            return jsonify({"ok": True, "faults": schematic_faults})
+
+        schematic_faults.clear()
+        return jsonify({"ok": True, "faults": schematic_faults})
 
     # ---------- MAME bridge ----------
     # All endpoints below proxy to the cabinet_bus Lua plugin running

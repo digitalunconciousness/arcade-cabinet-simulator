@@ -1,5 +1,5 @@
 # Phase 7 — Complete vertical-slice demo
-**Status:** 🚧 in progress — all deliverables implemented; awaiting end-to-end smoke test against a live MAME build
+**Status:** ✅ complete — deliverables implemented and validated with live end-to-end smoke run
 **Goal:** A working prototype you can hand to someone unfamiliar with
 the project. Centipede runs in MAME; you pick a fault from a named
 scenario list; the effect is immediately visible (or audible, or tactile
@@ -207,6 +207,11 @@ browser-open call added.
 
 This is the prototype-quality milestone: compelling enough to show a
 friend who has never heard of arcade fault simulation.
+
+Validation note (May 2026):
+- `tools/run-demo.sh` launched MAME + cabinet bus + UI successfully
+- `/api/mame/video/available` returned `available: true`
+- Scenario apply/clear validated for `dim-psu-5v` and `multi-fault`
 
 ---
 

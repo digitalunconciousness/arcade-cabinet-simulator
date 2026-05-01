@@ -7,6 +7,8 @@ import json
 import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from types import SimpleNamespace
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).parent))
 sys.path.insert(0, str(Path(__file__).parent.parent / "peripherals"))
@@ -108,6 +110,71 @@ def test_create_app_uses_injected_scenario_loader():
         assert payload["scenarios"][0]["coverage"] == [
             "tests/netlist/fault_buffer_test.cpp"
         ]
+
+
+def test_schematic_fault_apply_and_list():
+    with TemporaryDirectory() as d:
+        template, manifest_path, nltool, ui_dir = _make_runtime_files(Path(d))
+        app = create_app(
+            template_path=template,
+            manifest_path=manifest_path,
+            nltool_path=nltool,
+            ui_dir=ui_dir,
+            mame_client=StubMameClient(),
+            peripheral_registry=PeripheralRegistry(),
+            scenario_loader=lambda: [],
+        )
+
+        client = app.test_client()
+        res = client.post(
+            "/api/schematic/fault/apply",
+            json={"refdes": "U12", "pin": "QC", "mode": 2},
+        )
+        assert res.status_code == 200
+        payload = res.get_json()
+        assert payload["fault_device"] == "FB_V_LO_QC"
+        assert payload["mode"] == 2
+
+        listed = client.get("/api/schematic/faults").get_json()
+        assert listed["faults"]["FB_V_LO_QC"] == 2
+
+
+def test_schematic_faults_are_merged_into_run_spec():
+    with TemporaryDirectory() as d:
+        template, manifest_path, nltool, ui_dir = _make_runtime_files(Path(d))
+        app = create_app(
+            template_path=template,
+            manifest_path=manifest_path,
+            nltool_path=nltool,
+            ui_dir=ui_dir,
+            mame_client=StubMameClient(),
+            peripheral_registry=PeripheralRegistry(),
+            scenario_loader=lambda: [],
+        )
+        client = app.test_client()
+
+        # Set one schematic fault first.
+        res = client.post(
+            "/api/schematic/fault/apply",
+            json={"refdes": "U12", "pin": "QC", "mode": 1},
+        )
+        assert res.status_code == 200
+
+        captured = {}
+
+        def fake_run(spec):
+            captured["faults"] = dict(spec.faults)
+            return SimpleNamespace(
+                waveforms={"HSYNC_n": [], "VSYNC_n": []},
+                duration_s=0.001,
+                fault_mode_count=len([m for m in spec.faults.values() if m != 0]),
+                stderr="",
+            )
+
+        with patch("server.runner.run", side_effect=fake_run):
+            run_res = client.post("/api/run", json={"faults": {}})
+            assert run_res.status_code == 200
+            assert captured["faults"].get("FB_V_LO_QC") == 1
 
 
 if __name__ == "__main__":

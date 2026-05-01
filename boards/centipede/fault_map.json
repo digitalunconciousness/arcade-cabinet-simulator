@@ -1,0 +1,30 @@
+{
+  "board_id": "centipede",
+  "entries": [
+    {
+      "ref": "U8",
+      "pin": "1",
+      "net_name": "/HSYNC",
+      "fault_device": "FB_U8_1",
+      "fault_type": "FAULT_BUFFER",
+      "description": "74LS74 pin 1 — /HSYNC drive (sync loss fault, scenario 09)"
+    },
+    {
+      "ref": "U8",
+      "pin": "2",
+      "net_name": "/VSYNC",
+      "fault_device": "FB_U8_2",
+      "fault_type": "FAULT_BUFFER",
+      "description": "74LS74 pin 2 — /VSYNC drive (vertical collapse, scenario 02)"
+    },
+    {
+      "ref": "R1",
+      "pin": "1",
+      "net_name": "VIDEO_DATA",
+      "fault_device": "FB_R1_1",
+      "fault_type": "FAULT_BUFFER",
+      "description": "Video resistor ladder — brightness path (dim picture, scenario 01)"
+    }
+  ],
+  "_note": "Populate remaining entries from build/instrumented/*.manifest.json after running instrument.py"
+}

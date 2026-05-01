@@ -1,0 +1,34 @@
+{
+  "board_id": "centipede",
+  "revision": "1.0",
+  "mame_driver": "centiped",
+  "rom_set": "centiped3",
+  "netlist_sources": [
+    "vendor/mame/src/lib/netlist/devices/nld_sync_generator.cpp",
+    "vendor/mame/src/lib/netlist/devices/nld_address_decoder.cpp"
+  ],
+  "schematic_sheets": [
+    {
+      "sheet": 1,
+      "description": "CPU, Z80 bus, RAM",
+      "source_pdf": "DP-182-01A"
+    },
+    {
+      "sheet": 2,
+      "description": "ROM decode, video control",
+      "source_pdf": "DP-182-01B"
+    },
+    {
+      "sheet": 3,
+      "description": "Sync generator, video output",
+      "source_pdf": "DP-182-02A"
+    },
+    {
+      "sheet": 4,
+      "description": "Audio, PSU, I/O, trackball",
+      "source_pdf": "DP-182-02B"
+    }
+  ],
+  "canonical_schematic": "schematic.board.json",
+  "fault_map": "fault_map.json"
+}
