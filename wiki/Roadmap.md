@@ -66,11 +66,20 @@ back the written 1. See
 model as shader effects, trackball quadrature with fault categories,
 audio chain post-processing. See
 [Phase-6-CRT-Trackball-Audio](Phases/Phase-6-CRT-Trackball-Audio.md).
-### ⏳ Phase 7 — Cabinet UI + scenario library + training mode
-8-12 weekends. v1 polish: cabinet-cutaway UI, KiCad SVG schematic,
-PCB-photo view, probe view, training-mode runner with realism-weighted
-scenarios. See
-[Phase-7-Cabinet-UI-Training](Phases/Phase-7-Cabinet-UI-Training.md).
+Initial implementation is now landed: Phase 6 peripheral models,
+standalone CRT preview pane, WebAudio-based fault controls, and
+direct-push `trackball_delta` bridge command.
+### ⏳ Phase 7 — Complete vertical-slice demo
+Focused prototype milestone. Named scenario library (12 scenarios),
+BGFX CRT shader integration, PSU→MAME fault propagation, one-command
+launch. Goal: pick a fault, click Apply, see/hear/feel it in the
+running Centipede emulation within one second.
+See [Phase-7-Cabinet-UI-Training](Phases/Phase-7-Cabinet-UI-Training.md).
+
+### ⏳ Phase 8 — Cabinet UI + training mode
+8-12 weekends. Cabinet-cutaway UI, KiCad SVG schematic, PCB-photo view,
+probe view, training-mode runner with realism-weighted scenarios and
+scoring. Scoped out of Phase 7 to keep the demo milestone tight.
 ## Explicit non-goals (frozen for v1)
 - 🧊 Generic any-board support beyond Centipede.
 - 🧊 Full analog fault realism (resistive faults, thermal intermittents,

@@ -5,7 +5,14 @@ user inject realistic faults at any subsystem. Initial target is the Atari
 Centipede.
 The master plan is in [`arcade_cabinet_fault_simulator_plan.md`](../arcade_cabinet_fault_simulator_plan.md).
 ## Current status
-**Phase 5.5 complete — RAM region with cell-level fault modeling shipped.**
+**Phase 6 in progress — CRT/trackball/audio implementation started.**
+Phase 6 now has working scaffolding in the codebase: new CRT/trackball/
+audio peripheral models, CRT preview + trackball + audio controls in the
+UI, initial shader set under `ui/shaders/`, and direct-push
+`trackball_delta` plumbing through the cabinet-bus bridge.
+Latest details: `Phases/Phase-6-CRT-Trackball-Audio.md`.
+
+Phase 5.5 (RAM region with cell-level fault modeling) remains complete:
 A new `BAD_RAM_CELL` netlist device wraps a 16-cell SRAM with stuck-at
 fault injection at a configurable address. The faulted cell refuses
 writes and reads as 0/1/inverted while the other 15 cells behave
@@ -15,8 +22,8 @@ Phase 5 itself (address decoder, Target B) shipped earlier this run; a
 stuck-low fault on the QB address bit demonstrates the "sound and
 high-score memory go dead, rest of the bus fine" symptom. See
 `Phases/Phase-5-Address-Decoder-RAM.md`.
-Up next: **Phase 6** — CRT monitor + trackball + audio chain. The
-biggest single phase per the project plan: shader-level chassis fault
+Current focus: **Phase 6** — CRT monitor + trackball + audio chain. The
+largest single phase per the project plan: shader-level chassis fault
 effects, trackball quadrature with fault categories, audio post-processing.
 ## Phase index
 | Phase | Title | Status |
@@ -29,7 +36,7 @@ effects, trackball quadrature with fault categories, audio post-processing.
 | 4 | [PSU + peripherals](Phases/Phase-4-PSU-Peripherals.md) | ✅ complete |
 | 5 | [Address decoder + RAM](Phases/Phase-5-Address-Decoder-RAM.md) | ✅ complete |
 | 5.5 | [RAM region (cell-level faults)](Phases/Phase-5.5-RAM-Region.md) | ✅ complete |
-| 6 | [CRT + trackball + audio](Phases/Phase-6-CRT-Trackball-Audio.md) | 🚧 next up |
+| 6 | [CRT + trackball + audio](Phases/Phase-6-CRT-Trackball-Audio.md) | 🚧 in progress |
 | 7 | [Cabinet UI + training mode](Phases/Phase-7-Cabinet-UI-Training.md) | ⏳ planned |
 Full schedule and tier-expansion plan: [Roadmap](Roadmap.md).
 ### Reference

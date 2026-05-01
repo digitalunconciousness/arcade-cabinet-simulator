@@ -56,6 +56,29 @@
     <div id="peripherals-grid" class="peripherals-grid"></div>
   </section>
 
+  <section class="phase6-pane" id="phase6-pane">
+    <div class="phase6-grid">
+      <div class="phase6-card">
+        <h2>CRT preview (standalone)</h2>
+        <canvas id="crt-preview" width="400" height="260" aria-label="CRT test pattern preview"></canvas>
+        <div class="phase6-meta" id="crt-preview-meta">effect: crt_normal</div>
+      </div>
+      <div class="phase6-card">
+        <h2>Trackball input</h2>
+        <div class="trackball-pad" id="trackball-pad" aria-label="trackball drag area">drag here</div>
+        <div class="phase6-meta" id="trackball-meta">dx 0 · dy 0</div>
+      </div>
+      <div class="phase6-card">
+        <h2>Audio chain test</h2>
+        <div class="audio-controls">
+          <button id="audio-tone-start" type="button">Play test tone</button>
+          <button id="audio-tone-stop" type="button">Stop</button>
+        </div>
+        <div class="phase6-meta" id="audio-meta">fault: NORMAL</div>
+      </div>
+    </div>
+  </section>
+
   <main>
     <section class="schematic-pane">
       <h2>Sync generator (representative)</h2>

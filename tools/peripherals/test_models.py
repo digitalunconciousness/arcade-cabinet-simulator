@@ -9,12 +9,15 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from models import (  # noqa: E402
+    AudioChain,
     Button,
+    CRTChassis,
     CoinMech,
     HarnessSegment,
     Marquee,
     PowerSupply,
     PeripheralRegistry,
+    Trackball,
 )
 
 
@@ -143,15 +146,68 @@ def test_harness_records_endpoints():
     assert s["dst"] == "B"
 
 
+# ---------- CRT ----------
+
+def test_crt_brightness_couples_to_psu():
+    psu = PowerSupply()
+    crt = CRTChassis(psu=psu)
+    normal = crt.state()["effective_brightness"]
+    psu.apply_fault("overload_trip")
+    dark = crt.state()["effective_brightness"]
+    assert dark < normal
+
+
+def test_crt_fault_selects_shader():
+    crt = CRTChassis()
+    crt.apply_fault("vertical_collapse")
+    assert crt.state()["shader_effect"] == "crt_vertical_collapse"
+
+
+# ---------- trackball ----------
+
+def test_trackball_dead_opto_x_zeroes_x_axis():
+    t = Trackball()
+    t.apply_fault("dead_opto_x")
+    pkt = t.apply_motion(8, 3)
+    assert pkt["quad_dx"] == 0
+    assert pkt["quad_dy"] != 0
+
+
+def test_trackball_phase_fault_reverses_direction():
+    t = Trackball()
+    t.apply_fault("failed_quadrature_phase")
+    pkt = t.apply_motion(4, -2)
+    assert pkt["quad_dx"] == -4
+    assert pkt["quad_dy"] == 2
+
+
+# ---------- audio ----------
+
+def test_audio_dead_amp_mutes_output_gain():
+    a = AudioChain()
+    a.apply_fault("dead_amp")
+    assert a.state()["filter_params"]["gain"] == 0.0
+
+
+def test_audio_blown_speaker_limits_bandwidth():
+    a = AudioChain()
+    a.apply_fault("blown_speaker")
+    s = a.state()["filter_params"]
+    assert s["speaker_lowpass_hz"] <= 1200.0
+
+
 # ---------- registry ----------
 
 def test_registry_lists_all_peripherals():
     reg = PeripheralRegistry()
     items = reg.all()
     types = {it["type"] for it in items}
-    assert types == {"psu", "coin_mech", "button", "marquee", "harness"}
-    # Three buttons, four harness segments, plus PSU+coin+marquee = 10.
-    assert len(items) == 10
+    assert types == {
+        "psu", "coin_mech", "button", "marquee", "harness",
+        "crt", "trackball", "audio_chain",
+    }
+    # Three buttons, four harness, plus PSU+coin+marquee+crt+trackball+audio = 13.
+    assert len(items) == 13
 
 
 def test_registry_apply_fault_routes_to_target():

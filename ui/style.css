@@ -277,6 +277,86 @@ section h2 { margin: 0 0 0.75rem 0; font-size: 0.9rem; font-weight: 600; color: 
 .periph-rail-value.warn { color: var(--warn-2); }
 .periph-rail-value.bad  { color: var(--warn); }
 
+/* Phase 6 preview pane */
+.phase6-pane {
+  margin: 1rem 1.5rem 0;
+  background: var(--bg-2);
+  border: 1px solid var(--grid);
+  border-radius: 6px;
+  padding: 1rem;
+}
+.phase6-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.75rem;
+}
+.phase6-card {
+  background: var(--bg-3);
+  border: 1px solid var(--grid);
+  border-radius: 4px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.phase6-card h2 {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--fg-dim);
+}
+#crt-preview {
+  width: 100%;
+  height: auto;
+  border-radius: 4px;
+  border: 1px solid var(--grid);
+  background: #000;
+  image-rendering: pixelated;
+}
+.trackball-pad {
+  height: 180px;
+  border: 1px dashed var(--accent);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-2);
+  user-select: none;
+  cursor: grab;
+  font-family: ui-monospace, monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.trackball-pad.dragging {
+  cursor: grabbing;
+  border-color: var(--good);
+  color: var(--good);
+}
+.audio-controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.audio-controls button {
+  background: var(--bg-2);
+  color: var(--fg);
+  border: 1px solid var(--grid);
+  border-radius: 4px;
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.audio-controls button:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+.phase6-meta {
+  color: var(--fg-dim);
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+}
+
 /* Pin-config popover */
 .popover {
   position: absolute;

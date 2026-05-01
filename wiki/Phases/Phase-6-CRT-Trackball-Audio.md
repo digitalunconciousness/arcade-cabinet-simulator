@@ -1,5 +1,5 @@
 # Phase 6 — CRT monitor + trackball + audio chain
-**Status:** 🚧 not started
+**Status:** 🚧 in progress (initial implementation landed)
 **Goal:** The biggest remaining peripherals get behavioral models with
 fault categories and (for the CRT) shader-level visual rendering.
 - **CRT chassis** (Wells-Gardner 19K6100) — chassis-level model with
@@ -31,6 +31,31 @@ fault categories and (for the CRT) shader-level visual rendering.
    the cabinet_bus plugin.
 5. Audio model: post-process MAME's audio output through fault filters
    (clipping for distortion, low-pass for blown speaker, hum injection).
+## Current implementation (this commit)
+- Added Phase 6 behavioral models:
+  `tools/peripherals/crt.py`, `tools/peripherals/trackball.py`,
+  `tools/peripherals/audio.py`.
+- Registered all three in `tools/peripherals/models.py` so they appear in
+  `/api/peripherals/state`, respond to `/api/peripherals/fault`, and
+  support `/api/peripherals/adjust`.
+- Added cabinet-bus API endpoints:
+  - `GET /api/crt/preview` for standalone CRT preview state.
+  - `POST /api/trackball/motion` for direct push motion packets.
+- Extended MAME plugin bridge (`vendor/mame/plugins/cabinet_bus/init.lua`)
+  with a `trackball_delta` command and ack payload.
+- Added shader files under `ui/shaders/` for CRT fault categories.
+- Added UI pane in `ui/index.html` + `ui/app.js` + `ui/style.css` with:
+  - standalone CRT preview canvas,
+  - drag-to-move trackball pad,
+  - audio test tone controls with WebAudio fault filtering.
+- Added/updated unit tests in `tools/peripherals/test_models.py` and
+  verified passing.
+## Resolved architecture choices
+- CRT preview mode: **A** (standalone test-pattern preview in Phase 6).
+- Audio portability: implemented in browser-side **WebAudio** for maximum
+  cross-machine compatibility.
+- Trackball delivery mode: **B** (immediate push from cabinet bus to MAME
+  bridge via `trackball_delta`).
 ## Deliverables to land in the same commit as the phase
 - `tools/peripherals/crt.py`, `trackball.py`, `audio.py`.
 - Shader effects under `ui/shaders/`.
@@ -40,11 +65,12 @@ fault categories and (for the CRT) shader-level visual rendering.
   controls.
 - Updated wiki: this file, Home, Roadmap.
 ## Open questions
-- How tightly does the CRT preview need to be coupled to MAME's actual
-  rendering vs. a separate preview that shows the simulated chassis
-  behavior on a known test pattern? Both have demo value.
-- Audio fault realism is hard — most fault categories are subtle.
-  Probably worth EE consultation here.
+- How tightly should the next step couple this standalone CRT preview to
+  live MAME framebuffer output (Phase 7 candidate)?
+- Should `trackball_delta` be wired all the way into MAME input ports in
+  plugin code now, or staged behind a second endpoint after bench testing?
+- Audio fault realism is subtle; an EE-informed tuning pass is still
+  recommended once baseline behavior is validated.
 ## Navigation
 ← Previous: [Phase 5 — Address decoder + RAM](Phase-5-Address-Decoder-RAM.md) ·
 Next: [Phase 7 — Cabinet UI + training mode](Phase-7-Cabinet-UI-Training.md) →

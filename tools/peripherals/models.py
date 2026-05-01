@@ -17,8 +17,11 @@ this is the third surface the cabinet-bus speaks to.
 
 from __future__ import annotations
 
-import dataclasses
 from typing import Optional
+
+from audio import AudioChain
+from crt import CRTChassis
+from trackball import Trackball
 
 
 # ---------- power supply ----------
@@ -345,6 +348,9 @@ class PeripheralRegistry:
             ]
         }
         self.marquee = Marquee("MARQ1")
+        self.crt = CRTChassis("CRT1", psu=self.psu)
+        self.trackball = Trackball("TRACK1")
+        self.audio = AudioChain("AUDIO1")
         self.harness = {
             h.id: h for h in [
                 HarnessSegment("HARN_PSU_PCB",     "PSU",     "GamePCB"),
@@ -355,7 +361,14 @@ class PeripheralRegistry:
         }
 
     def all(self) -> list:
-        out = [self.psu.state(), self.coin.state(), self.marquee.state()]
+        out = [
+            self.psu.state(),
+            self.coin.state(),
+            self.marquee.state(),
+            self.crt.state(),
+            self.trackball.state(),
+            self.audio.state(),
+        ]
         for b in self.buttons.values():
             out.append(b.state())
         for h in self.harness.values():
@@ -367,6 +380,12 @@ class PeripheralRegistry:
             return self.psu
         if ident == self.coin.id:
             return self.coin
+        if ident == self.crt.id:
+            return self.crt
+        if ident == self.trackball.id:
+            return self.trackball
+        if ident == self.audio.id:
+            return self.audio
         if ident in self.buttons:
             return self.buttons[ident]
         if ident == self.marquee.id:
@@ -397,10 +416,20 @@ class PeripheralRegistry:
         return target.state()
 
     def reset_all(self) -> None:
-        for p in (self.psu, self.coin, self.marquee,
+        for p in (self.psu, self.coin, self.marquee, self.crt, self.trackball, self.audio,
                   *self.buttons.values(), *self.harness.values()):
             p.clear_fault()
         self.psu.adjust("trim_5v", PowerSupply.SUPPORTED_PARAMS["trim_5v"]["default"])
+        self.crt.adjust("brightness", CRTChassis.SUPPORTED_PARAMS["brightness"]["default"])
+        self.crt.adjust("focus", CRTChassis.SUPPORTED_PARAMS["focus"]["default"])
+        self.trackball.adjust("sensitivity", Trackball.SUPPORTED_PARAMS["sensitivity"]["default"])
+        self.trackball.adjust("wear", Trackball.SUPPORTED_PARAMS["wear"]["default"])
+        self.audio.adjust("master_gain", AudioChain.SUPPORTED_PARAMS["master_gain"]["default"])
+        self.audio.adjust("hum_level", AudioChain.SUPPORTED_PARAMS["hum_level"]["default"])
+        self.audio.adjust(
+            "distortion_drive",
+            AudioChain.SUPPORTED_PARAMS["distortion_drive"]["default"],
+        )
 
 
 __all__ = [
@@ -408,6 +437,9 @@ __all__ = [
     "CoinMech",
     "Button",
     "Marquee",
+    "CRTChassis",
+    "Trackball",
+    "AudioChain",
     "HarnessSegment",
     "PeripheralRegistry",
 ]

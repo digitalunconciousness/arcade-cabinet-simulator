@@ -26,6 +26,13 @@
     mameResetBtn:    document.getElementById("mame-reset"),
     periphGrid:      document.getElementById("peripherals-grid"),
     periphReset:     document.getElementById("peripherals-reset"),
+    crtPreview:      document.getElementById("crt-preview"),
+    crtPreviewMeta:  document.getElementById("crt-preview-meta"),
+    trackballPad:    document.getElementById("trackball-pad"),
+    trackballMeta:   document.getElementById("trackball-meta"),
+    audioMeta:       document.getElementById("audio-meta"),
+    audioToneStart:  document.getElementById("audio-tone-start"),
+    audioToneStop:   document.getElementById("audio-tone-stop"),
   };
 
   /** @type {{fault_targets: Array, log_nets: string[], duration_s: number, modes: object}} */
@@ -33,6 +40,22 @@
 
   /** @type {Object<string, number>} */
   const faults = {};
+
+  /** @type {any|null} */
+  let crtState = null;
+  /** @type {any|null} */
+  let trackballState = null;
+  /** @type {any|null} */
+  let audioState = null;
+
+  let audioCtx = null;
+  let audioToneOsc = null;
+  let audioHumOsc = null;
+  let audioToneGain = null;
+  let audioHumGain = null;
+  let audioDrive = null;
+  let audioLowpass = null;
+  let audioMaster = null;
 
   // Layout for the fault-pin badges. Keyed by fault_device. The (x, y) is the
   // SVG coordinate where the badge should sit. Tuned to match index.html.
@@ -266,6 +289,12 @@
     try {
       const data = await fetchJSON("/api/peripherals/state");
       renderPeripherals(data.peripherals);
+      crtState = data.peripherals.find(p => p.type === "crt") || null;
+      trackballState = data.peripherals.find(p => p.type === "trackball") || null;
+      audioState = data.peripherals.find(p => p.type === "audio_chain") || null;
+      renderCrtPreview();
+      renderTrackballMeta();
+      applyAudioFaultProfile();
     } catch (err) {
       console.error("peripherals load failed", err);
     }
@@ -373,6 +402,34 @@
       card.appendChild(stat);
     }
 
+    if (p.type === "crt") {
+      const stat = document.createElement("div");
+      stat.className = "periph-stat";
+      stat.innerHTML = `<span>effective brightness</span><span class="periph-stat-value">${p.effective_brightness.toFixed(2)}</span>`;
+      card.appendChild(stat);
+      const sync = document.createElement("div");
+      sync.className = "periph-stat";
+      sync.innerHTML = `<span>sync lock</span><span class="periph-stat-value ${p.sync_ok ? "" : "warn"}">${p.sync_ok ? "locked" : "unlock"}</span>`;
+      card.appendChild(sync);
+      renderParamSliders(card, p, ["brightness", "focus"]);
+    }
+
+    if (p.type === "trackball") {
+      const stat = document.createElement("div");
+      stat.className = "periph-stat";
+      stat.innerHTML = `<span>last packet</span><span class="periph-stat-value">dx ${p.last_packet.quad_dx} · dy ${p.last_packet.quad_dy}</span>`;
+      card.appendChild(stat);
+      renderParamSliders(card, p, ["sensitivity", "wear"]);
+    }
+
+    if (p.type === "audio_chain") {
+      const stat = document.createElement("div");
+      stat.className = "periph-stat";
+      stat.innerHTML = `<span>gain</span><span class="periph-stat-value">${p.filter_params.gain.toFixed(2)}</span>`;
+      card.appendChild(stat);
+      renderParamSliders(card, p, ["master_gain", "hum_level", "distortion_drive"]);
+    }
+
     // Fault dropdown for everything that has fault modes.
     if (p.supported_faults && p.supported_faults.length) {
       const wrap = document.createElement("div");
@@ -392,6 +449,41 @@
     }
 
     return card;
+  }
+
+  function renderParamSliders(card, p, names) {
+    for (const name of names) {
+      const spec = p.supported_params?.[name];
+      if (!spec) continue;
+      const wrap = document.createElement("div");
+      wrap.className = "trim-row";
+      const label = document.createElement("div");
+      label.innerHTML = `<label>${name}</label>`;
+      const val = document.createElement("span");
+      val.className = "periph-stat-value";
+      val.textContent = Number(p[name]).toFixed(2);
+      label.appendChild(val);
+      const range = document.createElement("input");
+      range.type = "range";
+      range.min = spec.min;
+      range.max = spec.max;
+      range.step = spec.step;
+      range.value = p[name];
+      range.addEventListener("input", () => {
+        val.textContent = Number(range.value).toFixed(2);
+      });
+      range.addEventListener("change", async () => {
+        await postJSON("/api/peripherals/adjust", {
+          id: p.id,
+          param: name,
+          value: parseFloat(range.value),
+        });
+        await loadPeripherals();
+      });
+      wrap.appendChild(label);
+      wrap.appendChild(range);
+      card.appendChild(wrap);
+    }
   }
 
   function railClass(name, v) {
@@ -476,6 +568,196 @@
   els.mameResumeBtn.addEventListener("click", () => mameAction("resume"));
   els.mameResetBtn.addEventListener("click",  () => mameAction("soft_reset"));
 
+  // ---------- Phase 6 preview ----------
+
+  function renderCrtPreview() {
+    if (!els.crtPreview || !crtState) return;
+    const canvas = els.crtPreview;
+    const ctx = canvas.getContext("2d");
+    const w = canvas.width;
+    const h = canvas.height;
+
+    // Base test pattern (standalone, no MAME framebuffer dependency).
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, w, h);
+    const bars = ["#ffffff", "#ffd400", "#00d4ff", "#2bd900", "#d94d2b", "#ff00ff", "#2a6bff", "#333333"];
+    const bw = Math.floor(w / bars.length);
+    bars.forEach((c, i) => {
+      ctx.fillStyle = c;
+      ctx.fillRect(i * bw, 10, bw, Math.floor(h * 0.45));
+    });
+    ctx.strokeStyle = "#73ff7a";
+    ctx.lineWidth = 2;
+    for (let y = 0; y < h; y += 8) {
+      ctx.beginPath();
+      ctx.moveTo(0, y + 0.5);
+      ctx.lineTo(w, y + 0.5);
+      ctx.stroke();
+    }
+
+    // Apply effect profile approximating shader categories.
+    const effect = crtState.shader_effect || "crt_normal";
+    if (effect === "crt_vertical_collapse") {
+      ctx.globalAlpha = 0.9;
+      ctx.drawImage(canvas, 0, Math.floor(h * 0.48), w, 4, 0, Math.floor(h * 0.44), w, 16);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = "rgba(255,255,255,0.15)";
+      ctx.fillRect(0, Math.floor(h * 0.49), w, 2);
+    } else if (effect === "crt_horizontal_collapse") {
+      ctx.globalAlpha = 0.9;
+      ctx.drawImage(canvas, Math.floor(w * 0.48), 0, 4, h, Math.floor(w * 0.44), 0, 16, h);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = "rgba(255,255,255,0.15)";
+      ctx.fillRect(Math.floor(w * 0.49), 0, 2, h);
+    } else if (effect === "crt_sync_lock_failure") {
+      const dy = Math.floor(((Date.now() / 20) % h));
+      const img = ctx.getImageData(0, 0, w, h);
+      ctx.putImageData(img, 0, dy - h);
+      ctx.putImageData(img, 0, dy);
+    } else if (effect === "crt_weak_focus") {
+      ctx.globalAlpha = 0.4;
+      ctx.drawImage(canvas, -1, 0);
+      ctx.drawImage(canvas, 1, 0);
+      ctx.drawImage(canvas, 0, -1);
+      ctx.drawImage(canvas, 0, 1);
+      ctx.globalAlpha = 1;
+    } else if (effect === "crt_bad_deflection_caps") {
+      for (let y = 0; y < h; y += 2) {
+        const offset = Math.round(Math.sin((y / 13) + (Date.now() / 180)) * 4);
+        ctx.drawImage(canvas, 0, y, w, 2, offset, y, w, 2);
+      }
+    } else if (effect === "crt_ringing_ghosting") {
+      ctx.globalAlpha = 0.22;
+      ctx.drawImage(canvas, 8, 0);
+      ctx.globalAlpha = 1;
+    }
+
+    const b = Math.max(0, Math.min(2, crtState.effective_brightness || 1));
+    const alpha = Math.max(0, Math.min(0.92, 1 - (b / 1.2)));
+    ctx.fillStyle = `rgba(0,0,0,${alpha})`;
+    ctx.fillRect(0, 0, w, h);
+
+    els.crtPreviewMeta.textContent = `effect: ${effect} · brightness: ${b.toFixed(2)}`;
+  }
+
+  function renderTrackballMeta() {
+    if (!els.trackballMeta) return;
+    const packet = trackballState?.last_packet || { quad_dx: 0, quad_dy: 0 };
+    els.trackballMeta.textContent = `dx ${packet.quad_dx} · dy ${packet.quad_dy}`;
+  }
+
+  async function postTrackballMotion(dx, dy) {
+    try {
+      await postJSON("/api/trackball/motion", { dx, dy });
+      await loadPeripherals();
+    } catch (e) {
+      console.error("trackball motion failed", e);
+    }
+  }
+
+  function initTrackballPad() {
+    if (!els.trackballPad) return;
+    let dragging = false;
+    let lastX = 0;
+    let lastY = 0;
+
+    els.trackballPad.addEventListener("pointerdown", (ev) => {
+      dragging = true;
+      lastX = ev.clientX;
+      lastY = ev.clientY;
+      els.trackballPad.classList.add("dragging");
+      els.trackballPad.setPointerCapture(ev.pointerId);
+    });
+    els.trackballPad.addEventListener("pointermove", (ev) => {
+      if (!dragging) return;
+      const dx = Math.round(ev.clientX - lastX);
+      const dy = Math.round(ev.clientY - lastY);
+      lastX = ev.clientX;
+      lastY = ev.clientY;
+      if (dx !== 0 || dy !== 0) {
+        void postTrackballMotion(dx, dy);
+      }
+    });
+    const stopDrag = () => {
+      dragging = false;
+      els.trackballPad.classList.remove("dragging");
+    };
+    els.trackballPad.addEventListener("pointerup", stopDrag);
+    els.trackballPad.addEventListener("pointercancel", stopDrag);
+  }
+
+  function createDistortionCurve(amount) {
+    const k = Math.max(0, amount) * 400;
+    const n = 512;
+    const curve = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+      const x = (i * 2) / n - 1;
+      curve[i] = ((3 + k) * x * 20 * (Math.PI / 180)) / (Math.PI + (k * Math.abs(x)));
+    }
+    return curve;
+  }
+
+  async function ensureAudioGraph() {
+    if (audioCtx) return;
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    audioToneOsc = audioCtx.createOscillator();
+    audioToneOsc.type = "square";
+    audioToneOsc.frequency.value = 523.25;
+
+    audioHumOsc = audioCtx.createOscillator();
+    audioHumOsc.type = "sine";
+    audioHumOsc.frequency.value = 60;
+
+    audioToneGain = audioCtx.createGain();
+    audioToneGain.gain.value = 0;
+    audioHumGain = audioCtx.createGain();
+    audioHumGain.gain.value = 0;
+    audioDrive = audioCtx.createWaveShaper();
+    audioDrive.curve = createDistortionCurve(0);
+    audioLowpass = audioCtx.createBiquadFilter();
+    audioLowpass.type = "lowpass";
+    audioLowpass.frequency.value = 12000;
+    audioMaster = audioCtx.createGain();
+    audioMaster.gain.value = 1.0;
+
+    audioToneOsc.connect(audioToneGain);
+    audioHumOsc.connect(audioHumGain);
+    audioToneGain.connect(audioDrive);
+    audioHumGain.connect(audioDrive);
+    audioDrive.connect(audioLowpass);
+    audioLowpass.connect(audioMaster);
+    audioMaster.connect(audioCtx.destination);
+
+    audioToneOsc.start();
+    audioHumOsc.start();
+  }
+
+  function applyAudioFaultProfile() {
+    if (!audioState || !els.audioMeta) return;
+    els.audioMeta.textContent = `fault: ${audioState.fault}`;
+    if (!audioCtx) return;
+    const fp = audioState.filter_params || {};
+    audioMaster.gain.value = fp.gain ?? 1.0;
+    audioHumOsc.frequency.value = fp.hum_hz ?? 60;
+    audioHumGain.gain.value = fp.hum_gain ?? 0.0;
+    audioLowpass.frequency.value = fp.speaker_lowpass_hz ?? 12000;
+    audioDrive.curve = createDistortionCurve(fp.distortion_drive ?? 0);
+  }
+
+  async function startTone() {
+    await ensureAudioGraph();
+    if (audioCtx.state === "suspended") {
+      await audioCtx.resume();
+    }
+    audioToneGain.gain.value = 0.2;
+    applyAudioFaultProfile();
+  }
+
+  function stopTone() {
+    if (!audioCtx) return;
+    audioToneGain.gain.value = 0;
+  }
+
   // ---------- bootstrap ----------
 
   async function init() {
@@ -490,10 +772,18 @@
     renderFaultsList();
     await reloadWaveforms();
     await loadPeripherals();
+    initTrackballPad();
+    if (els.audioToneStart) {
+      els.audioToneStart.addEventListener("click", () => { void startTone(); });
+    }
+    if (els.audioToneStop) {
+      els.audioToneStop.addEventListener("click", stopTone);
+    }
     pollMameOnce();
     setInterval(pollMameOnce, 1000);
     // Refresh peripherals every 2s so stuck_switch credits keep ticking.
     setInterval(loadPeripherals, 2000);
+    setInterval(renderCrtPreview, 80);
   }
 
   init();

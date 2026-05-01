@@ -149,6 +149,14 @@ class MameClient:
         """Disarm every armed stuck-byte fault."""
         return self.send({"cmd": "clear_stuck"})
 
+    def trackball_delta(self, dx: int, dy: int) -> dict:
+        """Push one quadrature-friendly trackball delta packet to MAME."""
+        return self.send({
+            "cmd": "trackball_delta",
+            "dx": int(dx),
+            "dy": int(dy),
+        })
+
     def _ensure_connection(self) -> None:
         """Open the cached socket if not already up."""
         if self._sock is not None:

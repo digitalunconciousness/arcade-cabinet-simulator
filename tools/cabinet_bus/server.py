@@ -293,6 +293,29 @@ def create_app(
         peripherals.coin.insert_coin()
         return jsonify(peripherals.coin.state())
 
+    @app.route("/api/crt/preview")
+    def api_crt_preview():
+        """Expose CRT state for the standalone preview pane."""
+        return jsonify(peripherals.crt.state())
+
+    @app.route("/api/trackball/motion", methods=["POST"])
+    def api_trackball_motion():
+        body = request.get_json(silent=True) or {}
+        try:
+            dx = int(body.get("dx", 0))
+            dy = int(body.get("dy", 0))
+        except (TypeError, ValueError):
+            return jsonify({"error": "dx and dy must be integers"}), 400
+
+        packet = peripherals.trackball.apply_motion(dx, dy)
+
+        # Direct push mode: forward immediately to the MAME bridge.
+        try:
+            mame_reply = mame.trackball_delta(packet["quad_dx"], packet["quad_dy"])
+            return jsonify({"available": True, "packet": packet, "mame": mame_reply})
+        except ConnectionError as e:
+            return jsonify({"available": False, "packet": packet, "error": str(e)}), 503
+
     return app
 
 
