@@ -42,8 +42,11 @@ import scenario_runner as _scenario_runner  # noqa: E402
 # Schematic/KiCad import helpers.
 sys.path.insert(0, str(Path(__file__).parent.parent / "schematic"))
 try:
+    from board_package import load_board_package, summarize_board_package  # noqa: E402
     from kicad_netlist import load_kicad_netlist, summarize_model  # noqa: E402
 except Exception:  # noqa: BLE001
+    load_board_package = None
+    summarize_board_package = None
     load_kicad_netlist = None
     summarize_model = None
 
@@ -76,6 +79,7 @@ def create_app(
     peripheral_registry: PeripheralRegistry | None = None,
     scenario_loader: Callable[[], list[dict]] | None = None,
     kicad_netlist_path: Path | None = None,
+    board_package_path: Path | None = None,
 ) -> Flask:
     if log_nets is None:
         log_nets = DEFAULT_LOG_NETS
@@ -101,15 +105,40 @@ def create_app(
     }
     schematic_faults: dict[str, int] = {}
 
-    # Optional KiCad netlist import path (Stage 8 foundation).
+    # Optional board package / KiCad netlist import path (Stage 8 foundation).
+    package_path = board_package_path
+    if package_path is None:
+        raw = os.environ.get("CABINET_BOARD_PATH", "").strip()
+        package_path = Path(raw) if raw else None
+
     netlist_path = kicad_netlist_path
     if netlist_path is None:
         raw = os.environ.get("CABINET_KICAD_NETLIST", "").strip()
         netlist_path = Path(raw) if raw else None
 
+    board_package = None
     schematic_model = None
     schematic_load_error = ""
-    if netlist_path is not None:
+    fault_map_by_refpin: dict[tuple[str, str], dict] = {}
+    if package_path is not None:
+        try:
+            if load_board_package is None:
+                raise RuntimeError("board package loader unavailable")
+            board_package = load_board_package(package_path)
+            fault_map_by_refpin = {
+                entry.key(): {
+                    "ref": entry.ref,
+                    "pin": entry.pin,
+                    "net_name": entry.net_name,
+                    "fault_device": entry.fault_device,
+                    "fault_type": entry.fault_type,
+                    "description": entry.description,
+                }
+                for entry in board_package.fault_map
+            }
+        except Exception as e:  # noqa: BLE001
+            schematic_load_error = str(e)
+    elif netlist_path is not None:
         try:
             if load_kicad_netlist is None:
                 raise RuntimeError("kicad parser unavailable")
@@ -189,15 +218,28 @@ def create_app(
             "stderr_tail": result.stderr.splitlines()[-5:],
         })
 
+    # ---------- Health check (Phase 9 sidecar contract) ----------
+
+    @app.route("/api/health")
+    def api_health():
+        bid = None
+        if board_package is not None:
+            bid = board_package.board_id
+        return jsonify({"status": "ok", "board_id": bid})
+
     # ---------- Schematic import + click-to-fault foundations ----------
 
     @app.route("/api/schematic/summary")
     def api_schematic_summary():
+        if board_package is not None:
+            if summarize_board_package is None:
+                return jsonify({"available": False, "error": "board package summary unavailable"}), 500
+            return jsonify({"available": True, **summarize_board_package(board_package)})
         if schematic_model is None:
             return jsonify({
                 "available": False,
-                "error": schematic_load_error or "no KiCad netlist loaded",
-                "hint": "set CABINET_KICAD_NETLIST to a KiCad XML netlist path",
+                "error": schematic_load_error or "no schematic source loaded",
+                "hint": "set CABINET_BOARD_PATH to a board.json path or CABINET_KICAD_NETLIST to a KiCad XML netlist path",
             }), 404
         if summarize_model is None:
             return jsonify({"available": False, "error": "summary unavailable"}), 500
@@ -210,10 +252,10 @@ def create_app(
     @app.route("/api/schematic/fault/apply", methods=["POST"])
     def api_schematic_fault_apply():
         body = request.get_json(silent=True) or {}
-        refdes = str(body.get("refdes", "")).strip()
+        refdes = str(body.get("refdes") or body.get("ref") or "").strip()
         pin = str(body.get("pin", "")).strip()
         if not refdes or not pin:
-            return jsonify({"error": "refdes and pin are required"}), 400
+            return jsonify({"error": "ref/refdes and pin are required"}), 400
         try:
             mode = int(body.get("mode", 0))
         except (TypeError, ValueError):
@@ -221,11 +263,12 @@ def create_app(
         if mode not in runner.MODE_LABELS:
             return jsonify({"error": f"unsupported mode: {mode}"}), 400
 
-        fault_device = manifest_by_refpin.get((refdes, pin), "")
+        fault_entry = fault_map_by_refpin.get((refdes, pin), {})
+        fault_device = fault_entry.get("fault_device") or manifest_by_refpin.get((refdes, pin), "")
         if not fault_device:
             return jsonify({
                 "error": f"no instrumented fault target for {refdes}.{pin}",
-                "hint": "instrument the target net so it appears in manifest",
+                "hint": "instrument the target net and map it in fault_map.json so it appears in the board package",
             }), 404
 
         if mode == 0:
@@ -236,20 +279,23 @@ def create_app(
         return jsonify({
             "ok": True,
             "refdes": refdes,
+            "ref": refdes,
             "pin": pin,
             "fault_device": fault_device,
             "mode": mode,
             "label": runner.MODE_LABELS[mode],
+            "fault": fault_entry or None,
             "active_faults": schematic_faults,
         })
 
     @app.route("/api/schematic/fault/clear", methods=["POST"])
     def api_schematic_fault_clear():
         body = request.get_json(silent=True) or {}
-        refdes = str(body.get("refdes", "")).strip()
+        refdes = str(body.get("refdes") or body.get("ref") or "").strip()
         pin = str(body.get("pin", "")).strip()
         if refdes and pin:
-            fault_device = manifest_by_refpin.get((refdes, pin), "")
+            fault_entry = fault_map_by_refpin.get((refdes, pin), {})
+            fault_device = fault_entry.get("fault_device") or manifest_by_refpin.get((refdes, pin), "")
             if not fault_device:
                 return jsonify({"error": f"no instrumented fault target for {refdes}.{pin}"}), 404
             schematic_faults.pop(fault_device, None)
@@ -839,11 +885,33 @@ def main(argv=None):
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=5050)
     parser.add_argument("--debug", action="store_true")
+    parser.add_argument("--board-package", type=Path, default=None)
+    parser.add_argument("--kicad-netlist", type=Path, default=None)
+    parser.add_argument(
+        "--tauri-sidecar",
+        action="store_true",
+        help=(
+            "Sidecar mode for Tauri desktop app: bind on a random available port "
+            "and write 'PORT=<n>' to stdout so the Tauri shell can discover it."
+        ),
+    )
     args = parser.parse_args(argv)
 
-    app = create_app()
-    print(f"Cabinet bus listening on http://{args.host}:{args.port}",
-          file=sys.stderr)
+    if args.tauri_sidecar:
+        import socket as _socket
+        with _socket.socket() as _s:
+            _s.bind(("127.0.0.1", 0))
+            args.port = _s.getsockname()[1]
+        # Write the port to stdout so Tauri's sidecar API can read it.
+        print(f"PORT={args.port}", flush=True)
+
+    app = create_app(
+        board_package_path=args.board_package,
+        kicad_netlist_path=args.kicad_netlist,
+    )
+    if not args.tauri_sidecar:
+        print(f"Cabinet bus listening on http://{args.host}:{args.port}",
+              file=sys.stderr)
     app.run(host=args.host, port=args.port, debug=args.debug, use_reloader=False)
 
 

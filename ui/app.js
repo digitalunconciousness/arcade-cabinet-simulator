@@ -950,6 +950,343 @@
         manifest.modes === null ||
         Array.isArray(manifest.modes)
       ) {
+  // ============================================================
+  // Board Inspector — Phase 8
+  // Loads /api/schematic/summary and renders the three-panel
+  // component browser / PCB overview / probe view.
+  // ============================================================
+
+  const boardInspector = {
+    /** Full summary payload from the server. Null when no board package. */
+    summary: null,
+    /** Currently selected component ref string. */
+    selectedRef: null,
+    /** Map of fault_device → mode (int) — mirrors the global `faults` dict. */
+    activeFaults: faults,  // same reference — kept in sync automatically
+  };
+
+  async function loadBoardInspector() {
+    let summary;
+    try {
+      summary = await fetchJSON("/api/schematic/summary");
+    } catch {
+      // Board package not available — hide inspector and return.
+      const el = document.getElementById("board-inspector");
+      if (el) el.hidden = true;
+      return;
+    }
+
+    if (!summary || !summary.board_id) {
+      const el = document.getElementById("board-inspector");
+      if (el) el.hidden = true;
+      return;
+    }
+
+    boardInspector.summary = summary;
+
+    // Show the section.
+    const section = document.getElementById("board-inspector");
+    if (section) section.hidden = false;
+
+    // Populate header.
+    const idEl  = document.getElementById("board-inspector-id");
+    const revEl = document.getElementById("board-inspector-rev");
+    const statsEl = document.getElementById("board-stats");
+    if (idEl)  idEl.textContent  = summary.board_id;
+    if (revEl) revEl.textContent = `rev ${summary.revision}`;
+    if (statsEl) {
+      statsEl.textContent =
+        `${summary.component_count} components · ` +
+        `${summary.net_count} nets · ` +
+        `${summary.mapped_fault_count} fault targets`;
+    }
+
+    renderComponentList(summary);
+    renderPcbGrid(summary);
+    renderProbePanel(null, summary);
+  }
+
+  /** Render the left-column component browser list. */
+  function renderComponentList(summary, filterText = "") {
+    const listEl = document.getElementById("component-list");
+    if (!listEl) return;
+    listEl.innerHTML = "";
+
+    const lower = filterText.toLowerCase();
+    const components = (summary.components || []).filter(c => {
+      if (!lower) return true;
+      return (
+        c.ref.toLowerCase().includes(lower) ||
+        c.chip_type.toLowerCase().includes(lower)
+      );
+    });
+
+    if (components.length === 0) {
+      listEl.innerHTML = `<div class="comp-type" style="padding:8px 4px;color:var(--fg-dim)">no matches</div>`;
+      return;
+    }
+
+    for (const comp of components) {
+      const item = document.createElement("div");
+      item.className = "comp-item";
+      item.setAttribute("role", "option");
+      item.setAttribute("aria-selected", boardInspector.selectedRef === comp.ref ? "true" : "false");
+      item.dataset.ref = comp.ref;
+
+      // Check if this component has any active faults.
+      const faultDevices = _faultDevicesForRef(comp.ref, summary);
+      const hasFault = faultDevices.some(fd => (faults[fd] ?? 0) !== 0);
+
+      if (hasFault) item.classList.add("faulted");
+      if (boardInspector.selectedRef === comp.ref) item.classList.add("selected");
+
+      item.innerHTML =
+        `<span class="comp-ref">${_esc(comp.ref)}</span>` +
+        `<span class="comp-type">${_esc(comp.chip_type)}</span>`;
+
+      item.addEventListener("click", () => selectBoardComponent(comp.ref));
+      listEl.appendChild(item);
+    }
+  }
+
+  /** Render the centre PCB-grid overview. */
+  function renderPcbGrid(summary) {
+    const gridEl = document.getElementById("pcb-grid");
+    if (!gridEl) return;
+    gridEl.innerHTML = "";
+
+    for (const comp of (summary.components || [])) {
+      const chip = document.createElement("div");
+      chip.className = "pcb-chip";
+      chip.setAttribute("role", "listitem");
+      chip.dataset.ref = comp.ref;
+
+      const faultDevices = _faultDevicesForRef(comp.ref, summary);
+      const activeModes = faultDevices.map(fd => faults[fd] ?? 0).filter(m => m !== 0);
+      const hasFault = activeModes.length > 0;
+
+      if (hasFault) chip.classList.add("faulted");
+      if (boardInspector.selectedRef === comp.ref) chip.classList.add("selected");
+
+      const faultLabel = hasFault
+        ? `<div class="pcb-chip-fault">${activeModes.length} fault${activeModes.length > 1 ? "s" : ""}</div>`
+        : "";
+
+      chip.innerHTML =
+        `<div class="pcb-chip-ref">${_esc(comp.ref)}</div>` +
+        `<div class="pcb-chip-type">${_esc(comp.chip_type)}</div>` +
+        faultLabel;
+
+      chip.addEventListener("click", () => selectBoardComponent(comp.ref));
+      gridEl.appendChild(chip);
+    }
+  }
+
+  /** Select a component and update both list + PCB grid selection state. */
+  function selectBoardComponent(ref) {
+    boardInspector.selectedRef = ref;
+    // Update CSS selection in list.
+    document.querySelectorAll(".comp-item").forEach(el => {
+      el.classList.toggle("selected", el.dataset.ref === ref);
+      el.setAttribute("aria-selected", el.dataset.ref === ref ? "true" : "false");
+    });
+    // Update CSS selection in grid.
+    document.querySelectorAll(".pcb-chip").forEach(el => {
+      el.classList.toggle("selected", el.dataset.ref === ref);
+    });
+    renderProbePanel(ref, boardInspector.summary);
+  }
+
+  /** Render the right-column probe/inspect panel. */
+  function renderProbePanel(ref, summary) {
+    const placeholder = document.getElementById("probe-placeholder");
+    const detail = document.getElementById("probe-detail");
+    if (!placeholder || !detail) return;
+
+    if (!ref || !summary) {
+      placeholder.hidden = false;
+      detail.hidden = true;
+      return;
+    }
+
+    const comp = (summary.components || []).find(c => c.ref === ref);
+    if (!comp) {
+      placeholder.hidden = false;
+      detail.hidden = true;
+      return;
+    }
+
+    placeholder.hidden = true;
+    detail.hidden = false;
+
+    const refEl  = document.getElementById("probe-ref");
+    const chipEl = document.getElementById("probe-chip");
+    const descEl = document.getElementById("probe-desc");
+    const netsEl = document.getElementById("probe-nets");
+    const pinsEl = document.getElementById("probe-pins");
+    const hintEl = document.getElementById("probe-fault-hint");
+
+    if (refEl)  refEl.textContent  = comp.ref;
+    if (chipEl) chipEl.textContent = comp.chip_type;
+    if (descEl) descEl.textContent = comp.description || "";
+
+    // Nets
+    if (netsEl) {
+      const nets = comp.nets || {};  // { "net_name": ["ref.pin", …], … }
+      const entries = Object.entries(nets);
+      if (entries.length === 0) {
+        netsEl.innerHTML = `<span class="probe-no-nets">no net data</span>`;
+      } else {
+        netsEl.innerHTML = entries.map(([net, pins]) =>
+          `<span class="probe-net-tag">${_esc(net)}</span>`
+        ).join("");
+      }
+    }
+
+    // Fault-injectable pins for this component.
+    const faultEntries = (summary.fault_map || []).filter(e => e.ref === ref);
+    if (hintEl) {
+      hintEl.textContent = faultEntries.length === 0 ? "(none mapped)" : "";
+    }
+
+    if (pinsEl) {
+      if (faultEntries.length === 0) {
+        pinsEl.innerHTML = `<div class="probe-no-faults">No instrumented pins on this component.</div>`;
+      } else {
+        pinsEl.innerHTML = "";
+        for (const entry of faultEntries) {
+          pinsEl.appendChild(_buildPinRow(entry));
+        }
+      }
+    }
+  }
+
+  /** Build a single fault-injectable pin row for the probe panel. */
+  function _buildPinRow(entry) {
+    const { ref, pin, net_name, fault_device, fault_type, description } = entry;
+    const currentMode = faults[fault_device] ?? 0;
+    const isActive = currentMode !== 0;
+
+    const row = document.createElement("div");
+    row.className = "probe-pin-row" + (isActive ? " active-fault" : "");
+    row.dataset.faultDevice = fault_device;
+
+    const modeNames = ["NORMAL", "STUCK_HI", "STUCK_LO", "OPEN"];
+    const badgeClass = ["", "stuck-hi", "stuck-lo", "open"];
+
+    const activeBadge = isActive
+      ? `<span class="probe-fault-badge ${badgeClass[currentMode]}">${modeNames[currentMode]}</span>`
+      : "";
+
+    const modeOptions = modeNames.map((name, i) =>
+      `<option value="${i}" ${currentMode === i ? "selected" : ""}>${i} — ${name}</option>`
+    ).join("");
+
+    row.innerHTML =
+      `<div class="probe-pin-head">` +
+        `<span class="probe-pin-name">.${_esc(pin)}</span>` +
+        `<span class="probe-pin-net">${_esc(net_name)}</span>` +
+        `<span class="probe-pin-device">${_esc(fault_device)}</span>` +
+        activeBadge +
+      `</div>` +
+      (description ? `<div class="probe-pin-desc">${_esc(description)}</div>` : "") +
+      `<div class="probe-pin-controls">` +
+        `<select class="probe-mode-select" aria-label="Fault mode for ${_esc(fault_device)}">` +
+          modeOptions +
+        `</select>` +
+        `<button class="probe-apply-btn" type="button">Apply</button>` +
+        `<button class="probe-clear-btn" type="button">Clear</button>` +
+      `</div>`;
+
+    const select = row.querySelector(".probe-mode-select");
+    const applyBtn = row.querySelector(".probe-apply-btn");
+    const clearBtn = row.querySelector(".probe-clear-btn");
+
+    async function applyFaultMode(mode) {
+      try {
+        await postJSON("/api/schematic/fault/apply", {
+          fault_device,
+          refdes: ref,
+          ref,
+          pin,
+          mode,
+        });
+        if (mode === 0) {
+          delete faults[fault_device];
+        } else {
+          faults[fault_device] = mode;
+        }
+        // Refresh the probe panel and PCB grid to reflect new state.
+        renderProbePanel(boardInspector.selectedRef, boardInspector.summary);
+        renderPcbGrid(boardInspector.summary);
+        renderComponentList(boardInspector.summary, _compSearchValue());
+        renderFaultPins();
+        renderFaultsList();
+        await reloadWaveforms();
+      } catch (err) {
+        setStatus("fault apply error: " + err.message, true);
+      }
+    }
+
+    applyBtn.addEventListener("click", () => {
+      const mode = parseInt(select.value, 10);
+      void applyFaultMode(mode);
+    });
+
+    clearBtn.addEventListener("click", async () => {
+      try {
+        await postJSON("/api/schematic/fault/clear", { fault_device });
+        delete faults[fault_device];
+        renderProbePanel(boardInspector.selectedRef, boardInspector.summary);
+        renderPcbGrid(boardInspector.summary);
+        renderComponentList(boardInspector.summary, _compSearchValue());
+        renderFaultPins();
+        renderFaultsList();
+        await reloadWaveforms();
+      } catch (err) {
+        setStatus("fault clear error: " + err.message, true);
+      }
+    });
+
+    return row;
+  }
+
+  /** Return all fault_device names associated with a given component ref. */
+  function _faultDevicesForRef(ref, summary) {
+    return (summary.fault_map || [])
+      .filter(e => e.ref === ref)
+      .map(e => e.fault_device);
+  }
+
+  /** Return the current component-search input value. */
+  function _compSearchValue() {
+    const el = document.getElementById("comp-search");
+    return el ? el.value.trim() : "";
+  }
+
+  /** Escape HTML special characters. */
+  function _esc(str) {
+    return String(str ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  // Wire up the component search filter.
+  const compSearchInput = document.getElementById("comp-search");
+  if (compSearchInput) {
+    compSearchInput.addEventListener("input", (e) => {
+      if (boardInspector.summary) {
+        renderComponentList(boardInspector.summary, e.target.value.trim());
+      }
+    });
+  }
+
+  // ============================================================
+  // End of Board Inspector
+  // ============================================================
+
   async function init() {
     setStatus("fetching manifest…");
     try {
@@ -971,6 +1308,7 @@
     await reloadWaveforms();
     await loadPeripherals();
     await loadScenarios();
+    await loadBoardInspector();
     initTrackballPad();
     if (els.audioToneStart) {
       els.audioToneStart.addEventListener("click", () => { void startTone(); });

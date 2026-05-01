@@ -114,6 +114,76 @@
     </div>
   </section>
 
+  <!-- ============================================================
+       Board Inspector — Phase 8
+       Shown when the server was started with --board-package.
+       Three panels: component browser / PCB overview / probe.
+       ============================================================ -->
+  <section class="board-inspector" id="board-inspector" hidden>
+    <div class="board-inspector-header">
+      <h2>Board Inspector
+        <span class="board-inspector-id" id="board-inspector-id"></span>
+        <span class="board-inspector-rev" id="board-inspector-rev"></span>
+      </h2>
+      <span class="board-stats" id="board-stats"></span>
+    </div>
+
+    <div class="board-inspector-grid">
+
+      <!-- Left panel: component browser -->
+      <div class="comp-browser-panel">
+        <div class="panel-head">
+          <span class="panel-title">Components</span>
+          <input type="search" id="comp-search"
+                 class="comp-search" placeholder="filter ref / chip…"
+                 aria-label="Filter components">
+        </div>
+        <div class="component-list" id="component-list"
+             role="listbox" aria-label="Component list"></div>
+      </div>
+
+      <!-- Centre panel: visual board / PCB overview -->
+      <div class="pcb-overview-panel">
+        <div class="panel-head">
+          <span class="panel-title">Board overview</span>
+        </div>
+        <div class="pcb-grid" id="pcb-grid"
+             role="list" aria-label="PCB chip grid"></div>
+        <div class="pcb-legend">
+          <span class="pcb-dot pcb-dot-ok"></span>no fault &nbsp;
+          <span class="pcb-dot pcb-dot-faulted"></span>fault active &nbsp;
+          <span class="pcb-dot pcb-dot-selected"></span>selected
+        </div>
+      </div>
+
+      <!-- Right panel: probe / inspect -->
+      <div class="probe-panel" id="probe-panel">
+        <div class="panel-head">
+          <span class="panel-title">Probe</span>
+        </div>
+        <div class="probe-placeholder" id="probe-placeholder">
+          Select a component to inspect its pins and inject faults.
+        </div>
+        <div class="probe-detail" id="probe-detail" hidden>
+          <div class="probe-badge">
+            <span class="probe-ref" id="probe-ref">—</span>
+            <span class="probe-chip" id="probe-chip">—</span>
+          </div>
+          <div class="probe-desc" id="probe-desc">—</div>
+
+          <div class="probe-section-head">Nets</div>
+          <div class="probe-nets" id="probe-nets"></div>
+
+          <div class="probe-section-head">Fault-injectable pins
+            <span class="probe-fault-hint" id="probe-fault-hint"></span>
+          </div>
+          <div class="probe-pins" id="probe-pins"></div>
+        </div>
+      </div>
+
+    </div><!-- /.board-inspector-grid -->
+  </section><!-- /#board-inspector -->
+
   <main>
     <section class="schematic-pane">
       <h2>Sync generator (representative)</h2>

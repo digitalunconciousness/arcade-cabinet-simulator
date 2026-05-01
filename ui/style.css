@@ -604,3 +604,343 @@ section h2 { margin: 0 0 0.75rem 0; font-size: 0.9rem; font-weight: 600; color: 
   0%, 100% { border-color: color-mix(in srgb, var(--warn) 40%, var(--grid)); }
   50%       { border-color: var(--warn); }
 }
+
+/* ============================================================
+   Board Inspector — Phase 8
+   ============================================================ */
+
+.board-inspector {
+  margin: 1rem 1.5rem 0;
+  background: var(--bg-2);
+  border: 1px solid var(--grid);
+  border-radius: 6px;
+  padding: 1rem;
+}
+.board-inspector[hidden] { display: none; }
+
+.board-inspector-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+.board-inspector-header h2 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--fg-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+.board-inspector-id {
+  color: var(--accent);
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+  text-transform: none;
+  font-weight: 700;
+}
+.board-inspector-rev {
+  color: var(--fg-dim);
+  font-family: ui-monospace, monospace;
+  font-size: 0.75rem;
+  text-transform: none;
+  font-weight: 400;
+}
+.board-stats {
+  color: var(--fg-dim);
+  font-family: ui-monospace, monospace;
+  font-size: 0.75rem;
+}
+
+.board-inspector-grid {
+  display: grid;
+  grid-template-columns: 200px 1fr 280px;
+  gap: 0.75rem;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .board-inspector-grid {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+  }
+  .probe-panel {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 600px) {
+  .board-inspector-grid { grid-template-columns: 1fr; }
+}
+
+/* Shared panel head */
+.panel-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.panel-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--fg-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Component browser */
+.comp-browser-panel {
+  background: var(--bg-3);
+  border: 1px solid var(--grid);
+  border-radius: 4px;
+  padding: 0.6rem;
+}
+.comp-search {
+  width: 100%;
+  background: var(--bg-2);
+  color: var(--fg);
+  border: 1px solid var(--grid);
+  border-radius: 3px;
+  padding: 4px 6px;
+  font: inherit;
+  font-size: 11px;
+  font-family: ui-monospace, monospace;
+  margin-bottom: 0.4rem;
+}
+.comp-search:focus { outline: none; border-color: var(--accent); }
+.component-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.comp-item {
+  background: var(--bg-2);
+  border: 1px solid transparent;
+  border-radius: 3px;
+  padding: 5px 7px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-family: ui-monospace, monospace;
+  transition: border-color 0.1s;
+}
+.comp-item:hover { border-color: var(--accent); }
+.comp-item.selected { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--bg-2)); }
+.comp-item.faulted  { border-color: var(--warn); }
+.comp-item.selected.faulted { border-color: var(--warn); background: color-mix(in srgb, var(--warn) 10%, var(--bg-2)); }
+.comp-ref  { font-size: 12px; font-weight: 700; color: var(--fg); }
+.comp-type { font-size: 10px; color: var(--fg-dim); }
+
+/* PCB grid overview */
+.pcb-overview-panel {
+  background: var(--bg-3);
+  border: 1px solid var(--grid);
+  border-radius: 4px;
+  padding: 0.6rem;
+}
+.pcb-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 80px;
+  padding: 4px 0 6px;
+}
+.pcb-chip {
+  background: var(--bg-2);
+  border: 1.5px solid var(--grid);
+  border-radius: 3px;
+  padding: 6px 10px;
+  cursor: pointer;
+  text-align: center;
+  font-family: ui-monospace, monospace;
+  min-width: 64px;
+  transition: border-color 0.1s, background 0.1s;
+}
+.pcb-chip:hover { border-color: var(--accent); }
+.pcb-chip.selected { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--bg-2)); }
+.pcb-chip.faulted  { border-color: var(--warn); background: color-mix(in srgb, var(--warn) 8%, var(--bg-2)); }
+.pcb-chip.selected.faulted { background: color-mix(in srgb, var(--warn) 15%, var(--bg-2)); }
+.pcb-chip-ref  { font-size: 12px; font-weight: 700; color: var(--fg); }
+.pcb-chip-type { font-size: 9px; color: var(--fg-dim); margin-top: 2px; }
+.pcb-chip-fault{ font-size: 8px; color: var(--warn); margin-top: 2px; letter-spacing: 0.03em; }
+.pcb-legend {
+  font-size: 0.7rem;
+  color: var(--fg-dim);
+  font-family: ui-monospace, monospace;
+  margin-top: 4px;
+}
+.pcb-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  margin: 0 4px 0 10px;
+  vertical-align: middle;
+}
+.pcb-dot-ok       { background: var(--good); }
+.pcb-dot-faulted  { background: var(--warn); }
+.pcb-dot-selected { background: var(--accent); }
+
+/* Probe panel */
+.probe-panel {
+  background: var(--bg-3);
+  border: 1px solid var(--grid);
+  border-radius: 4px;
+  padding: 0.6rem;
+}
+.probe-placeholder {
+  color: var(--fg-dim);
+  font-size: 0.8rem;
+  padding: 1rem 0.5rem;
+  text-align: center;
+}
+.probe-detail { display: flex; flex-direction: column; gap: 8px; }
+.probe-detail[hidden] { display: none; }
+.probe-badge {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.probe-ref {
+  font-family: ui-monospace, monospace;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+.probe-chip {
+  font-family: ui-monospace, monospace;
+  font-size: 0.8rem;
+  color: var(--fg-dim);
+  background: var(--bg-2);
+  padding: 1px 6px;
+  border-radius: 3px;
+  border: 1px solid var(--grid);
+}
+.probe-desc {
+  font-size: 0.8rem;
+  color: var(--fg-dim);
+  line-height: 1.4;
+}
+.probe-section-head {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fg-dim);
+  border-bottom: 1px solid var(--grid);
+  padding-bottom: 3px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.probe-fault-hint {
+  font-weight: 400;
+  font-size: 0.65rem;
+  color: var(--warn-2);
+  text-transform: none;
+  letter-spacing: 0;
+}
+.probe-nets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  font-family: ui-monospace, monospace;
+  font-size: 10px;
+}
+.probe-net-tag {
+  background: var(--bg-2);
+  border: 1px solid var(--grid);
+  border-radius: 3px;
+  padding: 2px 6px;
+  color: var(--fg-dim);
+}
+.probe-net-tag .pnt-pin { color: var(--accent-2); }
+.probe-no-nets { color: var(--fg-dim); font-size: 0.75rem; }
+
+/* Pin fault rows in probe panel */
+.probe-pins {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.probe-pin-row {
+  background: var(--bg-2);
+  border: 1px solid var(--grid);
+  border-radius: 4px;
+  padding: 7px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+}
+.probe-pin-row.active-fault { border-color: var(--warn); }
+.probe-pin-head {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.probe-pin-name {
+  font-weight: 700;
+  color: var(--fg);
+}
+.probe-pin-net {
+  font-size: 10px;
+  color: var(--accent-2);
+}
+.probe-pin-device {
+  font-size: 9px;
+  color: var(--fg-dim);
+  margin-left: auto;
+}
+.probe-pin-desc {
+  font-size: 10px;
+  color: var(--fg-dim);
+  line-height: 1.3;
+}
+.probe-pin-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.probe-mode-select {
+  background: var(--bg-3);
+  color: var(--fg);
+  border: 1px solid var(--grid);
+  border-radius: 3px;
+  padding: 3px 6px;
+  font: inherit;
+  font-size: 10px;
+  cursor: pointer;
+}
+.probe-mode-select:focus { outline: none; border-color: var(--accent); }
+.probe-apply-btn, .probe-clear-btn {
+  background: var(--bg-3);
+  color: var(--fg);
+  border: 1px solid var(--grid);
+  border-radius: 3px;
+  padding: 3px 8px;
+  font: inherit;
+  font-size: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.probe-apply-btn:hover { background: var(--good); border-color: var(--good); color: #0d1117; }
+.probe-clear-btn:hover { background: var(--warn); border-color: var(--warn); color: white; }
+.probe-fault-badge {
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.probe-fault-badge.stuck-hi { background: var(--warn-2); color: #0d1117; }
+.probe-fault-badge.stuck-lo { background: var(--warn);   color: white; }
+.probe-fault-badge.open     { background: var(--accent);  color: #0d1117; }
+.probe-no-faults { color: var(--fg-dim); font-size: 0.75rem; padding: 4px 0; }

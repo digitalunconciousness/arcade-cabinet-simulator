@@ -1,8 +1,130 @@
 {
   "board_id": "centipede",
   "revision": "1.0",
-  "source_file": "boards/centipede/kicad/centipede.net",
-  "components": {},
-  "nets": {},
-  "_note": "Placeholder — populate by running: python -m tools.schematic.model boards/centipede/kicad/centipede.net boards/centipede/schematic.board.json"
+  "source_file": "build/instrumented/sync_generator.cpp + address_decoder.cpp",
+  "_note": "Derived from the two instrumented MAME netlist sources. Replace source_file when a real KiCad netlist is available.",
+  "components": {
+    "CLK": {
+      "ref": "CLK",
+      "chip_type": "MAINCLOCK",
+      "footprint": "",
+      "lib": "netlist",
+      "description": "12.096 MHz master clock (sync gen) / 1 MHz bus clock stand-in (addr decoder)"
+    },
+    "H_LO": {
+      "ref": "H_LO",
+      "chip_type": "TTL_74161",
+      "footprint": "DIP-16",
+      "lib": "MAME",
+      "description": "Horizontal counter LSB (4 bits, free-running) — per DP-182 sheet 3"
+    },
+    "H_HI": {
+      "ref": "H_HI",
+      "chip_type": "TTL_74161",
+      "footprint": "DIP-16",
+      "lib": "MAME",
+      "description": "Horizontal counter MSB (4 bits, sync-clocked) — per DP-182 sheet 3"
+    },
+    "V_LO": {
+      "ref": "V_LO",
+      "chip_type": "TTL_74161",
+      "footprint": "DIP-16",
+      "lib": "MAME",
+      "description": "Vertical counter (4 bits, sync-clocked) — per DP-182 sheet 3"
+    },
+    "HSYNC_DEC": {
+      "ref": "HSYNC_DEC",
+      "chip_type": "TTL_7410_NAND",
+      "footprint": "DIP-14",
+      "lib": "MAME",
+      "description": "3-input NAND — HSYNC_n decode (active-low when H >= 224) — per DP-182 sheet 3"
+    },
+    "VSYNC_DEC": {
+      "ref": "VSYNC_DEC",
+      "chip_type": "TTL_7400_NAND",
+      "footprint": "DIP-14",
+      "lib": "MAME",
+      "description": "2-input NAND — VSYNC_n decode (active-low when V >= 12) — per DP-182 sheet 3"
+    },
+    "ADDR_CTR": {
+      "ref": "ADDR_CTR",
+      "chip_type": "TTL_74161",
+      "footprint": "DIP-16",
+      "lib": "MAME",
+      "description": "Address bus counter stand-in (QA/QB = A0/A1) — per DP-182 sheet 2"
+    },
+    "DEC": {
+      "ref": "DEC",
+      "chip_type": "TTL_74155A_GATE",
+      "footprint": "DIP-16",
+      "lib": "MAME",
+      "description": "2-to-4 active-low chip-select demux (ROM/RAM/POKEY/EAROM) — per DP-182 sheet 2"
+    }
+  },
+  "nets": {
+    "CLK_Q": {
+      "name": "CLK_Q",
+      "nodes": ["CLK.Q", "H_LO.CLK", "H_HI.CLK", "V_LO.CLK", "ADDR_CTR.CLK"]
+    },
+    "H_CARRY_LO": {
+      "name": "H_CARRY_LO",
+      "nodes": ["H_LO.RC", "H_HI.ENP", "H_HI.ENT", "V_LO.ENP"]
+    },
+    "H_CARRY_HI": {
+      "name": "H_CARRY_HI",
+      "nodes": ["H_HI.RC", "V_LO.ENT"]
+    },
+    "HSYNC_DEC_A": {
+      "name": "HSYNC_DEC_A",
+      "nodes": ["H_HI.QD", "HSYNC_DEC.A"]
+    },
+    "HSYNC_DEC_B": {
+      "name": "HSYNC_DEC_B",
+      "nodes": ["H_HI.QC", "HSYNC_DEC.B"]
+    },
+    "HSYNC_DEC_C": {
+      "name": "HSYNC_DEC_C",
+      "nodes": ["H_HI.QB", "HSYNC_DEC.C"]
+    },
+    "VSYNC_DEC_A": {
+      "name": "VSYNC_DEC_A",
+      "nodes": ["V_LO.QD", "VSYNC_DEC.A"]
+    },
+    "VSYNC_DEC_B": {
+      "name": "VSYNC_DEC_B",
+      "nodes": ["V_LO.QC", "VSYNC_DEC.B"]
+    },
+    "HSYNC_n": {
+      "name": "HSYNC_n",
+      "nodes": ["HSYNC_DEC.Q"]
+    },
+    "VSYNC_n": {
+      "name": "VSYNC_n",
+      "nodes": ["VSYNC_DEC.Q"]
+    },
+    "ADDR_A0": {
+      "name": "ADDR_A0",
+      "nodes": ["ADDR_CTR.QA", "DEC.A"]
+    },
+    "ADDR_A1": {
+      "name": "ADDR_A1",
+      "nodes": ["ADDR_CTR.QB", "DEC.B"]
+    },
+    "ROM_CSn": {
+      "name": "ROM_CSn",
+      "nodes": ["DEC.Y0"]
+    },
+    "RAM_CSn": {
+      "name": "RAM_CSn",
+      "nodes": ["DEC.Y1"]
+    },
+    "POKEY_CSn": {
+      "name": "POKEY_CSn",
+      "nodes": ["DEC.Y2"]
+    },
+    "EAROM_CSn": {
+      "name": "EAROM_CSn",
+      "nodes": ["DEC.Y3"]
+    }
+  }
 }

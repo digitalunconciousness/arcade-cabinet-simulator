@@ -387,7 +387,7 @@ tools/run-demo.sh &
 
 # Terminal 2 — start the cabinet_bus server with schematic support
 python -m tools.cabinet_bus.server \
-    --netlist-manifest build/instrumented/sync_generator.manifest.json
+  --board-package boards/centipede/board.json
 
 # Terminal 3 — query the schematic API
 curl -s http://localhost:5000/api/schematic/summary | python -m json.tool
@@ -458,6 +458,6 @@ Before marking a schematic section complete:
 | `FileNotFoundError: KiCad netlist not found` | Wrong path to `.net` file | Stage 5 — verify export path |
 | Component count is 0 | KiCad exported `Pcbnew` format instead of `KiCad` | Re-export, choose KiCad format |
 | `verify_registration` shows MISSING | Patches not applied or build cache stale | Stage 8 + `make clean` |
-| `/api/schematic/summary` returns `{"error": ...}` | Server started without `--netlist-manifest` | Pass the flag or set `NETLIST_MANIFEST` env var |
-| Fault applied but `/api/run` shows no change | `manifest_by_refpin` lookup miss — refdes mismatch | Compare manifest `refdes` to `fault_map.json` `ref` field |
+| `/api/schematic/summary` returns `{"error": ...}` | Server started without `--board-package` / `CABINET_BOARD_PATH`, or the board package files are incomplete | Pass `--board-package boards/centipede/board.json` and confirm `schematic.board.json` + `fault_map.json` exist |
+| Fault applied but `/api/run` shows no change | Board `fault_map.json` points at the wrong manifest device, or the manifest is out of date | Compare `fault_map.json` `fault_device` values to `build/instrumented/*.manifest.json` |
 | MAME crashes on start with custom devices | MODE contract violated | Re-run `verify_mode_contract` |

@@ -52,6 +52,63 @@ def _make_runtime_files(tmp: Path) -> tuple[Path, Path, Path, Path]:
     return template, manifest, nltool, ui_dir
 
 
+def _make_board_package(tmp: Path) -> Path:
+    board_dir = tmp / "boards" / "demo"
+    board_dir.mkdir(parents=True, exist_ok=True)
+    (board_dir / "board.json").write_text(
+        json.dumps(
+            {
+                "board_id": "demo-board",
+                "revision": "1.0",
+                "canonical_schematic": "schematic.board.json",
+                "fault_map": "fault_map.json",
+            }
+        )
+    )
+    (board_dir / "schematic.board.json").write_text(
+        json.dumps(
+            {
+                "board_id": "demo-board",
+                "revision": "1.0",
+                "source_file": "demo.net",
+                "components": {
+                    "U12": {
+                        "ref": "U12",
+                        "chip_type": "TTL_9316",
+                        "footprint": "DIP-16",
+                        "lib": "MAME",
+                        "description": "sync counter",
+                    }
+                },
+                "nets": {
+                    "VSYNC": {
+                        "name": "VSYNC",
+                        "nodes": ["U12.QC"],
+                    }
+                },
+            }
+        )
+    )
+    (board_dir / "fault_map.json").write_text(
+        json.dumps(
+            {
+                "board_id": "demo-board",
+                "entries": [
+                    {
+                        "ref": "U12",
+                        "pin": "QC",
+                        "net_name": "VSYNC",
+                        "fault_device": "FB_V_LO_QC",
+                        "fault_type": "FAULT_BUFFER",
+                        "description": "Vertical sync divider output",
+                    }
+                ],
+            }
+        )
+    )
+    return board_dir / "board.json"
+
+
 def test_manifest_contract_includes_version_and_modes():
     with TemporaryDirectory() as d:
         template, manifest_path, nltool, ui_dir = _make_runtime_files(Path(d))
@@ -137,6 +194,59 @@ def test_schematic_fault_apply_and_list():
 
         listed = client.get("/api/schematic/faults").get_json()
         assert listed["faults"]["FB_V_LO_QC"] == 2
+
+
+def test_schematic_summary_uses_board_package_when_present():
+    with TemporaryDirectory() as d:
+        tmp = Path(d)
+        template, manifest_path, nltool, ui_dir = _make_runtime_files(tmp)
+        board_path = _make_board_package(tmp)
+        app = create_app(
+            template_path=template,
+            manifest_path=manifest_path,
+            nltool_path=nltool,
+            ui_dir=ui_dir,
+            mame_client=StubMameClient(),
+            peripheral_registry=PeripheralRegistry(),
+            scenario_loader=lambda: [],
+            board_package_path=board_path,
+        )
+
+        client = app.test_client()
+        res = client.get("/api/schematic/summary")
+        assert res.status_code == 200
+        payload = res.get_json()
+        assert payload["board_id"] == "demo-board"
+        assert payload["component_count"] == 1
+        assert payload["mapped_fault_count"] == 1
+
+
+def test_schematic_fault_apply_accepts_board_package_ref_field():
+    with TemporaryDirectory() as d:
+        tmp = Path(d)
+        template, manifest_path, nltool, ui_dir = _make_runtime_files(tmp)
+        board_path = _make_board_package(tmp)
+        app = create_app(
+            template_path=template,
+            manifest_path=manifest_path,
+            nltool_path=nltool,
+            ui_dir=ui_dir,
+            mame_client=StubMameClient(),
+            peripheral_registry=PeripheralRegistry(),
+            scenario_loader=lambda: [],
+            board_package_path=board_path,
+        )
+
+        client = app.test_client()
+        res = client.post(
+            "/api/schematic/fault/apply",
+            json={"ref": "U12", "pin": "QC", "mode": 3},
+        )
+        assert res.status_code == 200
+        payload = res.get_json()
+        assert payload["fault_device"] == "FB_V_LO_QC"
+        assert payload["fault"]["net_name"] == "VSYNC"
+        assert payload["mode"] == 3
 
 
 def test_schematic_faults_are_merged_into_run_spec():

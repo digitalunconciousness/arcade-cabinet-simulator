@@ -76,12 +76,38 @@ launch. Goal: pick a fault, click Apply, see/hear/feel it in the
 running Centipede emulation within one second.
 See [Phase-7-Cabinet-UI-Training](Phases/Phase-7-Cabinet-UI-Training.md).
 
-### 🚧 Phase 8 — Cabinet UI + training mode
-8-12 weekends. Cabinet-cutaway UI, KiCad SVG schematic, PCB-photo view,
-probe view, training-mode runner with realism-weighted scenarios and
-scoring. Scoped out of Phase 7 to keep the demo milestone tight. Construction
-is now started with foundational KiCad netlist import + schematic fault-routing
-API plumbing.
+### ✅ Phase 8 — Schematic board packages + training surfaces
+Complete. Board package content (schematic.board.json, fault_map.json),
+coverage validator, and three-panel Board Inspector UI all shipped.
+See [Phase-8-Schematic-Board-Package](Phases/Phase-8-Schematic-Board-Package.md).
+
+### ⏳ Phase 9 — Desktop productization
+6-10 weekends. Replace the development-first Flask/browser workflow with
+a downloadable desktop app for Linux first, Windows second, and macOS
+when test hardware exists. Bundle board packages, shaders, scenarios,
+and local runtime orchestration so the user runs one executable instead
+of starting a server manually. See
+[Phase-9-Desktop-Productization](Phases/Phase-9-Desktop-Productization.md).
+
+### ⏳ Phase 10 — 3D cabinet digital twin
+10-16 weekends. Build the explorable 3D Centipede cabinet with the boards,
+monitor, PSU, harnesses, and controls placed where they belong physically.
+Every hotspot should resolve back to the same board-package and peripheral
+identifiers used by the runtime. See
+[Phase-10-3D-Cabinet-Digital-Twin](Phases/Phase-10-3D-Cabinet-Digital-Twin.md).
+
+### ⏳ Phase 11 — Interactive technician workflow
+8-12 weekends. Turn the simulator into a diagnosis-and-repair loop:
+symptom-first scenarios, logic-probe/test actions, virtual repairs,
+verification passes, and scoring based on whether the repair was correct.
+See [Phase-11-Interactive-Technician-Workflow](Phases/Phase-11-Interactive-Technician-Workflow.md).
+
+### ⏳ Phase 12 — Physical prototype + parts plan
+10-20 weekends plus parts lead time. Define the cabinet BOM, board
+refurbishment plan, replacement-part sourcing, safe bench bring-up, and
+simulator-vs-real-hardware parity checks needed to move from software-only
+work into an actual Centipede cabinet project. See
+[Phase-12-Physical-Prototype-Parts-Plan](Phases/Phase-12-Physical-Prototype-Parts-Plan.md).
 ## Explicit non-goals (frozen for v1)
 - 🧊 Generic any-board support beyond Centipede.
 - 🧊 Full analog fault realism (resistive faults, thermal intermittents,

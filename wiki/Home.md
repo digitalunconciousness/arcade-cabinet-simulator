@@ -32,9 +32,19 @@ Phase 5 itself (address decoder, Target B) shipped earlier this run; a
 stuck-low fault on the QB address bit demonstrates the "sound and
 high-score memory go dead, rest of the bus fine" symptom. See
 `Phases/Phase-5-Address-Decoder-RAM.md`.
-Current focus: **Phase 8** — Cabinet UI + training mode. Scope is unchanged;
-construction has started with KiCad netlist import and schematic fault-routing
-foundations.
+Current focus: **Phase 9** — desktop productization.
+Phase 8 (schematic board packages + training surfaces) is complete:
+the Centipede board package now contains real component/net data derived
+from the instrumented MAME netlists, all 11 fault targets are mapped in
+`fault_map.json`, the UI ships a full Board Inspector with component
+browser, PCB-grid overview, and per-pin probe panel, and a coverage
+validator checks scenario targets against board-package entries.
+
+The next major program milestones are now explicit:
+- Phase 9: downloadable desktop app for Linux/Windows/macOS instead of a manual server/browser workflow.
+- Phase 10: full 3D cabinet digital twin with physically placed boards and service hotspots.
+- Phase 11: diagnosis-and-repair training loop with virtual repairs and verification.
+- Phase 12: physical parts/BOM/sourcing plan and simulator parity checks against a real cabinet.
 
 ## Phase index
 | Phase | Title | Status |
@@ -49,6 +59,11 @@ foundations.
 | 5.5 | [RAM region (cell-level faults)](Phases/Phase-5.5-RAM-Region.md) | ✅ complete |
 | 6 | [CRT + trackball + audio](Phases/Phase-6-CRT-Trackball-Audio.md) | ✅ complete |
 | 7 | [Cabinet UI + training mode](Phases/Phase-7-Cabinet-UI-Training.md) | ✅ complete |
+| 8 | [Schematic board packages + training surfaces](Phases/Phase-8-Schematic-Board-Package.md) | ✅ complete |
+| 9 | [Desktop productization](Phases/Phase-9-Desktop-Productization.md) | ⏳ planned |
+| 10 | [3D cabinet digital twin](Phases/Phase-10-3D-Cabinet-Digital-Twin.md) | ⏳ planned |
+| 11 | [Interactive technician workflow](Phases/Phase-11-Interactive-Technician-Workflow.md) | ⏳ planned |
+| 12 | [Physical prototype + parts plan](Phases/Phase-12-Physical-Prototype-Parts-Plan.md) | ⏳ planned |
 Full schedule and tier-expansion plan: [Roadmap](Roadmap.md).
 ### Reference
 - [Build notes](Build-Notes.md) — toolchain, build commands, audio config
