@@ -109,6 +109,7 @@ echo "==> starting MAME ($ROM_NAME with cabinet_bus plugin)"
         -nomaximize \
         -background_input \
         -update_in_pause \
+        -skip_gameinfo \
         "$ROM_NAME"
 ) &
 MAME_PID=$!

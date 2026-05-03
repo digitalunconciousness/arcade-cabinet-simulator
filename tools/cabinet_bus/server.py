@@ -337,6 +337,21 @@ def create_app(
 
     @app.route("/api/mame/soft_reset", methods=["POST"])
     def api_mame_reset():
+        # Clear all injected faults so the reset starts clean.
+        schematic_faults.clear()
+        try:
+            mame.clear_stuck()
+        except ConnectionError:
+            pass
+        try:
+            mame.clear_buttons()
+        except ConnectionError:
+            pass
+        try:
+            mame.set_crt_fault("normal", 1.0)
+        except ConnectionError:
+            pass
+        peripherals.reset_all()
         return _mame_request("soft_reset")
 
     # Centipede video-RAM map (centiped_state::centiped_base_map):
@@ -410,6 +425,38 @@ def create_app(
     @app.route("/api/mame/clear_stuck", methods=["POST"])
     def api_mame_clear_stuck():
         return _mame_request("clear_stuck")
+
+    @app.route("/api/mame/press_button", methods=["POST"])
+    def api_mame_press_button():
+        body = request.get_json(silent=True) or {}
+        name = str(body.get("name", "")).strip()
+        if not name:
+            return jsonify({"error": "missing 'name'"}), 400
+        try:
+            reply = mame.press_button(name)
+            return jsonify({"available": True, **reply})
+        except ConnectionError as e:
+            return jsonify({"available": False, "error": str(e)}), 503
+
+    @app.route("/api/mame/release_button", methods=["POST"])
+    def api_mame_release_button():
+        body = request.get_json(silent=True) or {}
+        name = str(body.get("name", "")).strip()
+        if not name:
+            return jsonify({"error": "missing 'name'"}), 400
+        try:
+            reply = mame.release_button(name)
+            return jsonify({"available": True, **reply})
+        except ConnectionError as e:
+            return jsonify({"available": False, "error": str(e)}), 503
+
+    @app.route("/api/mame/clear_buttons", methods=["POST"])
+    def api_mame_clear_buttons():
+        return _mame_request("clear_buttons")
+
+    @app.route("/api/mame/list_buttons")
+    def api_mame_list_buttons():
+        return _mame_request("list_buttons")
 
     # ---------- Peripherals ----------
     # In-process registry of cabinet-level peripherals (PSU, coin mech,
@@ -688,15 +735,6 @@ def create_app(
         transient_armed = False
         while not _psu_watcher_stop.wait(timeout=1.0):
             try:
-                # In headless/Xvfb runs MAME may auto-pause on focus loss.
-                # Force it back to running so scenario effects are visible.
-                try:
-                    st = mame.get_state()
-                    if bool(st.get("paused")):
-                        mame.resume()
-                except ConnectionError:
-                    pass
-
                 crt_state = peripherals.crt.state()
                 effect = crt_state["shader_effect"].replace("crt_", "")
                 if effect == "normal":

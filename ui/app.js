@@ -26,6 +26,7 @@
     mamePauseBtn:    document.getElementById("mame-pause"),
     mameResumeBtn:   document.getElementById("mame-resume"),
     mameResetBtn:    document.getElementById("mame-reset"),
+    mameKbHeld:      document.getElementById("mame-kb-held"),
     periphGrid:      document.getElementById("peripherals-grid"),
     periphReset:     document.getElementById("peripherals-reset"),
     crtPreview:      document.getElementById("crt-preview"),
@@ -752,6 +753,140 @@
     els.trackballPad.addEventListener("pointercancel", stopDrag);
   }
 
+  // ---------- Keyboard controls for MAME ----------
+
+  // Map key → MAME button name (as exposed by the Lua plugin's list_buttons).
+  // These names come from MAME's ioport field descriptors for centiped3.
+  const KEY_BUTTON_MAP = {
+    " ":   "P1 Button 1",
+    "1":   "1 Player Start",
+    "2":   "2 Players Start",
+    "5":   "Coin 1",
+  };
+
+  // Arrow keys drive trackball motion: key → [dx, dy] per tick.
+  const KEY_TRACKBALL_MAP = {
+    ArrowLeft:  [-6,  0],
+    ArrowRight: [ 6,  0],
+    ArrowUp:    [ 0, -6],
+    ArrowDown:  [ 0,  6],
+  };
+
+  // Currently held state (prevents repeat floods).
+  const _kbHeldButtons  = new Set();
+  const _kbHeldArrows   = new Set();
+  let   _kbArrowInterval = null;
+
+  function _updateKbHeldDisplay() {
+    if (!els.mameKbHeld) return;
+    const all = [..._kbHeldButtons, ..._kbHeldArrows];
+    els.mameKbHeld.textContent = all.length
+      ? "held: " + all.map(k => k === " " ? "Space" : k).join(" + ")
+      : "";
+  }
+
+  async function _kbPressButton(name) {
+    try {
+      await postJSON("/api/mame/press_button", { name });
+    } catch (e) { console.warn("press_button", name, e); }
+  }
+
+  async function _kbReleaseButton(name) {
+    try {
+      await postJSON("/api/mame/release_button", { name });
+    } catch (e) { console.warn("release_button", name, e); }
+  }
+
+  function _startArrowInterval() {
+    if (_kbArrowInterval) return;
+    _kbArrowInterval = setInterval(() => {
+      if (_kbHeldArrows.size === 0) return;
+      let dx = 0; let dy = 0;
+      for (const key of _kbHeldArrows) {
+        const delta = KEY_TRACKBALL_MAP[key];
+        if (delta) { dx += delta[0]; dy += delta[1]; }
+      }
+      if (dx !== 0 || dy !== 0) {
+        postJSON("/api/mame/trackball_delta", { dx, dy }).catch(() => {});
+      }
+    }, 33); // ~30 Hz
+  }
+
+  function _stopArrowIntervalIfIdle() {
+    if (_kbHeldArrows.size === 0 && _kbArrowInterval) {
+      clearInterval(_kbArrowInterval);
+      _kbArrowInterval = null;
+    }
+  }
+
+  function initKeyboardControls() {
+    // Only capture keyboard when the MAME panel is visible.
+    // We intercept at the document level but guard on mame pane visibility.
+    // Ignore events when the user is typing in an input/select.
+    const isTypingTarget = (el) =>
+      el.tagName === "INPUT" || el.tagName === "SELECT" ||
+      el.tagName === "TEXTAREA" || el.isContentEditable;
+
+    document.addEventListener("keydown", (ev) => {
+      if (els.mamePane?.hidden) return;
+      if (isTypingTarget(ev.target)) return;
+
+      const key = ev.key;
+
+      // Arrow → trackball
+      if (KEY_TRACKBALL_MAP[key]) {
+        if (_kbHeldArrows.has(key)) return; // already held
+        ev.preventDefault();
+        _kbHeldArrows.add(key);
+        _startArrowInterval();
+        _updateKbHeldDisplay();
+        return;
+      }
+
+      // Button
+      const btnName = KEY_BUTTON_MAP[key];
+      if (btnName) {
+        if (_kbHeldButtons.has(key)) return; // already held (repeat)
+        ev.preventDefault();
+        _kbHeldButtons.add(key);
+        _kbPressButton(btnName);
+        _updateKbHeldDisplay();
+      }
+    });
+
+    document.addEventListener("keyup", (ev) => {
+      if (isTypingTarget(ev.target)) return;
+      const key = ev.key;
+
+      if (KEY_TRACKBALL_MAP[key]) {
+        _kbHeldArrows.delete(key);
+        _stopArrowIntervalIfIdle();
+        _updateKbHeldDisplay();
+        return;
+      }
+
+      const btnName = KEY_BUTTON_MAP[key];
+      if (btnName && _kbHeldButtons.has(key)) {
+        _kbHeldButtons.delete(key);
+        _kbReleaseButton(btnName);
+        _updateKbHeldDisplay();
+      }
+    });
+
+    // Release everything if window loses focus so we don't leave stuck buttons.
+    window.addEventListener("blur", () => {
+      const releaseAll = [..._kbHeldButtons].map(k => KEY_BUTTON_MAP[k]).filter(Boolean);
+      _kbHeldButtons.clear();
+      _kbHeldArrows.clear();
+      _stopArrowIntervalIfIdle();
+      _updateKbHeldDisplay();
+      for (const name of releaseAll) {
+        _kbReleaseButton(name);
+      }
+      postJSON("/api/mame/clear_buttons", {}).catch(() => {});
+    });
+  }
+
   function createDistortionCurve(amount) {
     const k = Math.max(0, amount) * 400;
     const n = 512;
@@ -943,13 +1078,7 @@
   }
 
   // ---------- bootstrap ----------
-      if (
-        !Array.isArray(manifest.fault_targets) ||
-        !Array.isArray(manifest.log_nets) ||
-        typeof manifest.modes !== "object" ||
-        manifest.modes === null ||
-        Array.isArray(manifest.modes)
-      ) {
+
   // ============================================================
   // Board Inspector — Phase 8
   // Loads /api/schematic/summary and renders the three-panel
@@ -1310,6 +1439,7 @@
     await loadScenarios();
     await loadBoardInspector();
     initTrackballPad();
+    initKeyboardControls();
     if (els.audioToneStart) {
       els.audioToneStart.addEventListener("click", () => { void startTone(); });
     }

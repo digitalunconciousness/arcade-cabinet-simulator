@@ -148,6 +148,22 @@ class MameClient:
             "dy": int(dy),
         })
 
+    def press_button(self, name: str) -> dict:
+        """Hold a digital ioport button by its MAME field name (e.g. 'P1 Fire')."""
+        return self.send({"cmd": "press_button", "name": str(name)})
+
+    def release_button(self, name: str) -> dict:
+        """Release a previously held digital ioport button."""
+        return self.send({"cmd": "release_button", "name": str(name)})
+
+    def clear_buttons(self) -> dict:
+        """Release all held buttons at once."""
+        return self.send({"cmd": "clear_buttons"})
+
+    def list_buttons(self) -> dict:
+        """Return all available button field names for the current game."""
+        return self.send({"cmd": "list_buttons"})
+
     def set_crt_fault(self, effect: str, brightness: float = 1.0) -> dict:
         """Set the active CRT overlay in the running MAME session.
 
