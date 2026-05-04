@@ -162,7 +162,7 @@ section h2 { margin: 0 0 0.75rem 0; font-size: 0.9rem; font-weight: 600; color: 
 }
 .mame-pane-inner {
   display: grid;
-  grid-template-columns: minmax(320px, 2fr) minmax(260px, 1fr);
+  grid-template-columns: minmax(320px, 3fr) minmax(220px, 1fr);
   gap: 0.75rem;
   align-items: start;
 }
@@ -172,6 +172,9 @@ section h2 { margin: 0 0 0.75rem 0; font-size: 0.9rem; font-weight: 600; color: 
   border: 1px solid var(--grid);
   border-radius: 4px;
   min-height: 240px;
+  min-width: 0;
+  aspect-ratio: 3 / 4;
+  max-height: min(78vh, 640px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -180,7 +183,8 @@ section h2 { margin: 0 0 0.75rem 0; font-size: 0.9rem; font-weight: 600; color: 
 .mame-video-feed {
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
+  object-fit: contain;
   background: #000;
   image-rendering: pixelated;
 }
@@ -472,20 +476,22 @@ section h2 { margin: 0 0 0.75rem 0; font-size: 0.9rem; font-weight: 600; color: 
 }
 /* MAME video panel (Phase 7) */
 .mame-pane-inner {
-  display: flex;
-  gap: 1rem;
+  display: grid;
+  grid-template-columns: minmax(320px, 3fr) minmax(220px, 1fr);
+  gap: 0.75rem;
   align-items: flex-start;
 }
 .mame-video-col {
-  flex: 0 0 auto;
+  flex: none;
   position: relative;
   background: #000;
   border-radius: 4px;
   overflow: hidden;
   border: 1px solid var(--grid);
-  /* Fixed aspect ratio matching Centipede's ~4:3 native res */
-  width: 240px;
-  min-height: 180px;
+  min-width: 0;
+  min-height: 240px;
+  aspect-ratio: 3 / 4;
+  max-height: min(78vh, 640px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -493,7 +499,8 @@ section h2 { margin: 0 0 0.75rem 0; font-size: 0.9rem; font-weight: 600; color: 
 .mame-video-feed {
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
+  object-fit: contain;
   image-rendering: pixelated;
 }
 .mame-video-unavail {
@@ -515,8 +522,13 @@ section h2 { margin: 0 0 0.75rem 0; font-size: 0.9rem; font-weight: 600; color: 
   min-width: 0;
 }
 @media (max-width: 640px) {
-  .mame-pane-inner { flex-direction: column; }
-  .mame-video-col  { width: 100%; }
+  .mame-pane-inner { grid-template-columns: 1fr; }
+  .mame-video-col  { width: 100%; max-height: 70vh; }
+}
+
+@media (max-width: 1100px) {
+  .mame-pane-inner { grid-template-columns: 1fr; }
+  .mame-video-col  { width: 100%; max-height: 72vh; }
 }
 
 /* Scenario bar (Phase 7) */

@@ -35,11 +35,14 @@ git clone --depth=1 https://github.com/mamedev/discrete.git vendor/discrete
 # 3. Python venv.
 python -m venv .venv
 source .venv/bin/activate
-pip install pyparsing lark jsonschema
-# 4. Build MAME (Centipede driver + nltool).
+pip install pyparsing lark jsonschema flask
+# 4. Install Xvfb (headless X11 for the video stream).
+#    Arch: sudo pacman -S xorg-server-xvfb
+#    Debian/Ubuntu: sudo apt install xvfb
+# 5. Build MAME (Centipede driver + nltool).
 cd vendor/mame
 make -j"$(nproc)" SOURCES=src/mame/atari/centiped.cpp TOOLS=1
-# 5. Smoke-test.
+# 6. Smoke-test.
 ./mame -rompath ../../roms -bench 5 centiped3
 ./nltool --cmd=run --time_to_run=0.005 -l FB1.Y \
     -D FAULT_MODE=1 ../../tests/netlist/fault_buffer_test.cpp
@@ -49,30 +52,41 @@ Use the new sound system explicitly:
 ```bash
 ./mame -rompath ../../roms -window -sound pipewire centiped3
 ```
-## Demo (Phase 3 + 3.5)
-The full demo wants two terminals — one for MAME, one for the cabinet bus.
-**Terminal 1 — MAME with the cabinet_bus plugin:**
-```bash
-cd vendor/mame
-./mame -plugin cabinet_bus -rompath ../../roms -window -sound pipewire centiped3
-```
-**Terminal 2 — cabinet bus + UI:**
+## Demo (Phase 7 vertical-slice)
+
+One command starts everything:
+
 ```bash
 source .venv/bin/activate
 pip install flask                    # if not already done
-./tools/cabinet_bus/start.sh         # http://127.0.0.1:5050
+bash tools/run-demo.sh               # http://127.0.0.1:5050
 ```
-Open the URL. The page shows:
-- a **Centipede emulator** panel with live state from MAME (ROM, frame
-  counter, paused/running) and Pause / Resume / Soft-reset buttons,
+
+`run-demo.sh` launches Xvfb (headless X11), MAME with the `cabinet_bus`
+plugin, and the Flask UI server, then waits for the plugin socket before
+printing the URL. Ctrl-C stops all three processes cleanly.
+
+Open `http://127.0.0.1:5050`. The page shows:
+
+- a **Centipede emulator** panel with a live MJPEG video feed of the
+  running game, ROM name, frame counter, paused/running state, and
+  Pause / Resume / Soft-reset buttons,
+- **keyboard controls** — WASD moves the trackball, Space fires, 1
+  starts 1-player, 2 starts 2-player, 5 inserts a coin,
 - the **sync generator schematic** with clickable fault-injection
-  pins and live HSYNC/VSYNC waveforms.
-If MAME isn't running, the emulator panel shows an offline placeholder
-with the launch command; the schematic + faults still work standalone.
+  pins and live HSYNC/VSYNC waveforms,
+- a **scenario dropdown** — pick a named fault (e.g. "dim PSU 5V",
+  "sprite RAM glitch"), click **Apply**, see the effect in the running
+  game within one second.
+
+If MAME isn't running the emulator panel shows an offline placeholder;
+the schematic and fault injection still work standalone.
+
 Full walkthroughs:
-[`wiki/Phases/Phase-3-Cabinet-Bus.md`](wiki/Phases/Phase-3-Cabinet-Bus.md)
+[`wiki/Phases/Phase-3-Cabinet-Bus.md`](wiki/Phases/Phase-3-Cabinet-Bus.md),
+[`wiki/Phases/Phase-3.5-MAME-Bridge.md`](wiki/Phases/Phase-3.5-MAME-Bridge.md),
 and
-[`wiki/Phases/Phase-3.5-MAME-Bridge.md`](wiki/Phases/Phase-3.5-MAME-Bridge.md).
+[`wiki/Phases/Phase-7-Cabinet-UI-Training.md`](wiki/Phases/Phase-7-Cabinet-UI-Training.md).
 ## Documentation
 - [`wiki/Home.md`](wiki/Home.md) — project wiki landing page; phase
   status, roadmap, devices, build notes, ADRs.

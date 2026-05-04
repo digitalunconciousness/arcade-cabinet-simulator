@@ -10,73 +10,93 @@ and watch the running game respond.
 - `vendor/mame/plugins/cabinet_bus/init.lua` — Lua plugin running inside
   MAME. Opens a TCP listener on `127.0.0.1:5051`, accepts newline-
   delimited JSON commands, returns JSON-line replies. Hooks
-  `add_machine_frame_notifier` to track a per-machine frame counter
-  and `add_machine_reset_notifier` to reset it on hard/soft reset.
-  Plugin defaults to `start: false` so it has no effect unless
-  explicitly enabled with `-plugin cabinet_bus`.
+  `add_machine_frame_notifier` for per-machine frame counting and trackball
+  delta draining. `add_machine_reset_notifier` resets counters and caches.
+  Plugin defaults to `start: false`; must be enabled with `-plugin cabinet_bus`.
+  **Digital button API:** `press_button` / `release_button` / `clear_buttons`
+  / `list_buttons` — drives `ioport_field:set_value()` each frame so held
+  buttons stay held until explicitly released. `held_buttons` and
+  `button_field_cache` are cleared on machine reset.
+  **Auto-reconnect:** the periodic handler detects ~10 seconds of silence
+  after the first client connection and reopens the listener, so Flask can
+  reconnect without restarting MAME.
 - `vendor/mame/plugins/cabinet_bus/plugin.json` — plugin metadata.
 - `patches/0002-Add-cabinet_bus-plugin-socket-bridge-for-the-cabinet.patch` —
   patch series entry so a fresh MAME clone reproduces the plugin.
 - `tools/cabinet_bus/mame_client.py` — Python socket client. Holds one
-  long-lived TCP connection across calls (MAME's `emu.file` socket
-  abstraction only listens for one connection at a time, so closing the
-  socket after each request would lose the listener); auto-reconnects
-  once on broken connection.
-- `tools/cabinet_bus/server.py` — Flask server gains the `/api/mame/*`
-  endpoints proxying to the plugin. They return HTTP 503 with
-  `{"available": false}` when MAME isn't running, so the UI can hide
-  the panel gracefully.
-- `ui/index.html` + `ui/app.js` + `ui/style.css` — adds a "Centipede
-  emulator (MAME)" panel above the schematic with ROM, paused-state,
-  frame counter, and build version, plus Pause / Resume / Soft-reset
-  buttons. Polls `/api/mame/state` every 1 second; switches between the
-  live panel and an offline placeholder card based on whether the
-  bridge is reachable.
+  long-lived TCP connection across calls; auto-reconnects once on broken
+  connection. Methods: `press_button()`, `release_button()`,
+  `clear_buttons()`, `list_buttons()`.
+- `tools/cabinet_bus/server.py` — Flask server `/api/mame/*` endpoints.
+  New endpoints: `POST /api/mame/press_button`, `POST /api/mame/release_button`,
+  `POST /api/mame/clear_buttons`, `GET /api/mame/list_buttons`. Soft reset
+  clears all fault state. PSU watcher does not auto-resume MAME when paused.
+- `tools/run-demo.sh` — single-command launcher: Xvfb + MAME + Flask.
+  Passes `-skip_gameinfo` so MAME starts straight into gameplay.
+- `ui/index.html` + `ui/app.js` + `ui/style.css` — emulator panel with
+  live MJPEG video feed, ROM name, frame counter, paused state, and control
+  buttons. Keyboard controls: WASD drives the trackball; Space, 1, 2, 5
+  press digital buttons. Video stream retries until ffmpeg grab is ready.
 ## Protocol
 Both directions speak newline-terminated JSON objects. One request
 yields one reply; replies always include an `ok` boolean.
 Commands:
 - `{"cmd":"ping"}` → `{"ok":true,"pong":true,"app":"mame","version":"0.287"}`
-- `{"cmd":"get_state"}` → `{"ok":true,"rom":"centiped3","paused":false,"frame":12345,"app":"mame","version":"0.287"}`
+- `{"cmd":"get_state"}` → `{"ok":true,"rom":"centiped3","paused":false,"frame":12345,...}`
 - `{"cmd":"pause"}` → updated state with `paused:true`
 - `{"cmd":"resume"}` → updated state with `paused:false`
 - `{"cmd":"soft_reset"}` → `{"ok":true,"reset":"soft"}`
+- `{"cmd":"trackball_delta","dx":N,"dy":N}` → accumulate per-frame trackball motion
+- `{"cmd":"press_button","name":"P1 Button 1"}` → hold a digital input until released
+- `{"cmd":"release_button","name":"P1 Button 1"}` → release a held digital input
+- `{"cmd":"clear_buttons"}` → release all held buttons
+- `{"cmd":"list_buttons"}` → list all ioport field names available in the running ROM
+- `{"cmd":"stuck_byte","addr":N,"value":N|null,"cpu":"maincpu"}` → arm/disarm a stuck-at RAM cell
+- `{"cmd":"clear_stuck"}` → disarm all stuck cells
+- `{"cmd":"set_crt_fault","effect":"...","brightness":0.8}` → set active CRT visual overlay
+
 Unknown commands return `{"ok":false,"error":"..."}`.
-## Architectural choice: persistent connection
+## Architectural choice: persistent connection + plugin reconnect
 MAME's `emu.file("", 7)` socket abstraction is a one-shot listener:
 when the connected client closes its socket, the listener disappears
 and a follow-up `connect()` from a fresh client gets ECONNREFUSED.
-Two ways around it:
-1. Have the Lua plugin re-open the listener when the connection drops.
-   `emu.file` doesn't expose a clean way to detect EOF, so this
-   requires polling or guessing.
-2. Keep one long-lived TCP connection from Flask and reuse it across
-   requests.
-Option 2 is the simpler/correct fix and is what we ship. Flask is
-single-threaded by default so there's no contention. `MameClient`
-auto-reconnects once if the connection breaks (MAME exiting, plugin
-restart, etc.).
+We handle this at both ends:
+
+**Python side (`MameClient`):** holds one long-lived TCP connection
+across all requests. Flask is single-threaded so there's no contention.
+Auto-reconnects once on `ConnectionResetError` / `BrokenPipeError`
+(handles MAME restart while Flask stays up).
+
+**Lua side (`init.lua` periodic handler):** tracks whether a client
+ever sent data (`ever_got_data`). Once a client has connected, if no
+bytes arrive for ~10 seconds (~600 frames at 60 Hz), the plugin closes
+its stale socket and reopens the listener. This handles the Flask
+server restarting while MAME stays up. The 10-second grace period
+prevents false reconnects during idle periods.
 ## Demo recipe
-Two terminals.
-**Terminal 1 — MAME with the cabinet_bus plugin:**
+One command:
 ```bash
-cd /home/jackie/arcade-sim/vendor/mame
-./mame -plugin cabinet_bus \
-    -rompath /home/jackie/arcade-sim/roms \
-    -window -sound pipewire centiped3
-# stderr should show: cabinet_bus: listening on socket.127.0.0.1:5051
+source .venv/bin/activate
+bash tools/run-demo.sh
+# ==> starting virtual display :99 (Xvfb)
+# ==> starting MAME (centiped3 with cabinet_bus plugin)
+# ==> waiting for cabinet_bus plugin on 127.0.0.1:5051 ... ok
+# ==> starting cabinet bus server on http://127.0.0.1:5050
 ```
-**Terminal 2 — Flask cabinet bus + UI:**
-```bash
-cd /home/jackie/arcade-sim
-./tools/cabinet_bus/start.sh
-# Cabinet bus listening on http://127.0.0.1:5050
-```
-Open `http://127.0.0.1:5050` in a browser. The "Centipede emulator
-(MAME)" panel auto-activates once it detects the plugin. Click
-**Pause** — the running Centipede freezes mid-frame; **Resume** lets
-it continue; **Soft reset** restarts the game and the frame counter
-resets to 0.
+Open `http://127.0.0.1:5050`. The MAME panel shows a live MJPEG video
+feed plus ROM, frame counter, and paused state. Click **Pause** — the
+running Centipede freezes; **Resume** lets it continue; **Soft reset**
+restarts the game and clears all injected faults.
+
+Keyboard controls (browser window focused):
+- **W / A / S / D** — trackball up/left/down/right
+- **Space** — fire
+- **1 / 2** — 1-player / 2-player start
+- **5** — insert coin
+
+**Note:** MAME must run from `vendor/mame/` to find its plugins.
+`run-demo.sh` does this automatically; launching MAME from the repo
+root will fail with `Could not load plugin: cabinet_bus`.
 ## Smoke-test verification (no browser needed)
 After both processes are up:
 ```bash

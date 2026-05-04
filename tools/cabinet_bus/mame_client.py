@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import socket
+import threading
 from dataclasses import dataclass
 from typing import Optional
 
@@ -43,23 +44,28 @@ class MameClient:
         self.config = config or MameClientConfig()
         self._sock: Optional[socket.socket] = None
         self._recv_buffer: bytes = b""
+        # Flask serves requests in multiple threads; serialize socket I/O so
+        # requests cannot race and consume each other's replies.
+        self._io_lock = threading.Lock()
 
     def close(self) -> None:
-        if self._sock is not None:
-            try:
-                self._sock.close()
-            except OSError:
-                pass
-            self._sock = None
-        self._recv_buffer = b""
+        with self._io_lock:
+            if self._sock is not None:
+                try:
+                    self._sock.close()
+                except OSError:
+                    pass
+                self._sock = None
+            self._recv_buffer = b""
 
     def is_available(self) -> bool:
         """Quick reachability probe. Returns True if we have or can open a connection."""
-        try:
-            self._ensure_connection()
-            return True
-        except OSError:
-            return False
+        with self._io_lock:
+            try:
+                self._ensure_connection()
+                return True
+            except OSError:
+                return False
 
     def send(self, cmd: dict) -> dict:
         """Send one command, return the decoded reply.
@@ -67,25 +73,38 @@ class MameClient:
         Auto-reconnects once on a broken connection (e.g., MAME restart).
         Raises ConnectionError if the plugin still isn't reachable.
         """
-        for attempt in (1, 2):
-            try:
-                self._ensure_connection()
-                assert self._sock is not None
-                self._sock.sendall((json.dumps(cmd) + "\n").encode("utf-8"))
-                line = self._readline()
-                return json.loads(line.decode("utf-8"))
-            except (ConnectionResetError, BrokenPipeError, TimeoutError) as e:
-                self.close()
-                if attempt == 2:
+        with self._io_lock:
+            for attempt in (1, 2):
+                try:
+                    self._ensure_connection()
+                    assert self._sock is not None
+                    self._sock.sendall((json.dumps(cmd) + "\n").encode("utf-8"))
+                    line = self._readline()
+                    return json.loads(line.decode("utf-8"))
+                except (ConnectionResetError, BrokenPipeError, TimeoutError) as e:
+                    if self._sock is not None:
+                        try:
+                            self._sock.close()
+                        except OSError:
+                            pass
+                        self._sock = None
+                    self._recv_buffer = b""
+                    if attempt == 2:
+                        raise ConnectionError(
+                            f"MAME plugin connection lost: {e}"
+                        ) from e
+                except OSError as e:
+                    if self._sock is not None:
+                        try:
+                            self._sock.close()
+                        except OSError:
+                            pass
+                        self._sock = None
+                    self._recv_buffer = b""
                     raise ConnectionError(
-                        f"MAME plugin connection lost: {e}"
+                        f"MAME plugin not reachable at "
+                        f"{self.config.host}:{self.config.port}: {e}"
                     ) from e
-            except OSError as e:
-                self.close()
-                raise ConnectionError(
-                    f"MAME plugin not reachable at "
-                    f"{self.config.host}:{self.config.port}: {e}"
-                ) from e
         # Unreachable; loop above either returns or raises.
         raise ConnectionError("unexpected: send loop exhausted")
 

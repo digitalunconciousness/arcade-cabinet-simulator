@@ -8,14 +8,18 @@ sudo pacman -Syu --needed \
   flac libvpx libjpeg-turbo \
   glm pugixml lua \
   kicad kicad-library kicad-library-3d \
+  xorg-server-xvfb \
   gtkwave fd ripgrep
 ```
+`xorg-server-xvfb` is required for `run-demo.sh` to stream MAME video to the
+browser. Without it MAME opens a real window on `$DISPLAY` and the video feed
+is unavailable.
 ## Python venv
 ```bash
 cd /home/jackie/arcade-sim
 python -m venv .venv
 source .venv/bin/activate
-pip install pyparsing lark jsonschema
+pip install pyparsing lark jsonschema flask
 ```
 ## MAME — Centipede + nltool fast iteration
 ```bash
@@ -38,6 +42,20 @@ make -j2 SUBTARGET=arcade
 ```
 Multi-hour build; only needed if we want to test against drivers other
 than Centipede.
+## Running the full demo
+```bash
+source .venv/bin/activate
+bash tools/run-demo.sh
+```
+`run-demo.sh` starts Xvfb, MAME (from `vendor/mame/`, headless), and the
+Flask cabinet-bus server in one shot. It waits for the plugin socket before
+printing the URL. Open `http://127.0.0.1:5050`. Ctrl-C stops everything.
+
+**Note:** MAME must be launched from inside `vendor/mame/` (the script does
+this automatically) so it can find the `plugins/cabinet_bus/` directory.
+Running `./vendor/mame/mame` from the repo root fails with
+`Could not load plugin: cabinet_bus`.
+
 ## Running MAME with audio
 ```bash
 cd vendor/mame
@@ -65,6 +83,8 @@ head log_FB1.Y.log
 | `Unknown parameter FB.0`                                           | Macro substitution collision — rename the `-D` macro (avoid `MODE`).  |
 | `make: Nothing to be done for ...`                                 | Wrong target; with this tree just run `make -j3 SOURCES=... TOOLS=1`. |
 | `fatal: No names found, cannot describe anything.` during build    | Benign — shallow git clone has no tags. MAME embeds "unknown" in version. |
+| `Could not load plugin: cabinet_bus`                               | MAME launched from wrong directory — must run from inside `vendor/mame/`. |
+| `port 5050/5051 already in use`                                    | Kill stale processes: `pkill -f 'mame\|cabinet_bus'`, then retry.    |
 ## Disk usage at end of Phase 1
 - `vendor/mame/` (source + build):  about 7 GB
 - `vendor/discrete/`:                ~1 MB

@@ -14,6 +14,14 @@ ROM_DIR="$REPO_ROOT/roms"
 ROM_NAME="${ROM_NAME:-centiped3}"
 SERVER_PORT="${SERVER_PORT:-5050}"
 MAME_PORT="${MAME_PORT:-5051}"
+XVFB_GEOMETRY="${XVFB_GEOMETRY:-480x640x24}"
+
+IFS='x' read -r XVFB_W XVFB_H XVFB_D <<< "$XVFB_GEOMETRY"
+if [[ -z "${XVFB_W:-}" || -z "${XVFB_H:-}" || -z "${XVFB_D:-}" ]]; then
+    echo "error: XVFB_GEOMETRY must be WxHxD (example: 480x640x24)" >&2
+    exit 1
+fi
+MAME_CAPTURE_SIZE="${MAME_CAPTURE_SIZE:-${XVFB_W}x${XVFB_H}}"
 
 # Sanity checks.
 if [[ ! -x "$MAME_DIR/mame" ]]; then
@@ -27,6 +35,16 @@ if [[ ! -f "$ROM_DIR/${ROM_NAME}.zip" ]]; then
 fi
 if [[ ! -d "$VENV" ]]; then
     echo "error: Python venv not found at $VENV — see README.md bootstrap section" >&2
+    exit 1
+fi
+if ! command -v ffmpeg &>/dev/null; then
+    echo "error: ffmpeg not found in PATH" >&2
+    echo "       install ffmpeg; /api/mame/video requires it for MJPEG streaming" >&2
+    exit 1
+fi
+if ! command -v Xvfb &>/dev/null; then
+    echo "error: Xvfb not found in PATH" >&2
+    echo "       install with: sudo pacman -S xorg-server-xvfb" >&2
     exit 1
 fi
 if ss -ltn 2>/dev/null | grep -qE "[: ]$MAME_PORT[ ]"; then
@@ -62,41 +80,31 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-# Run MAME in Xvfb when available so /api/mame/video can stream to browser.
-MAME_DISPLAY="${DISPLAY:-:0}"
-if command -v Xvfb &>/dev/null; then
-    pick_free_display() {
-        for n in $(seq 99 120); do
-            if [[ ! -e "/tmp/.X${n}-lock" ]]; then
-                echo ":${n}"
-                return 0
-            fi
-        done
-        return 1
-    }
-
-    DISPLAY_CANDIDATE="$(pick_free_display || true)"
-    if [[ -n "$DISPLAY_CANDIDATE" ]]; then
-        echo "==> starting virtual display ${DISPLAY_CANDIDATE} (Xvfb)"
-        Xvfb "$DISPLAY_CANDIDATE" -screen 0 640x480x24 -ac &
-        XVFB_PID=$!
-        sleep 0.5
-        if kill -0 "$XVFB_PID" 2>/dev/null; then
-            MAME_DISPLAY="$DISPLAY_CANDIDATE"
-            echo "    game video stream enabled at /api/mame/video"
-        else
-            echo "warning: Xvfb failed to start; falling back to ${DISPLAY:-:0}" >&2
-            XVFB_PID=""
-        fi
-    else
-        echo "warning: no free X display slot found; falling back to ${DISPLAY:-:0}" >&2
-    fi
-else
-    echo "warning: Xvfb not found — MAME will open a normal window on ${DISPLAY:-:0}"
-    echo "         install with: sudo pacman -S xorg-server-xvfb"
+# Run MAME on a deterministic virtual display so /api/mame/video is reliable.
+MAME_DISPLAY=":99"
+if pgrep -af "Xvfb :99" >/dev/null; then
+    echo "==> restarting existing virtual display :99 to enforce ${XVFB_GEOMETRY}"
+    pkill -f "Xvfb :99" || true
+    sleep 0.2
+elif [[ -e "/tmp/.X99-lock" ]]; then
+    echo "error: :99 is locked but not by Xvfb :99" >&2
+    echo "       clear stale lock or stop the conflicting X server, then retry" >&2
+    exit 1
 fi
 
+echo "==> starting virtual display :99 (Xvfb ${XVFB_GEOMETRY})"
+Xvfb ":99" -screen 0 "$XVFB_GEOMETRY" -ac >/tmp/xvfb.log 2>&1 &
+XVFB_PID=$!
+sleep 0.5
+if ! kill -0 "$XVFB_PID" 2>/dev/null; then
+    echo "error: Xvfb failed to start on :99" >&2
+    echo "       see /tmp/xvfb.log for details" >&2
+    exit 1
+fi
+echo "    game video stream enabled at /api/mame/video"
+
 export MAME_DISPLAY
+export MAME_CAPTURE_SIZE
 
 echo "==> starting MAME ($ROM_NAME with cabinet_bus plugin)"
 (
@@ -106,8 +114,10 @@ echo "==> starting MAME ($ROM_NAME with cabinet_bus plugin)"
         -plugin cabinet_bus \
         -video soft \
         -window \
+        -resolution "$MAME_CAPTURE_SIZE" \
         -nomaximize \
         -background_input \
+        -mouse \
         -update_in_pause \
         -skip_gameinfo \
         "$ROM_NAME"

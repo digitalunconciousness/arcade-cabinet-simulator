@@ -68,6 +68,21 @@ DEFAULT_LOG_NETS = ["HSYNC_n", "VSYNC_n"]
 DEFAULT_DURATION_S = 0.001
 MANIFEST_VERSION = 1
 
+# Whitelist of xdotool key names that may be injected into the MAME window.
+# Keeping this explicit prevents path-traversal / injection via the key field.
+_XDOTOOL_ALLOWED_KEYS: frozenset[str] = frozenset({
+    # Player controls - Centipede defaults
+    "ctrl",          # P1 Button 1 (Left Control)
+    # Coin / start
+    "1", "2", "3", "4", "5", "6", "7", "8", "9", "0",
+    # System
+    "Escape", "Return", "Tab",
+    "F1", "F2", "F3", "F4", "F5", "F9",
+    "p",             # pause in MAME
+    # Arrow keys (MAME keyboard trackball simulation fallback)
+    "Left", "Right", "Up", "Down",
+})
+
 
 def create_app(
     template_path: Path = DEFAULT_TEMPLATE,
@@ -91,6 +106,17 @@ def create_app(
         if peripheral_registry is not None
         else PeripheralRegistry()
     )
+    trackball_diag = {
+        "received": 0,
+        "forwarded_ok": 0,
+        "bad_payload": 0,
+        "mame_unavailable": 0,
+        "last_dx": 0,
+        "last_dy": 0,
+        "last_ok": False,
+        "last_error": "",
+        "last_ts": 0.0,
+    }
 
     # Cache the manifest at boot; it's small and rarely changes.
     if not manifest_path.exists():
@@ -458,6 +484,148 @@ def create_app(
     def api_mame_list_buttons():
         return _mame_request("list_buttons")
 
+    @app.route("/api/mame/trackball_delta", methods=["POST"])
+    def api_mame_trackball_delta():
+        trackball_diag["received"] += 1
+        body = request.get_json(silent=True) or {}
+        try:
+            dx = int(body.get("dx", 0))
+            dy = int(body.get("dy", 0))
+        except (TypeError, ValueError):
+            trackball_diag["bad_payload"] += 1
+            trackball_diag["last_ok"] = False
+            trackball_diag["last_error"] = "dx and dy must be integers"
+            trackball_diag["last_ts"] = time.time()
+            return jsonify({"error": "dx and dy must be integers"}), 400
+        trackball_diag["last_dx"] = dx
+        trackball_diag["last_dy"] = dy
+        try:
+            reply = mame.trackball_delta(dx, dy)
+            trackball_diag["forwarded_ok"] += 1
+            trackball_diag["last_ok"] = True
+            trackball_diag["last_error"] = ""
+            trackball_diag["last_ts"] = time.time()
+            return jsonify({"available": True, **reply})
+        except ConnectionError as e:
+            trackball_diag["mame_unavailable"] += 1
+            trackball_diag["last_ok"] = False
+            trackball_diag["last_error"] = str(e)
+            trackball_diag["last_ts"] = time.time()
+            return jsonify({"available": False, "error": str(e)}), 503
+
+    @app.route("/api/mame/trackball_diag")
+    def api_mame_trackball_diag():
+        return jsonify({
+            "ok": True,
+            "counts": {
+                "received": trackball_diag["received"],
+                "forwarded_ok": trackball_diag["forwarded_ok"],
+                "bad_payload": trackball_diag["bad_payload"],
+                "mame_unavailable": trackball_diag["mame_unavailable"],
+            },
+            "last": {
+                "dx": trackball_diag["last_dx"],
+                "dy": trackball_diag["last_dy"],
+                "ok": trackball_diag["last_ok"],
+                "error": trackball_diag["last_error"],
+                "ts": trackball_diag["last_ts"],
+            },
+        })
+
+    @app.route("/api/mame/xkey", methods=["POST"])
+    def api_mame_xkey():
+        """Inject a keyboard event directly into the MAME X11 window via xdotool.
+
+        Body: {"action": "keydown"|"keyup"|"key", "key": "<xdotool_keyname>"}
+
+        This bypasses the Lua TCP plugin entirely, giving MAME the same input
+        it would receive from a real keyboard attached to the Xvfb display.
+        Only keys listed in _XDOTOOL_ALLOWED_KEYS are accepted.
+        """
+        body = request.get_json(silent=True) or {}
+        action = str(body.get("action", "key")).strip()
+        key = str(body.get("key", "")).strip()
+        if action not in ("keydown", "keyup", "key"):
+            return jsonify({"error": "action must be keydown, keyup, or key"}), 400
+        if not key or key not in _XDOTOOL_ALLOWED_KEYS:
+            return jsonify({"error": "key not in allowed list"}), 400
+        display = _resolve_mame_display()
+        if not display:
+            return jsonify({"error": "no MAME display configured"}), 503
+        try:
+            # For atomic "key" presses, add --delay 50ms so MAME's input
+            # polling loop sees the press before the release arrives.
+            cmd = ["xdotool", action]
+            if action == "key":
+                cmd += ["--delay", "50"]
+            cmd += ["--clearmodifiers", key]
+            subprocess.Popen(
+                cmd,
+                env={**os.environ, "DISPLAY": display},
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            return jsonify({"ok": True, "action": action, "key": key})
+        except OSError as e:
+            return jsonify({"error": str(e)}), 500
+
+    @app.route("/api/mame/xmouse", methods=["POST"])
+    def api_mame_xmouse():
+        """Move the virtual mouse on the MAME display (trackball = mouse in MAME).
+
+        Body: {"dx": int, "dy": int}
+
+        MAME maps IPT_TRACKBALL_X/Y to the mouse by default, so sending
+        relative mouse moves via xdotool produces smooth trackball movement
+        with no polarity bugs and no Lua round-trip overhead.
+        """
+        body = request.get_json(silent=True) or {}
+        try:
+            dx = int(body.get("dx", 0))
+            dy = int(body.get("dy", 0))
+        except (TypeError, ValueError):
+            return jsonify({"error": "dx and dy must be integers"}), 400
+        dx = max(-500, min(500, dx))
+        dy = max(-500, min(500, dy))
+        if dx == 0 and dy == 0:
+            return jsonify({"ok": True})
+        display = _resolve_mame_display()
+        if not display:
+            return jsonify({"error": "no MAME display configured"}), 503
+        try:
+            subprocess.Popen(
+                ["xdotool", "mousemove_relative", "--", str(dx), str(dy)],
+                env={**os.environ, "DISPLAY": display},
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            return jsonify({"ok": True, "dx": dx, "dy": dy})
+        except OSError as e:
+            return jsonify({"error": str(e)}), 500
+
+    @app.route("/api/mame/xcenter", methods=["POST"])
+    def api_mame_xcenter():
+        """Warp the Xvfb cursor to the centre of the capture area.
+
+        Called before each click-drag gesture so the cursor has the maximum
+        possible room to move in every direction before hitting a display edge.
+        """
+        display = _resolve_mame_display()
+        if not display:
+            return jsonify({"ok": True})
+        parts = _capture_size().split("x")
+        cx, cy = int(parts[0]) // 2, int(parts[1]) // 2
+        try:
+            subprocess.Popen(
+                ["xdotool", "mousemove", str(cx), str(cy)],
+                env={**os.environ, "DISPLAY": display},
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            return jsonify({"ok": True, "cx": cx, "cy": cy})
+        except OSError as e:
+            return jsonify({"error": str(e)}), 500
+
     # ---------- Peripherals ----------
     # In-process registry of cabinet-level peripherals (PSU, coin mech,
     # buttons, marquee, harness segments). Faults applied here are pure
@@ -518,7 +686,7 @@ def create_app(
         the display is not configured.  The stream is per-connection; each
         browser tab that loads the <img> tag gets its own ffmpeg instance.
         """
-        display = os.environ.get("MAME_DISPLAY", "")
+        display = _resolve_mame_display()
         display_target = _normalize_x11_display(display)
         if not display:
             return jsonify({
@@ -528,12 +696,7 @@ def create_app(
         if not _ffmpeg_available():
             return jsonify({"error": "ffmpeg not found in PATH"}), 503
         window_id = _find_mame_window_id(display)
-        if not window_id:
-            return jsonify({
-                "error": "MAME window not found on display",
-                "hint": "ensure MAME is running and opened on the configured display",
-            }), 503
-        if not _x11_grab_available(display_target, window_id):
+        if not _x11_grab_available(display_target):
             return jsonify({
                 "error": f"display {display_target} is not capturable",
                 "hint": "restart via tools/run-demo.sh so MAME and Xvfb share the same display",
@@ -546,10 +709,11 @@ def create_app(
 
         def stream():
             vf_chain = _video_filter_chain(effect, brightness)
+            capture_size = _capture_size()
             cmd = [
                 "ffmpeg", "-hide_banner", "-loglevel", "quiet",
                 "-f", "x11grab", "-framerate", "15",
-                "-window_id", window_id,
+                "-video_size", capture_size,
                 "-i", display_target,
                 "-vf", vf_chain,
                 "-f", "mpjpeg", "-q:v", "5",
@@ -580,6 +744,31 @@ def create_app(
         import shutil
         return shutil.which("ffmpeg") is not None
 
+    def _resolve_mame_display() -> str:
+        """Best-effort display resolution for mame video capture.
+
+        Preferred source is MAME_DISPLAY env (set by run-demo.sh).  If that is
+        absent and an Xvfb :99 process is running, fall back to :99 so a manual
+        Flask restart still preserves video streaming.
+        """
+        disp = os.environ.get("MAME_DISPLAY", "").strip()
+        if disp:
+            return disp
+        try:
+            r = subprocess.run(
+                ["pgrep", "-af", "Xvfb :99"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                text=True,
+                timeout=0.8,
+                check=False,
+            )
+            if r.returncode == 0 and (r.stdout or "").strip():
+                return ":99"
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+        return ""
+
     def _normalize_x11_display(display: str) -> str:
         """Normalize ':99' -> ':99.0+0,0' for ffmpeg x11grab."""
         if not display:
@@ -589,6 +778,18 @@ def create_app(
         if "." not in display:
             return f"{display}.0+0,0"
         return f"{display}+0,0"
+
+    def _capture_size() -> str:
+        """Return capture size as '<w>x<h>' (defaults to portrait Centipede)."""
+        raw = os.environ.get("MAME_CAPTURE_SIZE", "").strip().lower()
+        if raw:
+            parts = raw.split("x")
+            if len(parts) == 2 and all(p.isdigit() for p in parts):
+                w = int(parts[0])
+                h = int(parts[1])
+                if w > 0 and h > 0:
+                    return f"{w}x{h}"
+        return "480x640"
 
     def _find_mame_window_id(display: str) -> Optional[str]:
         """Return first X11 window id for WM_CLASS 'mame' on the display."""
@@ -611,20 +812,14 @@ def create_app(
         except (OSError, subprocess.TimeoutExpired, IndexError):
             return None
 
-    def _x11_grab_available(display_target: str, window_id: Optional[str] = None) -> bool:
+    def _x11_grab_available(display_target: str) -> bool:
         """Return True when ffmpeg can capture at least one frame from display."""
         if not display_target or not _ffmpeg_available():
             return False
         try:
             cmd = [
                 "ffmpeg", "-hide_banner", "-loglevel", "error",
-                "-f", "x11grab",
-            ]
-            if window_id:
-                cmd += ["-window_id", str(window_id)]
-            else:
-                cmd += ["-video_size", "16x16"]
-            cmd += [
+                "-f", "x11grab", "-video_size", "16x16",
                 "-i", display_target,
                 "-frames:v", "1",
                 "-f", "null", "-",
@@ -669,20 +864,20 @@ def create_app(
             # Cheap approximation: slight jitter via horizontal shear.
             filters.append("shear=xh=0.05")
 
-        # Always scale to a stable panel size.
-        filters.append("scale=640:480:flags=neighbor")
+        # Always scale to a stable panel size matching capture dimensions.
+        filters.append(f"scale={_capture_size().replace('x', ':')}:flags=neighbor")
         return ",".join(filters)
 
     @app.route("/api/mame/video/available")
     def api_mame_video_available():
         """Quick probe: is the video stream available?"""
-        display = os.environ.get("MAME_DISPLAY", "")
+        display = _resolve_mame_display()
         display_target = _normalize_x11_display(display)
         window_id = _find_mame_window_id(display)
         ffmpeg_ok = _ffmpeg_available()
-        grab_ok = _x11_grab_available(display_target, window_id) if display and ffmpeg_ok else False
+        grab_ok = _x11_grab_available(display_target) if display and ffmpeg_ok else False
         return jsonify({
-            "available": bool(display) and bool(window_id) and ffmpeg_ok and grab_ok,
+            "available": bool(display) and ffmpeg_ok and grab_ok,
             "display": display_target or None,
             "window_id": window_id,
             "ffmpeg": ffmpeg_ok,

@@ -17,6 +17,7 @@
     popoverClose:  document.getElementById("popover-close"),
     mamePane:        document.getElementById("mame-pane"),
     mameOffline:     document.getElementById("mame-pane-offline"),
+    mameVideoCol:    document.getElementById("mame-video-col"),
     mameVideoFeed:   document.getElementById("mame-video-feed"),
     mameVideoUnavail: document.getElementById("mame-video-unavail"),
     mameRom:         document.getElementById("mame-rom"),
@@ -561,15 +562,24 @@
     }
   }
 
+  let _mameWasAvailable = false;
+
   function showMame(data) {
     if (!data) {
       els.mamePane.hidden = true;
       els.mameOffline.hidden = false;
+      _mameWasAvailable = false;
       return;
     }
     initMameVideo();
     els.mamePane.hidden = false;
     els.mameOffline.hidden = true;
+    if (!_mameWasAvailable) {
+      // Defensive reset so stale held movement state cannot linger.
+      _kbHeldMove.clear();
+      _updateKbHeldDisplay();
+    }
+    _mameWasAvailable = true;
     els.mameRom.textContent = data.rom || "—";
     els.mamePaused.textContent = data.paused ? "PAUSED" : "running";
     els.mamePaused.classList.toggle("paused", !!data.paused);
@@ -579,33 +589,29 @@
     els.mameResumeBtn.disabled = !data.paused;
   }
 
-    // Probe /api/mame/video/available once and wire up the MJPEG <img> feed.
+    // Probe /api/mame/video/available and wire up the MJPEG <img> feed.
+    // Retries until available so late-starting Xvfb is picked up automatically.
     let _videoInitDone = false;
     async function initMameVideo() {
       if (_videoInitDone) return;
-      _videoInitDone = true;
       try {
         const res = await fetch("/api/mame/video/available");
         const data = res.ok ? await res.json() : { available: false };
         if (data.available) {
+          _videoInitDone = true;
           els.mameVideoFeed.src = "/api/mame/video";
           els.mameVideoFeed.hidden = false;
           els.mameVideoUnavail.hidden = true;
           // Reload the stream if the browser drops it (Xvfb restart, etc.)
           els.mameVideoFeed.addEventListener("error", () => {
+            _videoInitDone = false;
             els.mameVideoFeed.hidden = true;
             els.mameVideoUnavail.hidden = false;
           });
         } else {
           els.mameVideoFeed.hidden = true;
           els.mameVideoUnavail.hidden = false;
-          const parts = [];
-          if (data.display) parts.push(`display ${data.display}`);
-          if (data.ffmpeg === false) parts.push("ffmpeg missing");
-          if (data.grab === false) parts.push("display not capturable");
-          if (parts.length) {
-            setStatus(`MAME video unavailable: ${parts.join(", ")}`, true);
-          }
+          // Don't set _videoInitDone — will retry on next poll cycle.
         }
       } catch {
         els.mameVideoFeed.hidden = true;
@@ -754,136 +760,185 @@
   }
 
   // ---------- Keyboard controls for MAME ----------
+  //
+  // Rather than going through the Lua TCP plugin (which has polarity bugs,
+  // axis inversion, and HTTP round-trip lag), we inject events directly into
+  // the MAME X11 window on the Xvfb display via xdotool.  MAME receives the
+  // same events as if a real keyboard/mouse were attached — no Lua glue needed.
+  //
+  // Key layout (matches MAME's default centiped3 bindings):
+  //   Space / LCtrl  → P1 Button 1 (fire)   → xdotool key "ctrl"
+  //   5              → Coin 1                → xdotool key "5"
+  //   1              → 1 Player Start        → xdotool key "1"
+  //   2              → 2 Players Start       → xdotool key "2"
+  //   WASD           → trackball             → xdotool mousemove_relative
 
-  // Map key → MAME button name (as exposed by the Lua plugin's list_buttons).
-  // These names come from MAME's ioport field descriptors for centiped3.
-  const KEY_BUTTON_MAP = {
-    " ":   "P1 Button 1",
-    "1":   "1 Player Start",
-    "2":   "2 Players Start",
-    "5":   "Coin 1",
+  // ev.code → xdotool key name for momentary / toggled buttons.
+  const KEY_XDOTOOL_MAP = {
+    ControlLeft:  "ctrl",   // P1 Button 1
+    Digit1:       "1",
+    Digit2:       "2",
+    Digit5:       "5",
+    Numpad1:      "1",
+    Numpad2:      "2",
+    Numpad5:      "5",
+    Escape:       "Escape",
   };
 
-  // Arrow keys drive trackball motion: key → [dx, dy] per tick.
-  const KEY_TRACKBALL_MAP = {
-    ArrowLeft:  [-6,  0],
-    ArrowRight: [ 6,  0],
-    ArrowUp:    [ 0, -6],
-    ArrowDown:  [ 0,  6],
+  // WASD → xdotool arrow key events (MAME's native keyboard trackball emulation).
+  // Arrow keys avoid all cursor-boundary issues; MAME handles sensitivity internally.
+  const KEY_TRACKBALL_CODE_MAP = {
+    KeyA: "Left",
+    KeyD: "Right",
+    KeyW: "Up",
+    KeyS: "Down",
   };
 
-  // Currently held state (prevents repeat floods).
-  const _kbHeldButtons  = new Set();
-  const _kbHeldArrows   = new Set();
-  let   _kbArrowInterval = null;
+  // Currently held state for WASD arrow keys only.
+  // Buttons use atomic xdotool key (no open hold state, nothing can get stuck).
+  const _kbHeldMove   = new Set();
 
   function _updateKbHeldDisplay() {
     if (!els.mameKbHeld) return;
-    const all = [..._kbHeldButtons, ..._kbHeldArrows];
-    els.mameKbHeld.textContent = all.length
-      ? "held: " + all.map(k => k === " " ? "Space" : k).join(" + ")
+    els.mameKbHeld.textContent = _kbHeldMove.size
+      ? "held: " + [..._kbHeldMove].join(" + ")
       : "";
   }
 
-  async function _kbPressButton(name) {
-    try {
-      await postJSON("/api/mame/press_button", { name });
-    } catch (e) { console.warn("press_button", name, e); }
+  function _xdoKey(action, key) {
+    postJSON("/api/mame/xkey", { action, key }).catch(() => {});
   }
 
-  async function _kbReleaseButton(name) {
-    try {
-      await postJSON("/api/mame/release_button", { name });
-    } catch (e) { console.warn("release_button", name, e); }
-  }
-
-  function _startArrowInterval() {
-    if (_kbArrowInterval) return;
-    _kbArrowInterval = setInterval(() => {
-      if (_kbHeldArrows.size === 0) return;
-      let dx = 0; let dy = 0;
-      for (const key of _kbHeldArrows) {
-        const delta = KEY_TRACKBALL_MAP[key];
-        if (delta) { dx += delta[0]; dy += delta[1]; }
-      }
-      if (dx !== 0 || dy !== 0) {
-        postJSON("/api/mame/trackball_delta", { dx, dy }).catch(() => {});
-      }
-    }, 33); // ~30 Hz
-  }
-
-  function _stopArrowIntervalIfIdle() {
-    if (_kbHeldArrows.size === 0 && _kbArrowInterval) {
-      clearInterval(_kbArrowInterval);
-      _kbArrowInterval = null;
-    }
+  function _xdoMouse(dx, dy) {
+    postJSON("/api/mame/xmouse", { dx, dy }).catch(() => {});
   }
 
   function initKeyboardControls() {
-    // Only capture keyboard when the MAME panel is visible.
-    // We intercept at the document level but guard on mame pane visibility.
-    // Ignore events when the user is typing in an input/select.
     const isTypingTarget = (el) =>
       el.tagName === "INPUT" || el.tagName === "SELECT" ||
       el.tagName === "TEXTAREA" || el.isContentEditable;
+
+    const focusMamePane = () => {
+      if (!els.mamePane) return;
+      if (els.mamePane.tabIndex < 0) els.mamePane.tabIndex = 0;
+      try { els.mamePane.focus({ preventScroll: true }); }
+      catch { els.mamePane.focus(); }
+    };
+
+    els.mamePane?.addEventListener("pointerdown", focusMamePane);
+    setTimeout(focusMamePane, 0);
 
     document.addEventListener("keydown", (ev) => {
       if (els.mamePane?.hidden) return;
       if (isTypingTarget(ev.target)) return;
 
-      const key = ev.key;
-
-      // Arrow → trackball
-      if (KEY_TRACKBALL_MAP[key]) {
-        if (_kbHeldArrows.has(key)) return; // already held
+      // WASD → arrow key hold (MAME native trackball emulation)
+      const arrowKey = KEY_TRACKBALL_CODE_MAP[ev.code];
+      if (arrowKey) {
+        if (_kbHeldMove.has(ev.code)) return; // already held
         ev.preventDefault();
-        _kbHeldArrows.add(key);
-        _startArrowInterval();
+        _kbHeldMove.add(ev.code);
+        _xdoKey("keydown", arrowKey);
         _updateKbHeldDisplay();
         return;
       }
 
-      // Button
-      const btnName = KEY_BUTTON_MAP[key];
-      if (btnName) {
-        if (_kbHeldButtons.has(key)) return; // already held (repeat)
+      // Button → atomic xdotool key (press+release in one shot).
+      // This prevents stuck-key: if keyup is ever lost (tab switch, Ctrl+R,
+      // any browser shortcut), nothing stays held in X11.
+      // OS key-repeat sends repeated keydown events → repeated atomic fires.
+      const xkey = KEY_XDOTOOL_MAP[ev.code];
+      if (xkey) {
         ev.preventDefault();
-        _kbHeldButtons.add(key);
-        _kbPressButton(btnName);
-        _updateKbHeldDisplay();
+        ev.stopPropagation();
+        _xdoKey("key", xkey);
       }
-    });
+    }, true);
 
     document.addEventListener("keyup", (ev) => {
       if (isTypingTarget(ev.target)) return;
-      const key = ev.key;
 
-      if (KEY_TRACKBALL_MAP[key]) {
-        _kbHeldArrows.delete(key);
-        _stopArrowIntervalIfIdle();
+      const arrowKey = KEY_TRACKBALL_CODE_MAP[ev.code];
+      if (arrowKey && _kbHeldMove.has(ev.code)) {
+        _kbHeldMove.delete(ev.code);
+        _xdoKey("keyup", arrowKey);
         _updateKbHeldDisplay();
         return;
       }
+      // No keyup handling needed for button keys — atomic presses have no open state.
+    }, true);
 
-      const btnName = KEY_BUTTON_MAP[key];
-      if (btnName && _kbHeldButtons.has(key)) {
-        _kbHeldButtons.delete(key);
-        _kbReleaseButton(btnName);
-        _updateKbHeldDisplay();
+    // Release held movement keys if the browser tab loses focus.
+    window.addEventListener("blur", () => {
+      for (const code of _kbHeldMove) {
+        const ak = KEY_TRACKBALL_CODE_MAP[code];
+        if (ak) _xdoKey("keyup", ak);
       }
+      _kbHeldMove.clear();
+      _updateKbHeldDisplay();
+    });
+  }
+
+  function initMouseControls() {
+    if (!els.mameVideoCol) return;
+
+    let dragging = false;
+    let activePointerId = null;
+    let lastX = 0;
+    let lastY = 0;
+
+    // Make sure we never leave the user in pointer-lock mode.
+    if (document.pointerLockElement && document.exitPointerLock) {
+      document.exitPointerLock();
+    }
+
+    els.mameVideoCol.addEventListener("pointerdown", (ev) => {
+      if (els.mamePane?.hidden) return;
+      // Center the Xvfb cursor so the drag has full room in every direction.
+      postJSON("/api/mame/xcenter", {}).catch(() => {});
+      dragging = true;
+      activePointerId = ev.pointerId;
+      lastX = ev.clientX;
+      lastY = ev.clientY;
+      if (typeof els.mameVideoCol.setPointerCapture === "function") {
+        els.mameVideoCol.setPointerCapture(ev.pointerId);
+      }
+      els.mameVideoCol.classList.add("dragging");
+      ev.preventDefault();
     });
 
-    // Release everything if window loses focus so we don't leave stuck buttons.
-    window.addEventListener("blur", () => {
-      const releaseAll = [..._kbHeldButtons].map(k => KEY_BUTTON_MAP[k]).filter(Boolean);
-      _kbHeldButtons.clear();
-      _kbHeldArrows.clear();
-      _stopArrowIntervalIfIdle();
-      _updateKbHeldDisplay();
-      for (const name of releaseAll) {
-        _kbReleaseButton(name);
+    els.mameVideoCol.addEventListener("pointermove", (ev) => {
+      if (!dragging) return;
+      if (activePointerId !== null && ev.pointerId !== activePointerId) return;
+      const dx = Math.round(ev.clientX - lastX);
+      const dy = Math.round(ev.clientY - lastY);
+      lastX = ev.clientX;
+      lastY = ev.clientY;
+      // Negate: dragging right on screen moves blaster right in game.
+      if (dx !== 0 || dy !== 0) _xdoMouse(-dx, -dy);
+    });
+
+    const stopDrag = (ev) => {
+      if (!dragging) return;
+      if (ev && activePointerId !== null && ev.pointerId !== activePointerId) return;
+      dragging = false;
+      if (activePointerId !== null && typeof els.mameVideoCol.releasePointerCapture === "function") {
+        try {
+          els.mameVideoCol.releasePointerCapture(activePointerId);
+        } catch {}
       }
-      postJSON("/api/mame/clear_buttons", {}).catch(() => {});
+      activePointerId = null;
+      els.mameVideoCol.classList.remove("dragging");
+    };
+
+    els.mameVideoCol.addEventListener("pointerup", stopDrag);
+    els.mameVideoCol.addEventListener("pointercancel", stopDrag);
+    els.mameVideoCol.addEventListener("pointerleave", stopDrag);
+
+    window.addEventListener("blur", () => {
+      dragging = false;
+      activePointerId = null;
+      els.mameVideoCol.classList.remove("dragging");
     });
   }
 
@@ -1440,6 +1495,7 @@
     await loadBoardInspector();
     initTrackballPad();
     initKeyboardControls();
+    initMouseControls();
     if (els.audioToneStart) {
       els.audioToneStart.addEventListener("click", () => { void startTone(); });
     }
