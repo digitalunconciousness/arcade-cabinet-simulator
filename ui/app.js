@@ -914,8 +914,7 @@
       const dy = Math.round(ev.clientY - lastY);
       lastX = ev.clientX;
       lastY = ev.clientY;
-      // Negate: dragging right on screen moves blaster right in game.
-      if (dx !== 0 || dy !== 0) _xdoMouse(-dx, -dy);
+      if (dx !== 0 || dy !== 0) _xdoMouse(dx, dy);
     });
 
     const stopDrag = (ev) => {
