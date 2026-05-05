@@ -7,9 +7,22 @@
 # `cargo build`, and `tauri dev` all work without a PyInstaller binary.
 #
 # The PyInstaller build replaces this file with a real standalone ELF.
-REPO_ROOT="$(cd "$(dirname "$0")" && pwd)"
+# Resolve repo root robustly: readlink -f gives an absolute path
+# regardless of how $0 was passed by the caller (Tauri uses full path,
+# but fallback handles basename-only invocations too).
+SELF="$(readlink -f -- "$0" 2>/dev/null || realpath -- "$0" 2>/dev/null || echo "$0")"
+REPO_ROOT="$(dirname "$(dirname "$SELF")")"
+
+# Prefer the venv python; try both 'python' and 'python3' symlink names.
 PYTHON="${REPO_ROOT}/.venv/bin/python"
+if [ ! -x "$PYTHON" ]; then
+    PYTHON="${REPO_ROOT}/.venv/bin/python3"
+fi
 if [ ! -x "$PYTHON" ]; then
     PYTHON="python3"
 fi
+
+# Make repo root importable regardless of the process CWD.
+export PYTHONPATH="${REPO_ROOT}${PYTHONPATH:+:${PYTHONPATH}}"
+
 exec "$PYTHON" -m tools.cabinet_bus "$@"

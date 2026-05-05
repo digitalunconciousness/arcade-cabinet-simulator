@@ -35,6 +35,15 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .manage(SidecarState(Mutex::new(None)))
         .setup(|app| {
+            // In release builds, navigate to the splash screen immediately
+            // so the window shows something while the sidecar starts.
+            // In dev mode, about:blank stays until the sidecar port is ready.
+            #[cfg(not(debug_assertions))]
+            {
+                if let Some(w) = app.get_webview_window("main") {
+                    let _ = w.navigate("tauri://localhost/splash.html".parse().unwrap());
+                }
+            }
             let handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
                 if let Err(e) = boot(handle).await {

@@ -205,3 +205,16 @@ Ubuntu 20.04 ships WebKitGTK 4.0. Either upgrade to 22.04, or change the depende
 
 **Shader compile errors in WebKitGTK**
 The shaders use GLSL ES 1.00 (`varying`, `texture2D`, `gl_FragColor`). If a new shader uses `#version 300 es` syntax it will fail in WebKitGTK. Stick to ES 1.00 or add a transpilation step. Compile errors are logged to the browser console as `[CRT shader] compile failed: <name>`.
+
+**`failed to run linuxdeploy` — patchelf missing (Arch Linux)**
+linuxdeploy requires `patchelf` to rewrite ELF RPATH entries. Arch does not install it by default:
+```bash
+sudo pacman -S patchelf
+```
+On Ubuntu/Debian it is part of the `patchelf` package (already listed in the apt prerequisites above).
+
+**`failed to run linuxdeploy` — `strip` crashes on `.relr.dyn` ELF sections (Arch Linux / glibc ≥ 2.31)**
+linuxdeploy bundles an old 2019 `strip` binary that cannot parse compressed relocation sections used by modern glibc. Fix: set `NO_STRIP=1` in the environment before running `cargo tauri build`. This env var is already set in `beforeBuildCommand` in `tauri.conf.json`.
+
+**`Failed to run plugin: gtk (exit code: 1)` — gdk-pixbuf loaders directory missing (Arch Linux)**
+gdk-pixbuf ≥ 2.44 (with glycin) no longer ships `/usr/lib/gdk-pixbuf-2.0/2.10.0/` on Arch, but `pkg-config` still reports that path. The bundled `linuxdeploy-plugin-gtk.sh` at `~/.cache/tauri/` has been patched to guard the `copy_tree` call with a directory existence check. If the cache is cleared and the plugin is re-downloaded, re-apply the patch: change the `copy_tree "$gdk_pixbuf_binarydir"` line to check `[ -d "$gdk_pixbuf_binarydir" ]` first. See `patches/` for context.
