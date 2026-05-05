@@ -641,16 +641,222 @@
   els.mameResumeBtn.addEventListener("click", () => mameAction("resume"));
   els.mameResetBtn.addEventListener("click",  () => mameAction("soft_reset"));
 
-  // ---------- Phase 6 preview ----------
+  // ---------- Phase 6 preview — WebGL CRT shader renderer ----------
+  //
+  // All .glsl files are WebGL 1 / GLSL ES 1.00 (varying, texture2D,
+  // gl_FragColor) and are served at /static/shaders/<name>.glsl.
+  //
+  // Boot sequence (once, at init):
+  //   1. _crtGl.prefetch() fetches all 10 .glsl sources.
+  //   2. On first renderCrtPreview call, _crtGl.init() creates the
+  //      WebGL1 context and compiles every shader program.
+  //   3. Each frame: draw test pattern to offscreen canvas, upload as
+  //      texture, run the current shader, blit to the visible canvas.
+  //
+  // Falls back silently to Canvas 2D if WebGL is unavailable.
+
+  const _crtGl = (() => {
+    const VERT_SRC = `
+attribute vec2 a_pos;
+varying vec2 v_uv;
+void main() {
+  v_uv = a_pos * 0.5 + 0.5;
+  gl_Position = vec4(a_pos, 0.0, 1.0);
+}`;
+
+    const SHADER_NAMES = [
+      "crt_normal", "crt_dim_picture", "crt_no_hv",
+      "crt_brightness_drift", "crt_weak_focus", "crt_ringing_ghosting",
+      "crt_bad_deflection_caps", "crt_sync_lock_failure",
+      "crt_vertical_collapse", "crt_horizontal_collapse",
+    ];
+
+    let gl = null;
+    let vbo = null;
+    const programs = {};   // name → { program, uniforms }
+    const sources = {};    // name → glsl source string
+    let offscreen = null;  // OffscreenCanvas or plain <canvas>
+    let failed = false;
+
+    function _compileShader(type, src) {
+      const sh = gl.createShader(type);
+      gl.shaderSource(sh, src);
+      gl.compileShader(sh);
+      if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+        console.warn("[crt-gl] shader compile:", gl.getShaderInfoLog(sh), "\n---\n", src);
+        gl.deleteShader(sh);
+        return null;
+      }
+      return sh;
+    }
+
+    function _buildProgram(fsSrc) {
+      const vs = _compileShader(gl.VERTEX_SHADER, VERT_SRC);
+      const fs = _compileShader(gl.FRAGMENT_SHADER, fsSrc);
+      if (!vs || !fs) return null;
+      const prog = gl.createProgram();
+      gl.attachShader(prog, vs);
+      gl.attachShader(prog, fs);
+      gl.linkProgram(prog);
+      gl.deleteShader(vs);
+      gl.deleteShader(fs);
+      if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+        console.warn("[crt-gl] link:", gl.getProgramInfoLog(prog));
+        gl.deleteProgram(prog);
+        return null;
+      }
+      return {
+        program: prog,
+        uniforms: {
+          u_texture:  gl.getUniformLocation(prog, "u_texture"),
+          u_time:     gl.getUniformLocation(prog, "u_time"),
+          u_brightness: gl.getUniformLocation(prog, "u_brightness"),
+        },
+        attribs: {
+          a_pos: gl.getAttribLocation(prog, "a_pos"),
+        },
+      };
+    }
+
+    function init(canvas) {
+      if (failed || gl) return;
+      try {
+        gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+        if (!gl) { failed = true; return; }
+
+        // Full-screen quad: two triangles covering NDC.
+        const verts = new Float32Array([-1,-1, 1,-1, -1,1, 1,1]);
+        vbo = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+        gl.bufferData(gl.ARRAY_BUFFER, verts, gl.STATIC_DRAW);
+
+        // Compile a program for each fetched shader source.
+        let allOk = true;
+        for (const name of SHADER_NAMES) {
+          const src = sources[name];
+          if (!src) { allOk = false; continue; }
+          const entry = _buildProgram(src);
+          if (!entry) { allOk = false; continue; }
+          programs[name] = entry;
+        }
+        if (!allOk) {
+          console.warn("[crt-gl] some shaders failed; will fall back per-effect");
+        }
+
+        // Offscreen canvas for 2D test-pattern generation.
+        try {
+          offscreen = new OffscreenCanvas(canvas.width, canvas.height);
+        } catch (_) {
+          offscreen = document.createElement("canvas");
+          offscreen.width = canvas.width;
+          offscreen.height = canvas.height;
+        }
+      } catch (e) {
+        console.warn("[crt-gl] init failed:", e);
+        failed = true;
+      }
+    }
+
+    function render(canvas, effect, time, brightness) {
+      if (failed) return false;
+      init(canvas);
+      if (!gl) return false;
+      const entry = programs[effect] || programs["crt_normal"];
+      if (!entry) return false;
+
+      // Resize offscreen canvas if needed.
+      if (offscreen.width !== canvas.width || offscreen.height !== canvas.height) {
+        offscreen.width = canvas.width;
+        offscreen.height = canvas.height;
+      }
+
+      // Draw the base test pattern on the offscreen 2D canvas.
+      const octx = offscreen.getContext("2d");
+      const w = offscreen.width, h = offscreen.height;
+      octx.fillStyle = "#000";
+      octx.fillRect(0, 0, w, h);
+      const bars = ["#ffffff","#ffd400","#00d4ff","#2bd900","#d94d2b","#ff00ff","#2a6bff","#333333"];
+      const bw = Math.floor(w / bars.length);
+      bars.forEach((c, i) => {
+        octx.fillStyle = c;
+        octx.fillRect(i * bw, 10, bw, Math.floor(h * 0.45));
+      });
+      octx.strokeStyle = "#73ff7a";
+      octx.lineWidth = 2;
+      for (let y = 0; y < h; y += 8) {
+        octx.beginPath(); octx.moveTo(0, y + 0.5); octx.lineTo(w, y + 0.5); octx.stroke();
+      }
+
+      // Upload offscreen canvas as a WebGL texture.
+      const tex = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      try {
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, offscreen);
+      } catch (_) {
+        // OffscreenCanvas may not be accepted on all WebKitGTK versions.
+        const tmp = (offscreen instanceof HTMLCanvasElement)
+          ? offscreen
+          : (() => { const c = document.createElement("canvas"); c.width=w; c.height=h; c.getContext("2d").drawImage(offscreen, 0, 0); return c; })();
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, tmp);
+      }
+
+      // Draw.
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.useProgram(entry.program);
+      gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+      gl.enableVertexAttribArray(entry.attribs.a_pos);
+      gl.vertexAttribPointer(entry.attribs.a_pos, 2, gl.FLOAT, false, 0, 0);
+      gl.uniform1i(entry.uniforms.u_texture, 0);
+      if (entry.uniforms.u_time !== null)
+        gl.uniform1f(entry.uniforms.u_time, time);
+      if (entry.uniforms.u_brightness !== null)
+        gl.uniform1f(entry.uniforms.u_brightness, brightness);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      gl.deleteTexture(tex);
+      return true;
+    }
+
+    async function prefetch() {
+      const results = await Promise.allSettled(
+        SHADER_NAMES.map(name =>
+          fetch(`/static/shaders/${name}.glsl`)
+            .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
+            .then(src => { sources[name] = src; })
+        )
+      );
+      const failures = results.filter(r => r.status === "rejected").length;
+      if (failures > 0) {
+        console.warn(`[crt-gl] ${failures}/${SHADER_NAMES.length} shader(s) failed to fetch`);
+      }
+    }
+
+    return { prefetch, render };
+  })();
 
   function renderCrtPreview() {
     if (!els.crtPreview || !crtState) return;
     const canvas = els.crtPreview;
+    const effect = crtState.shader_effect || "crt_normal";
+    const b = Math.max(0, Math.min(2, crtState.effective_brightness || 1));
+    const time = performance.now() / 1000.0;
+
+    // Try the WebGL shader path first.
+    if (_crtGl.render(canvas, effect, time, b)) {
+      els.crtPreviewMeta.textContent = `effect: ${effect} · brightness: ${b.toFixed(2)} [gl]`;
+      return;
+    }
+
+    // Canvas 2D fallback (used when WebGL is unavailable or a shader failed
+    // to compile, and as the reference implementation during development).
     const ctx = canvas.getContext("2d");
     const w = canvas.width;
     const h = canvas.height;
 
-    // Base test pattern (standalone, no MAME framebuffer dependency).
+    // Base test pattern.
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, w, h);
     const bars = ["#ffffff", "#ffd400", "#00d4ff", "#2bd900", "#d94d2b", "#ff00ff", "#2a6bff", "#333333"];
@@ -668,8 +874,7 @@
       ctx.stroke();
     }
 
-    // Apply effect profile approximating shader categories.
-    const effect = crtState.shader_effect || "crt_normal";
+    // Apply effect approximations.
     if (effect === "crt_vertical_collapse") {
       ctx.globalAlpha = 0.9;
       ctx.drawImage(canvas, 0, Math.floor(h * 0.48), w, 4, 0, Math.floor(h * 0.44), w, 16);
@@ -705,7 +910,6 @@
       ctx.globalAlpha = 1;
     }
 
-    const b = Math.max(0, Math.min(2, crtState.effective_brightness || 1));
     const alpha = Math.max(0, Math.min(0.92, 1 - (b / 1.2)));
     ctx.fillStyle = `rgba(0,0,0,${alpha})`;
     ctx.fillRect(0, 0, w, h);
@@ -1495,6 +1699,8 @@
     initTrackballPad();
     initKeyboardControls();
     initMouseControls();
+    // Prefetch CRT shader sources so the WebGL path is ready at first frame.
+    _crtGl.prefetch().catch(() => {});
     if (els.audioToneStart) {
       els.audioToneStart.addEventListener("click", () => { void startTone(); });
     }
