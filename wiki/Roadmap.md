@@ -81,12 +81,14 @@ Complete. Board package content (schematic.board.json, fault_map.json),
 coverage validator, and three-panel Board Inspector UI all shipped.
 See [Phase-8-Schematic-Board-Package](Phases/Phase-8-Schematic-Board-Package.md).
 
-### ⏳ Phase 9 — Desktop productization
+### 🚧 Phase 9 — Desktop productization
 6-10 weekends. Replace the development-first Flask/browser workflow with
 a downloadable desktop app for Linux first, Windows second, and macOS
 when test hardware exists. Bundle board packages, shaders, scenarios,
 and local runtime orchestration so the user runs one executable instead
-of starting a server manually. See
+of starting a server manually. M1–M5 complete (PyInstaller spec, Tauri
+2.11.0 scaffold, MAME config, WebGL shader pipeline). M6 (CI) and M7
+(docs) remaining. See
 [Phase-9-Desktop-Productization](Phases/Phase-9-Desktop-Productization.md).
 
 ### ⏳ Phase 10 — 3D cabinet digital twin
