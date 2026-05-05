@@ -133,12 +133,16 @@ def create_app(
     }
 
     # Cache the manifest at boot; it's small and rarely changes.
+    # Missing manifest is non-fatal — the app still starts so the UI loads.
+    _manifest_error: str = ""
     if not manifest_path.exists():
-        raise FileNotFoundError(
+        _manifest_error = (
             f"manifest not found at {manifest_path}; "
             f"run tools/preprocessor/instrument.py first"
         )
-    manifest = json.loads(manifest_path.read_text())
+        manifest = []
+    else:
+        manifest = json.loads(manifest_path.read_text())
     manifest_by_refpin = {
         (e.get("refdes", ""), e.get("pin", "")): e.get("fault_device", "")
         for e in manifest
@@ -186,12 +190,12 @@ def create_app(
         except Exception as e:  # noqa: BLE001
             schematic_load_error = str(e)
 
+    _template_error: str = ""
     if not template_path.exists():
-        raise FileNotFoundError(
-            f"instrumented netlist not found at {template_path}"
-        )
+        _template_error = f"instrumented netlist not found at {template_path}"
+    _nltool_error: str = ""
     if not nltool_path.exists():
-        raise FileNotFoundError(
+        _nltool_error = (
             f"nltool not built at {nltool_path}; "
             f"run `make -j3 SOURCES=src/mame/atari/centiped.cpp TOOLS=1` "
             f"in vendor/mame"

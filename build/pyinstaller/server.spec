@@ -18,6 +18,7 @@ REPO = Path(SPECPATH).resolve().parent.parent  # noqa: F821
 a = Analysis(
     [str(REPO / "tools" / "cabinet_bus" / "__main__.py")],
     pathex=[
+        str(REPO),  # makes `tools.cabinet_bus.server` importable when frozen
         str(REPO / "tools" / "cabinet_bus"),
         str(REPO / "tools" / "peripherals"),
         str(REPO / "tools" / "schematic"),
