@@ -1,0 +1,15 @@
+#!/usr/bin/env sh
+# Development stub for the arcade-sim-server sidecar.
+#
+# Tauri requires the sidecar binary to exist at check/build time (with the
+# target-triple suffix appended).  Before `build/pyinstaller/build.sh` has
+# been run this stub delegates to the Python package so `cargo check`,
+# `cargo build`, and `tauri dev` all work without a PyInstaller binary.
+#
+# The PyInstaller build replaces this file with a real standalone ELF.
+REPO_ROOT="$(cd "$(dirname "$0")" && pwd)"
+PYTHON="${REPO_ROOT}/.venv/bin/python"
+if [ ! -x "$PYTHON" ]; then
+    PYTHON="python3"
+fi
+exec "$PYTHON" -m tools.cabinet_bus "$@"

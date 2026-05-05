@@ -31,3 +31,14 @@ log_*.log
 # Graphify generated artifacts
 graphify-out/
 **/graphify-out/
+
+# Tauri / Rust build artifacts
+src-tauri/target/
+
+# PyInstaller build artifacts — the real sidecar binary and work dir.
+# The dev stub (dist/arcade-sim-server-*) IS tracked in git.
+build/pyinstaller/work/
+dist/arcade-sim-server
+# Placeholder icons are tracked; real ones generated before release.
+# src-tauri/icons/ is intentionally NOT in .gitignore.
+

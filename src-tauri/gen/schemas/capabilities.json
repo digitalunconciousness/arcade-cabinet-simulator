@@ -1,0 +1,1 @@
+{"default":{"identifier":"default","description":"Default capabilities for the Arcade Fault Simulator desktop app.","local":true,"windows":["main"],"permissions":["core:default",{"identifier":"shell:allow-execute","allow":[{"args":[{"validator":"^--tauri-sidecar$"}],"name":"arcade-sim-server","sidecar":true}]},"shell:allow-spawn","dialog:allow-open"]}}

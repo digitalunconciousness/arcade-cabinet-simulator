@@ -29,6 +29,7 @@ from typing import Optional
 # Local import; runner.py lives next to this file.
 sys.path.insert(0, str(Path(__file__).parent))
 import runner  # noqa: E402
+from config import load_config, save_config  # noqa: E402
 from mame_client import MameClient  # noqa: E402
 
 # Peripherals package lives one level up.
@@ -55,7 +56,20 @@ from flask import Flask, Response, abort, jsonify, request, send_from_directory 
 
 # Repo layout. Discovered relative to this file.
 HERE = Path(__file__).resolve().parent
-REPO_ROOT = HERE.parent.parent
+
+
+def _bundle_root() -> Path:
+    """Root directory for bundled data assets.
+
+    In a PyInstaller --onefile build, all ``datas`` entries land under
+    ``sys._MEIPASS``.  In normal development the root is the repo root.
+    """
+    if getattr(sys, "frozen", False):
+        return Path(sys._MEIPASS)  # type: ignore[attr-defined]
+    return HERE.parent.parent
+
+
+REPO_ROOT = _bundle_root()
 INSTRUMENTED_DIR = REPO_ROOT / "build" / "instrumented"
 DEFAULT_TEMPLATE = INSTRUMENTED_DIR / "sync_generator.cpp"
 DEFAULT_MANIFEST = INSTRUMENTED_DIR / "sync_generator.manifest.json"
@@ -252,6 +266,25 @@ def create_app(
         if board_package is not None:
             bid = board_package.board_id
         return jsonify({"status": "ok", "board_id": bid})
+
+    @app.route("/api/mame/runtime_info")
+    def api_mame_runtime_info():
+        """Report MAME binary + ROM path discovery state.
+
+        Used by the Tauri first-run dialog to decide whether to show the
+        MAME path picker.  Never raises; returns safe defaults if anything
+        is misconfigured.
+        """
+        import shutil
+        cfg = load_config()
+        mame_bin = cfg["mame_binary"] or shutil.which("mame") or ""
+        mame_found = bool(mame_bin and Path(mame_bin).is_file())
+        return jsonify({
+            "mame_found": mame_found,
+            "mame_path": mame_bin or None,
+            "rom_path": cfg["rom_path"] or None,
+            "display": cfg["display"] or _resolve_mame_display(),
+        })
 
     # ---------- Schematic import + click-to-fault foundations ----------
 
@@ -747,11 +780,15 @@ def create_app(
     def _resolve_mame_display() -> str:
         """Best-effort display resolution for mame video capture.
 
-        Preferred source is MAME_DISPLAY env (set by run-demo.sh).  If that is
-        absent and an Xvfb :99 process is running, fall back to :99 so a manual
-        Flask restart still preserves video streaming.
+        Preferred source is MAME_DISPLAY env (set by run-demo.sh).  Falls back
+        to ARCADE_SIM_DISPLAY (set by Tauri before spawning the sidecar).  If
+        neither is set and an Xvfb :99 process is running, falls back to :99 so
+        a manual Flask restart still preserves video streaming.
         """
-        disp = os.environ.get("MAME_DISPLAY", "").strip()
+        disp = (
+            os.environ.get("MAME_DISPLAY", "").strip()
+            or os.environ.get("ARCADE_SIM_DISPLAY", "").strip()
+        )
         if disp:
             return disp
         try:
