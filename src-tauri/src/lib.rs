@@ -69,11 +69,15 @@ pub fn run() {
 
 async fn boot(app: AppHandle) -> Result<(), String> {
     // 1. Spawn the Python sidecar.
+    // Clear PYTHONHOME and PYTHONPATH so the PyInstaller bootloader uses its
+    // own bundled stdlib and is not confused by any active venv on the host.
     let (mut rx, child) = app
         .shell()
         .sidecar("arcade-sim-server")
         .map_err(|e| format!("sidecar lookup failed: {e}"))?
         .args(["--tauri-sidecar"])
+        .env("PYTHONHOME", "")
+        .env("PYTHONPATH", "")
         .spawn()
         .map_err(|e| format!("sidecar spawn failed: {e}"))?;
 
