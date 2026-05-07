@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import subprocess
 import sys
 import threading
@@ -52,6 +53,7 @@ except Exception:  # noqa: BLE001
     summarize_model = None
 
 from flask import Flask, Response, abort, jsonify, request, send_from_directory  # noqa: E402
+from werkzeug.exceptions import HTTPException  # noqa: E402
 
 
 # Repo layout. Discovered relative to this file.
@@ -142,7 +144,26 @@ def create_app(
         )
         manifest = []
     else:
-        manifest = json.loads(manifest_path.read_text())
+        try:
+            raw_manifest = json.loads(manifest_path.read_text())
+        except (OSError, json.JSONDecodeError) as e:
+            _manifest_error = f"failed to load manifest at {manifest_path}: {e}"
+            raw_manifest = []
+
+        # Accept only well-formed rows so /api/run never crashes while
+        # normalizing request faults.
+        manifest = []
+        if isinstance(raw_manifest, list):
+            for entry in raw_manifest:
+                if not isinstance(entry, dict):
+                    continue
+                if not entry.get("fault_device"):
+                    continue
+                manifest.append(entry)
+        else:
+            _manifest_error = (
+                f"manifest at {manifest_path} must be a JSON list of objects"
+            )
     manifest_by_refpin = {
         (e.get("refdes", ""), e.get("pin", "")): e.get("fault_device", "")
         for e in manifest
@@ -193,6 +214,22 @@ def create_app(
     _template_error: str = ""
     if not template_path.exists():
         _template_error = f"instrumented netlist not found at {template_path}"
+
+    # In bundled builds, vendor/mame/nltool may be absent from _MEIPASS.
+    # Fall back to nltool next to the configured MAME binary or PATH.
+    if not nltool_path.exists():
+        cfg = load_config()
+        mame_bin = (
+            os.environ.get("ARCADE_SIM_MAME_BINARY", "").strip()
+            or cfg.get("mame_binary", "").strip()
+            or shutil.which("mame")
+            or ""
+        )
+        if mame_bin:
+            candidate = Path(mame_bin).resolve().parent / "nltool"
+            if candidate.exists():
+                nltool_path = candidate
+
     _nltool_error: str = ""
     if not nltool_path.exists():
         _nltool_error = (
@@ -220,12 +257,26 @@ def create_app(
             "modes": runner.MODE_LABELS,
         })
 
+    @app.errorhandler(Exception)
+    def api_error_handler(err: Exception):
+        # Ensure API clients never receive Flask's HTML error page.
+        if request.path.startswith("/api/"):
+            if isinstance(err, HTTPException):
+                return jsonify({"error": err.description}), int(err.code or 500)
+            return jsonify({"error": f"internal server error: {err}"}), 500
+        if isinstance(err, HTTPException):
+            return err
+        raise err
+
     @app.route("/api/run", methods=["POST"])
     def api_run():
         body = request.get_json(silent=True) or {}
         faults_in = body.get("faults", {}) or {}
         # Normalize: only allow keys that appear in the manifest.
-        manifest_devices = {e["fault_device"] for e in manifest}
+        manifest_devices = {
+            e.get("fault_device") for e in manifest
+            if isinstance(e, dict) and e.get("fault_device")
+        }
         faults = dict(schematic_faults)
         for k, v in faults_in.items():
             if k not in manifest_devices:
@@ -251,8 +302,12 @@ def create_app(
             result = runner.run(spec)
         except ValueError as e:
             return jsonify({"error": str(e)}), 400
+        except FileNotFoundError as e:
+            return jsonify({"error": str(e), "hint": _nltool_error or _template_error}), 503
         except subprocess.TimeoutExpired:  # type: ignore[name-defined]
             return jsonify({"error": "nltool timed out"}), 504
+        except Exception as e:  # noqa: BLE001
+            return jsonify({"error": f"simulation failed: {e}"}), 500
 
         return jsonify({
             "waveforms": runner.waveforms_to_json(result.waveforms),

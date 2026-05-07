@@ -101,7 +101,25 @@
     const res = await fetch(url, opts);
     if (!res.ok) {
       const text = await res.text();
-      throw new Error(`${res.status}: ${text}`);
+      let detail = text.trim();
+
+      // Prefer structured API errors, but gracefully collapse HTML error pages
+      // into a short message so status banners remain readable.
+      try {
+        const parsed = JSON.parse(detail);
+        if (parsed && typeof parsed.error === "string" && parsed.error.trim()) {
+          detail = parsed.error.trim();
+        }
+      } catch {
+        const htmlP = detail.match(/<p>(.*?)<\/p>/i);
+        if (htmlP && htmlP[1]) {
+          detail = htmlP[1].replace(/<[^>]+>/g, "").trim();
+        } else if (/^\s*<!doctype html>|^\s*<html/i.test(detail)) {
+          detail = "internal server error";
+        }
+      }
+
+      throw new Error(`${res.status}: ${detail}`);
     }
     return await res.json();
   }
@@ -122,7 +140,13 @@
       }
       setStatus("ready");
     } catch (err) {
-      setStatus("error: " + err.message, true);
+      const msg = String(err?.message || err || "waveform simulation unavailable");
+      if (/nltool|timed out|timeout/i.test(msg)) {
+        setStatus("ready (waveforms unavailable)");
+      } else {
+        setStatus("ready (simulation unavailable)");
+      }
+      console.warn("waveform reload failed", err);
     }
   }
 
