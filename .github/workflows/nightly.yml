@@ -248,7 +248,7 @@ jobs:
           NIGHTLY_VERSION: ${{ needs.create-nightly-release.outputs.nightly_version }}
         run: |
           Copy-Item src-tauri/tauri.nightly.conf.json src-tauri/tauri.conf.json -Force
-          python -c "import json, os, pathlib; p = pathlib.Path('src-tauri/tauri.conf.json'); data = json.loads(p.read_text()); data['version'] = os.environ['NIGHTLY_VERSION']; data['plugins']['updater']['endpoints'] = [f\"{os.environ['RELEASE_BASE_URL']}/releases/download/nightly/latest.json\"]; data['build']['beforeBuildCommand'] = 'bash build/pyinstaller/build.sh'; p.write_text(json.dumps(data, indent=2) + '\n')"
+          python -c 'import json, os, pathlib; p = pathlib.Path("src-tauri/tauri.conf.json"); data = json.loads(p.read_text()); data["version"] = os.environ["NIGHTLY_VERSION"]; data["plugins"]["updater"]["endpoints"] = [os.environ["RELEASE_BASE_URL"] + "/releases/download/nightly/latest.json"]; data["build"]["beforeBuildCommand"] = "bash build/pyinstaller/build.sh"; p.write_text(json.dumps(data, indent=2) + "\n")'
 
       - name: Build and publish nightly NSIS installer
         uses: tauri-apps/tauri-action@v0
