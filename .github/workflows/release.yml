@@ -43,6 +43,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Ensure vendored MAME tree exists
+        shell: bash
+        run: |
+          if [[ ! -d vendor/mame/plugins/cabinet_bus ]]; then
+            git clone --depth=1 https://github.com/mamedev/mame.git vendor/mame
+            ( cd vendor/mame && git am ../../patches/*.patch )
+          fi
+
       - name: Install system dependencies
         run: |
           sudo apt-get update
@@ -98,6 +106,14 @@ jobs:
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
+
+      - name: Ensure vendored MAME tree exists
+        shell: bash
+        run: |
+          if [[ ! -d vendor/mame/plugins/cabinet_bus ]]; then
+            git clone --depth=1 https://github.com/mamedev/mame.git vendor/mame
+            ( cd vendor/mame && git am ../../patches/*.patch )
+          fi
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
