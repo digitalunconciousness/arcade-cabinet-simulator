@@ -156,7 +156,7 @@ jobs:
         run: |
           python3 -m venv .venv
           .venv/bin/pip install --upgrade pip
-          .venv/bin/pip install -r requirements.txt pyinstaller
+          .venv/bin/pip install -r requirements.txt pyinstaller pytest requests
 
       - name: Add venv to PATH
         run: echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
@@ -237,7 +237,7 @@ jobs:
         run: |
           python -m venv .venv
           .venv\Scripts\pip install --upgrade pip
-          .venv\Scripts\pip install -r requirements.txt pyinstaller pillow
+          .venv\Scripts\pip install -r requirements.txt pyinstaller pillow pytest requests
 
       - name: Add venv to PATH
         run: echo "$env:GITHUB_WORKSPACE\.venv\Scripts" | Out-File -FilePath $env:GITHUB_PATH -Append
