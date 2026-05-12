@@ -91,12 +91,26 @@
 
   function _sendMameButton(action, name) {
     if (!name) return;
-    void _invokeMame(`mame_${action}`, { name }).catch(() => {});
+    // Route through Flask sidecar so the Python MameClient holds the sole
+    // MAME TCP socket. Tauri IPC bypasses the peripheral fault model and
+    // competes with the Python client for the single-connection socket.
+    void fetch(`/api/mame/${action}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    }).catch(() => {});
   }
 
   function _sendTrackballDelta(dx, dy) {
     if (dx === 0 && dy === 0) return;
-    void _invokeMame("mame_trackball_delta", { dx, dy }).catch(() => {});
+    // Use /api/trackball/motion so the peripheral fault model is applied
+    // (dirty_roller, dead_opto_x/y, seized_bearing, etc.) before forwarding
+    // the scaled delta to MAME. Also routes through Python MameClient.
+    void fetch("/api/trackball/motion", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ dx, dy }),
+    }).catch(() => {});
   }
 
   function _scheduleTrackballPump() {

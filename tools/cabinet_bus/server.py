@@ -746,7 +746,10 @@ def create_app(
             result = peripherals.apply_fault(ident, fault)
             # Push CRT state to MAME immediately so the visual change appears
             # without waiting for the 1-second PSU watcher cycle.
-            if str(ident).upper().startswith("CRT"):
+            # Also push on PSU faults because the CRT effective_brightness
+            # is coupled to the 5V rail and changes immediately.
+            ident_upper = str(ident).upper()
+            if ident_upper.startswith("CRT") or ident_upper.startswith("PSU"):
                 result["mame_available"] = _push_crt_to_mame()
             return jsonify(result)
         except ValueError as e:
@@ -1149,11 +1152,11 @@ def create_app(
                 if fault_type == "peripheral":
                     peripherals.apply_fault(fault["target"], fault["fault"])
                     result: dict = {"type": fault_type, "target": fault["target"], "ok": True}
-                    if fault["target"].startswith("CRT"):
+                    if fault["target"].startswith("CRT") or fault["target"].startswith("PSU"):
                         reached = _push_crt_to_mame()
                         result["mame_available"] = reached
                         if not reached:
-                            result["warning"] = "CRT state updated but MAME is not connected"
+                            result["warning"] = "state updated but MAME is not connected"
                     results.append(result)
 
                 elif fault_type == "mame_stuck_byte":
