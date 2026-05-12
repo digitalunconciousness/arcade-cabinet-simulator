@@ -180,11 +180,16 @@ jobs:
         run: |
           python -m venv .venv
           .venv\Scripts\pip install --upgrade pip
-          .venv\Scripts\pip install -r requirements.txt pyinstaller
+          .venv\Scripts\pip install -r requirements.txt pyinstaller pillow
 
       - name: Add venv to PATH
         run: echo "$env:GITHUB_WORKSPACE\.venv\Scripts" | Out-File -FilePath $env:GITHUB_PATH -Append
         shell: pwsh
+
+      - name: Generate Windows icon
+        shell: pwsh
+        run: |
+          python -c 'from PIL import Image; img = Image.open("src-tauri/icons/icon.png"); img.save("src-tauri/icons/icon.ico", format="ICO", sizes=[(256,256),(128,128),(64,64),(32,32),(16,16)])'
 
       - name: Build and publish NSIS installer
         uses: tauri-apps/tauri-action@v0
