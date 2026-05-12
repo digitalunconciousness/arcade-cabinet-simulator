@@ -108,6 +108,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Configure Git identity for vendored patches
+        shell: bash
+        run: |
+          git config --global user.name "Arcade Fault Simulator CI"
+          git config --global user.email "ci@arcade-sim.invalid"
+
+      - name: Ensure vendored MAME tree exists
+        shell: bash
+        run: |
+          if [[ ! -d vendor/mame/plugins/cabinet_bus ]]; then
+            git clone --depth=1 https://github.com/mamedev/mame.git vendor/mame
+            for patch in "$GITHUB_WORKSPACE"/patches/*.patch; do
+              if git -C vendor/mame apply --reverse --check "$patch" >/dev/null 2>&1; then
+                echo "Skipping already-applied patch: $(basename "$patch")"
+                continue
+              fi
+
+              git -C vendor/mame -c user.name="Arcade Fault Simulator CI" -c user.email="ci@arcade-sim.invalid" am -3 "$patch"
+            done
+          fi
+
       - name: Install system dependencies
         run: |
           sudo apt-get update
@@ -223,10 +244,11 @@ jobs:
       - name: Apply nightly Tauri config
         shell: pwsh
         env:
+          RELEASE_BASE_URL: ${{ github.server_url }}/${{ github.repository }}
           NIGHTLY_VERSION: ${{ needs.create-nightly-release.outputs.nightly_version }}
         run: |
           Copy-Item src-tauri/tauri.nightly.conf.json src-tauri/tauri.conf.json -Force
-          python -c "import json, os, pathlib; p = pathlib.Path('src-tauri/tauri.conf.json'); data = json.loads(p.read_text()); data['version'] = os.environ['NIGHTLY_VERSION']; p.write_text(json.dumps(data, indent=2) + '\n')"
+          python -c "import json, os, pathlib; p = pathlib.Path('src-tauri/tauri.conf.json'); data = json.loads(p.read_text()); data['version'] = os.environ['NIGHTLY_VERSION']; data['plugins']['updater']['endpoints'] = [f\"{os.environ['RELEASE_BASE_URL']}/releases/download/nightly/latest.json\"]; data['build']['beforeBuildCommand'] = 'bash build/pyinstaller/build.sh'; p.write_text(json.dumps(data, indent=2) + '\n')"
 
       - name: Build and publish nightly NSIS installer
         uses: tauri-apps/tauri-action@v0
