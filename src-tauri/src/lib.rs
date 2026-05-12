@@ -60,6 +60,7 @@ pub fn run() {
             tauri::async_runtime::spawn(async move {
                 if let Err(e) = boot(handle).await {
                     eprintln!("[arcade-sim] boot error: {e}");
+                    set_splash_error(&app.handle(), &e);
                 }
             });
             Ok(())
@@ -70,11 +71,18 @@ pub fn run() {
                     // Last window — force-kill known children so relaunch is clean.
                     let state = window.app_handle().state::<SidecarState>();
                     let mut procs = state.0.lock().unwrap();
-                    // Drop in reverse order: sidecar, MAME, Xvfb.
-                    procs.sidecar = None;
-                    procs.mame = None;
-                    procs.xvfb = None;
+                    // Kill in reverse order: sidecar, MAME, Xvfb.
+                    if let Some(child) = procs.sidecar.take() {
+                        let _ = child.kill();
+                    }
+                    if let Some(child) = procs.mame.take() {
+                        let _ = child.kill();
+                    }
+                    if let Some(child) = procs.xvfb.take() {
+                        let _ = child.kill();
+                    }
                     kill_stale_processes();
+                    window.app_handle().exit(0);
                 }
             }
         })
@@ -86,25 +94,31 @@ pub fn run() {
 
 async fn boot(app: AppHandle) -> Result<(), String> {
     // Best-effort cleanup in case a prior run left children alive.
+    set_splash_status(&app, 5, "Cleaning stale processes");
     kill_stale_processes();
 
     // 1. Start Xvfb (virtual X11 display).
     let xvfb_display = ":99";
+    set_splash_status(&app, 15, "Starting virtual display (Xvfb)");
     eprintln!("[arcade-sim] starting Xvfb on {xvfb_display}…");
     let xvfb_child = start_xvfb(&app, xvfb_display).await?;
     app.state::<SidecarState>().0.lock().unwrap().xvfb = Some(xvfb_child);
+    set_splash_status(&app, 35, "Display ready");
     tokio::time::sleep(Duration::from_millis(500)).await;
 
     // 2. Start MAME emulator with cabinet_bus plugin.
+    set_splash_status(&app, 45, "Launching MAME");
     eprintln!("[arcade-sim] starting MAME…");
     let mame_child = start_mame(&app, xvfb_display).await?;
     app.state::<SidecarState>().0.lock().unwrap().mame = Some(mame_child);
     // Give MAME a moment to initialize and open its window.
+    set_splash_status(&app, 60, "MAME booting and loading ROM");
     tokio::time::sleep(Duration::from_millis(2000)).await;
 
     // 3. Spawn the Python sidecar (arcade-sim-server) with DISPLAY set.
     // Clear PYTHONHOME and PYTHONPATH so the PyInstaller bootloader uses its
     // own bundled stdlib and is not confused by any active venv on the host.
+    set_splash_status(&app, 70, "Starting API sidecar");
     eprintln!("[arcade-sim] starting arcade-sim-server sidecar…");
     let mut env = HashMap::new();
     env.insert("PYTHONHOME".to_string(), "".to_string());
@@ -125,6 +139,7 @@ async fn boot(app: AppHandle) -> Result<(), String> {
     app.state::<SidecarState>().0.lock().unwrap().sidecar = Some(child);
 
     // 4. Read stdout for PORT=<n> (10 s timeout).
+    set_splash_status(&app, 80, "Waiting for sidecar port");
     let port = tokio::time::timeout(Duration::from_secs(10), async {
         while let Some(event) = rx.recv().await {
             match event {
@@ -158,12 +173,14 @@ async fn boot(app: AppHandle) -> Result<(), String> {
 
     // 5. Poll /api/health until 200 (10 s timeout).
     let base_url = format!("http://127.0.0.1:{port}");
+    set_splash_status(&app, 90, "Checking API health");
     wait_for_health(&base_url).await?;
 
     // 6. Background update check — fire-and-forget.
     check_for_update(app.clone());
 
     // 7. Navigate the WebView to the running app.
+    set_splash_status(&app, 100, "Launching interface");
     let window = app
         .get_webview_window("main")
         .ok_or_else(|| "main window not found".to_string())?;
@@ -197,6 +214,9 @@ async fn start_xvfb(app: &AppHandle, display: &str) -> Result<CommandChild, Stri
         ])
         .spawn()
         .map_err(|e| format!("Xvfb spawn failed: {e}"))?;
+
+    // Ensure the display is actually ready before launching MAME.
+    wait_for_display_ready(display)?;
     
     Ok(child)
 }
@@ -215,16 +235,20 @@ async fn start_mame(app: &AppHandle, display: &str) -> Result<CommandChild, Stri
     let rom_path = app_resource_path.join("roms");
     let cfg_path = app_resource_path.join("cfg");
     let plugins_path = app_resource_path.join("vendor/mame/plugins");
+    let project_root = find_project_root();
 
     // Fall back to source-tree paths when running via `cargo tauri dev`.
-    // Try project-root-relative first, then src-tauri-relative (../), then resource_dir value.
+    // Try resource_dir first, then absolute project-root fallback, then relative paths.
     let rom_path = if rom_path.exists() { rom_path }
+        else if let Some(root) = &project_root { root.join("roms") }
         else if Path::new("roms").exists() { PathBuf::from("roms") }
         else { PathBuf::from("../roms") };
     let cfg_path = if cfg_path.exists() { cfg_path }
+        else if let Some(root) = &project_root { root.join("cfg") }
         else if Path::new("cfg").exists() { PathBuf::from("cfg") }
         else { PathBuf::from("../cfg") };
     let plugins_path = if plugins_path.exists() { plugins_path }
+        else if let Some(root) = &project_root { root.join("vendor/mame/plugins") }
         else if Path::new("vendor/mame/plugins").exists() { PathBuf::from("vendor/mame/plugins") }
         else { PathBuf::from("../vendor/mame/plugins") };
 
@@ -292,7 +316,15 @@ fn find_mame_binary(resource_dir: &Path) -> Result<String, String> {
         }
     }
 
-    // 4. Search PATH for mame binary.
+    // 4. Absolute project-root fallback (stable when launched from App Center).
+    if let Some(root) = find_project_root() {
+        let p = root.join("vendor/mame/mame");
+        if p.is_file() && is_executable(&p) {
+            return Ok(p.to_string_lossy().into_owned());
+        }
+    }
+
+    // 5. Search PATH for mame binary.
     if let Ok(path_env) = std::env::var("PATH") {
         for dir in path_env.split(':') {
             let candidate = Path::new(dir).join("mame");
@@ -305,6 +337,41 @@ fn find_mame_binary(resource_dir: &Path) -> Result<String, String> {
     Err(
         "MAME binary not found. Build vendor/mame/mame or set mame_binary in ~/.arcade-sim/config.json".to_string()
     )
+}
+
+fn find_project_root() -> Option<PathBuf> {
+    let mut candidates: Vec<PathBuf> = Vec::new();
+
+    if let Ok(cwd) = std::env::current_dir() {
+        candidates.push(cwd);
+    }
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(parent) = exe.parent() {
+            candidates.push(parent.to_path_buf());
+            if let Some(grand) = parent.parent() {
+                candidates.push(grand.to_path_buf());
+            }
+        }
+    }
+    if let Some(home) = std::env::var_os("HOME").map(PathBuf::from) {
+        candidates.push(home.join("arcade-sim"));
+    }
+
+    for base in candidates {
+        // Check both base and one level up.
+        for root in [base.clone(), base.join("..")]
+            .iter()
+            .filter_map(|p| p.canonicalize().ok())
+        {
+            if root.join("roms").exists()
+                && root.join("cfg").exists()
+                && root.join("vendor/mame/plugins").exists()
+            {
+                return Some(root);
+            }
+        }
+    }
+    None
 }
 
 fn is_executable(path: &Path) -> bool {
@@ -324,10 +391,31 @@ fn is_executable(path: &Path) -> bool {
     }
 }
 
+fn wait_for_display_ready(display: &str) -> Result<(), String> {
+    let deadline = Instant::now() + Duration::from_secs(5);
+    loop {
+        let ok = std::process::Command::new("xdpyinfo")
+            .args(["-display", display])
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false);
+        if ok {
+            return Ok(());
+        }
+        if Instant::now() >= deadline {
+            return Err(format!("Xvfb display {display} did not become ready within 5 s"));
+        }
+        std::thread::sleep(Duration::from_millis(100));
+    }
+}
+
 fn kill_stale_processes() {
     // Keep this broad enough to clean up orphaned processes from prior runs.
     let _ = std::process::Command::new("pkill")
         .args(["-f", "arcade-sim-server --tauri-sidecar"])
+        .output();
+    let _ = std::process::Command::new("pkill")
+        .args(["-f", "mame .* -plugin cabinet_bus"])
         .output();
     let _ = std::process::Command::new("pkill")
         .args(["-f", "vendor/mame/mame"])
@@ -335,6 +423,29 @@ fn kill_stale_processes() {
     let _ = std::process::Command::new("pkill")
         .args(["-f", "Xvfb :99"])
         .output();
+}
+
+fn set_splash_status(app: &AppHandle, percent: u8, message: &str) {
+    if let Some(window) = app.get_webview_window("main") {
+        let msg = serde_json::to_string(message).unwrap_or_else(|_| "\"Starting…\"".to_string());
+        let script = format!(
+            "if (window.__bootProgress) {{ window.__bootProgress({}, {}); }}",
+            percent.min(100),
+            msg
+        );
+        let _ = window.eval(&script);
+    }
+}
+
+fn set_splash_error(app: &AppHandle, message: &str) {
+    if let Some(window) = app.get_webview_window("main") {
+        let msg = serde_json::to_string(message).unwrap_or_else(|_| "\"Boot failed\"".to_string());
+        let script = format!(
+            "if (window.__bootError) {{ window.__bootError({}); }}",
+            msg
+        );
+        let _ = window.eval(&script);
+    }
 }
 
 // ── HTTP helpers — std::net (blocking, loopback only) ─────────────────────────
