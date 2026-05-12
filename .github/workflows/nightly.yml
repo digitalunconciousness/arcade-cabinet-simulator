@@ -176,6 +176,7 @@ jobs:
           data['plugins']['updater']['endpoints'] = [
               f"{os.environ['RELEASE_BASE_URL']}/releases/download/nightly/latest.json"
           ]
+            data['bundle']['createUpdaterArtifacts'] = False
           data['bundle']['resources'] = [
               r for r in data['bundle']['resources'] if (p.parent / r).exists()
           ]
@@ -186,8 +187,6 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY || secrets.TAURI_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD || secrets.TAURI_KEY_PASSWORD }}
           ARCADE_SIM_CHANNEL: nightly
           NO_STRIP: "1"
           APPIMAGE_EXTRACT_AND_RUN: "1"
@@ -256,14 +255,12 @@ jobs:
           NIGHTLY_VERSION: ${{ needs.create-nightly-release.outputs.nightly_version }}
         run: |
           Copy-Item src-tauri/tauri.nightly.conf.json src-tauri/tauri.conf.json -Force
-          python -c 'import json, os, pathlib; p = pathlib.Path("src-tauri/tauri.conf.json"); data = json.loads(p.read_text()); data["version"] = os.environ["NIGHTLY_VERSION"]; data["plugins"]["updater"]["endpoints"] = [os.environ["RELEASE_BASE_URL"] + "/releases/download/nightly/latest.json"]; data["build"]["beforeBuildCommand"] = "bash build/pyinstaller/build.sh"; data["bundle"]["resources"] = [r for r in data["bundle"]["resources"] if (p.parent / r).exists()]; p.write_text(json.dumps(data, indent=2) + "\n")'
+          python -c 'import json, os, pathlib; p = pathlib.Path("src-tauri/tauri.conf.json"); data = json.loads(p.read_text()); data["version"] = os.environ["NIGHTLY_VERSION"]; data["plugins"]["updater"]["endpoints"] = [os.environ["RELEASE_BASE_URL"] + "/releases/download/nightly/latest.json"]; data["build"]["beforeBuildCommand"] = "bash build/pyinstaller/build.sh"; data["bundle"]["createUpdaterArtifacts"] = False; data["bundle"]["resources"] = [r for r in data["bundle"]["resources"] if (p.parent / r).exists()]; p.write_text(json.dumps(data, indent=2) + "\n")'
 
       - name: Build and publish nightly NSIS installer
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY || secrets.TAURI_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD || secrets.TAURI_KEY_PASSWORD }}
           ARCADE_SIM_CHANNEL: nightly
         with:
           releaseId: ${{ needs.create-nightly-release.outputs.release_id }}
@@ -302,7 +299,7 @@ jobs:
       contents: read
     runs-on: ubuntu-22.04
     steps:
-      - name: Verify nightly release has expected assets and updater metadata
+      - name: Verify nightly release has expected assets
         uses: actions/github-script@v7
         with:
           script: |
@@ -321,9 +318,8 @@ jobs:
             const hasNsis = names.some(n => n.endsWith('-setup.exe'));
             const hasAppImage = names.some(n => n.endsWith('.AppImage'));
             const hasDeb = names.some(n => n.endsWith('.deb'));
-            const hasUpdaterJson = names.some(n => n.endsWith('latest.json'));
 
-            if (!hasNsis || !hasAppImage || !hasDeb || !hasUpdaterJson) {
+            if (!hasNsis || !hasAppImage || !hasDeb) {
               core.setFailed(`Missing expected nightly assets. Found: ${names.join(', ')}`);
               return;
             }
