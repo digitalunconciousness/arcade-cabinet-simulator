@@ -43,13 +43,32 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Configure Git identity for vendored patches
+        shell: bash
+        run: |
+          git config --global user.name "Arcade Fault Simulator CI"
+          git config --global user.email "ci@arcade-sim.invalid"
+
       - name: Ensure vendored MAME tree exists
         shell: bash
         run: |
           if [[ ! -d vendor/mame/plugins/cabinet_bus ]]; then
             git clone --depth=1 https://github.com/mamedev/mame.git vendor/mame
-            ( cd vendor/mame && git am ../../patches/*.patch )
+            for patch in "$GITHUB_WORKSPACE"/patches/*.patch; do
+              if git -C vendor/mame apply --reverse --check "$patch" >/dev/null 2>&1; then
+                echo "Skipping already-applied patch: $(basename "$patch")"
+                continue
+              fi
+
+              git -C vendor/mame -c user.name="Arcade Fault Simulator CI" -c user.email="ci@arcade-sim.invalid" am -3 "$patch"
+            done
           fi
+
+      - name: Apply host-aware stable updater endpoint
+        env:
+          RELEASE_BASE_URL: ${{ github.server_url }}/${{ github.repository }}
+        run: |
+          python -c "import json, os, pathlib; p = pathlib.Path('src-tauri/tauri.conf.json'); data = json.loads(p.read_text()); data['plugins']['updater']['endpoints'] = [f\"{os.environ['RELEASE_BASE_URL']}/releases/latest/download/latest.json\"]; p.write_text(json.dumps(data, indent=2) + '\\n')"
 
       - name: Install system dependencies
         run: |
@@ -107,13 +126,32 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Configure Git identity for vendored patches
+        shell: bash
+        run: |
+          git config --global user.name "Arcade Fault Simulator CI"
+          git config --global user.email "ci@arcade-sim.invalid"
+
       - name: Ensure vendored MAME tree exists
         shell: bash
         run: |
           if [[ ! -d vendor/mame/plugins/cabinet_bus ]]; then
             git clone --depth=1 https://github.com/mamedev/mame.git vendor/mame
-            ( cd vendor/mame && git am ../../patches/*.patch )
+            for patch in "$GITHUB_WORKSPACE"/patches/*.patch; do
+              if git -C vendor/mame apply --reverse --check "$patch" >/dev/null 2>&1; then
+                echo "Skipping already-applied patch: $(basename "$patch")"
+                continue
+              fi
+
+              git -C vendor/mame -c user.name="Arcade Fault Simulator CI" -c user.email="ci@arcade-sim.invalid" am -3 "$patch"
+            done
           fi
+
+      - name: Apply host-aware stable updater endpoint
+        env:
+          RELEASE_BASE_URL: ${{ github.server_url }}/${{ github.repository }}
+        run: |
+          python -c "import json, os, pathlib; p = pathlib.Path('src-tauri/tauri.conf.json'); data = json.loads(p.read_text()); data['plugins']['updater']['endpoints'] = [f\"{os.environ['RELEASE_BASE_URL']}/releases/latest/download/latest.json\"]; p.write_text(json.dumps(data, indent=2) + '\\n')"
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
