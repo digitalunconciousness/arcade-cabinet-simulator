@@ -599,7 +599,6 @@
     els.mamePane.hidden = false;
     els.mameOffline.hidden = true;
     if (!_mameWasAvailable) {
-      // Defensive reset so stale held movement state cannot linger.
       _kbHeldMove.clear();
       _updateKbHeldDisplay();
     }
@@ -609,39 +608,35 @@
     els.mamePaused.classList.toggle("paused", !!data.paused);
     els.mameFrame.textContent = data.frame ?? "—";
     els.mameVersion.textContent = `${data.app || "mame"} ${data.version || ""}`.trim();
-    els.mamePauseBtn.disabled  = !!data.paused;
+    els.mamePauseBtn.disabled = !!data.paused;
     els.mameResumeBtn.disabled = !data.paused;
   }
 
-    // Probe /api/mame/video/available and wire up the MJPEG <img> feed.
-    // Retries until available so late-starting Xvfb is picked up automatically.
-    let _videoInitDone = false;
-    async function initMameVideo() {
-      if (_videoInitDone) return;
-      try {
-        const res = await fetch("/api/mame/video/available");
-        const data = res.ok ? await res.json() : { available: false };
-        if (data.available) {
-          _videoInitDone = true;
-          els.mameVideoFeed.src = "/api/mame/video";
-          els.mameVideoFeed.hidden = false;
-          els.mameVideoUnavail.hidden = true;
-          // Reload the stream if the browser drops it (Xvfb restart, etc.)
-          els.mameVideoFeed.addEventListener("error", () => {
-            _videoInitDone = false;
-            els.mameVideoFeed.hidden = true;
-            els.mameVideoUnavail.hidden = false;
-          });
-        } else {
+  let _videoInitDone = false;
+  async function initMameVideo() {
+    if (_videoInitDone) return;
+    try {
+      const res = await fetch("/api/mame/video/available");
+      const data = res.ok ? await res.json() : { available: false };
+      if (data.available) {
+        _videoInitDone = true;
+        els.mameVideoFeed.src = "/api/mame/video";
+        els.mameVideoFeed.hidden = false;
+        els.mameVideoUnavail.hidden = true;
+        els.mameVideoFeed.addEventListener("error", () => {
+          _videoInitDone = false;
           els.mameVideoFeed.hidden = true;
           els.mameVideoUnavail.hidden = false;
-          // Don't set _videoInitDone — will retry on next poll cycle.
-        }
-      } catch {
+        });
+      } else {
         els.mameVideoFeed.hidden = true;
         els.mameVideoUnavail.hidden = false;
       }
+    } catch {
+      els.mameVideoFeed.hidden = true;
+      els.mameVideoUnavail.hidden = false;
     }
+  }
 
   async function mameAction(path) {
     try {
@@ -657,13 +652,12 @@
 
   function refreshMameVideoStream() {
     if (!els.mameVideoFeed) return;
-    // Reconnect so the server can rebuild ffmpeg filters from current CRT state.
     els.mameVideoFeed.src = `/api/mame/video?t=${Date.now()}`;
   }
 
-  els.mamePauseBtn.addEventListener("click",  () => mameAction("pause"));
+  els.mamePauseBtn.addEventListener("click", () => mameAction("pause"));
   els.mameResumeBtn.addEventListener("click", () => mameAction("resume"));
-  els.mameResetBtn.addEventListener("click",  () => mameAction("soft_reset"));
+  els.mameResetBtn.addEventListener("click", () => mameAction("soft_reset"));
 
   // ---------- Phase 6 preview — WebGL CRT shader renderer ----------
   //
@@ -988,33 +982,18 @@ void main() {
   }
 
   // ---------- Keyboard controls for MAME ----------
-  //
-  // Rather than going through the Lua TCP plugin (which has polarity bugs,
-  // axis inversion, and HTTP round-trip lag), we inject events directly into
-  // the MAME X11 window on the Xvfb display via xdotool.  MAME receives the
-  // same events as if a real keyboard/mouse were attached — no Lua glue needed.
-  //
-  // Key layout (matches MAME's default centiped3 bindings):
-  //   Space / LCtrl  → P1 Button 1 (fire)   → xdotool key "ctrl"
-  //   5              → Coin 1                → xdotool key "5"
-  //   1              → 1 Player Start        → xdotool key "1"
-  //   2              → 2 Players Start       → xdotool key "2"
-  //   WASD           → trackball             → xdotool mousemove_relative
 
-  // ev.code → xdotool key name for momentary / toggled buttons.
   const KEY_XDOTOOL_MAP = {
-    ControlLeft:  "ctrl",   // P1 Button 1
-    Digit1:       "1",
-    Digit2:       "2",
-    Digit5:       "5",
-    Numpad1:      "1",
-    Numpad2:      "2",
-    Numpad5:      "5",
-    Escape:       "Escape",
+    ControlLeft: "ctrl",
+    Digit1: "1",
+    Digit2: "2",
+    Digit5: "5",
+    Numpad1: "1",
+    Numpad2: "2",
+    Numpad5: "5",
+    Escape: "Escape",
   };
 
-  // WASD → xdotool arrow key events (MAME's native keyboard trackball emulation).
-  // Arrow keys avoid all cursor-boundary issues; MAME handles sensitivity internally.
   const KEY_TRACKBALL_CODE_MAP = {
     KeyA: "Left",
     KeyD: "Right",
@@ -1022,9 +1001,7 @@ void main() {
     KeyS: "Down",
   };
 
-  // Currently held state for WASD arrow keys only.
-  // Buttons use atomic xdotool key (no open hold state, nothing can get stuck).
-  const _kbHeldMove   = new Set();
+  const _kbHeldMove = new Set();
 
   function _updateKbHeldDisplay() {
     if (!els.mameKbHeld) return;
@@ -1060,10 +1037,9 @@ void main() {
       if (els.mamePane?.hidden) return;
       if (isTypingTarget(ev.target)) return;
 
-      // WASD → arrow key hold (MAME native trackball emulation)
       const arrowKey = KEY_TRACKBALL_CODE_MAP[ev.code];
       if (arrowKey) {
-        if (_kbHeldMove.has(ev.code)) return; // already held
+        if (_kbHeldMove.has(ev.code)) return;
         ev.preventDefault();
         _kbHeldMove.add(ev.code);
         _xdoKey("keydown", arrowKey);
@@ -1071,10 +1047,6 @@ void main() {
         return;
       }
 
-      // Button → atomic xdotool key (press+release in one shot).
-      // This prevents stuck-key: if keyup is ever lost (tab switch, Ctrl+R,
-      // any browser shortcut), nothing stays held in X11.
-      // OS key-repeat sends repeated keydown events → repeated atomic fires.
       const xkey = KEY_XDOTOOL_MAP[ev.code];
       if (xkey) {
         ev.preventDefault();
@@ -1091,16 +1063,13 @@ void main() {
         _kbHeldMove.delete(ev.code);
         _xdoKey("keyup", arrowKey);
         _updateKbHeldDisplay();
-        return;
       }
-      // No keyup handling needed for button keys — atomic presses have no open state.
     }, true);
 
-    // Release held movement keys if the browser tab loses focus.
     window.addEventListener("blur", () => {
       for (const code of _kbHeldMove) {
-        const ak = KEY_TRACKBALL_CODE_MAP[code];
-        if (ak) _xdoKey("keyup", ak);
+        const arrowKey = KEY_TRACKBALL_CODE_MAP[code];
+        if (arrowKey) _xdoKey("keyup", arrowKey);
       }
       _kbHeldMove.clear();
       _updateKbHeldDisplay();
@@ -1115,14 +1084,12 @@ void main() {
     let lastX = 0;
     let lastY = 0;
 
-    // Make sure we never leave the user in pointer-lock mode.
     if (document.pointerLockElement && document.exitPointerLock) {
       document.exitPointerLock();
     }
 
     els.mameVideoCol.addEventListener("pointerdown", (ev) => {
       if (els.mamePane?.hidden) return;
-      // Center the Xvfb cursor so the drag has full room in every direction.
       postJSON("/api/mame/xcenter", {}).catch(() => {});
       dragging = true;
       activePointerId = ev.pointerId;
@@ -1321,7 +1288,6 @@ void main() {
             setStatus("MAME is paused; fault may not be visually obvious until resumed", true);
           }
         }
-        // Warn if any CRT fault couldn't reach MAME.
         const mameUnreachable = (result.faults || []).some(
           f => f.mame_available === false
         );

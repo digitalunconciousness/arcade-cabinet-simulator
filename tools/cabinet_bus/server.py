@@ -268,6 +268,13 @@ def create_app(
             return err
         raise err
 
+    @app.errorhandler(404)
+    def api_not_found(err):
+        # Return JSON for /api/* 404s instead of HTML.
+        if request.path.startswith("/api/"):
+            return jsonify({"error": "not found"}), 404
+        return err
+
     @app.route("/api/run", methods=["POST"])
     def api_run():
         body = request.get_json(silent=True) or {}

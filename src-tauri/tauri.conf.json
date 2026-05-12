@@ -5,7 +5,6 @@
   "identifier": "com.arcade-sim.desktop",
   "build": {
     "frontendDist": "../ui",
-    "devUrl": "http://127.0.0.1:5050",
     "beforeDevCommand": "",
     "beforeBuildCommand": "NO_STRIP=1 APPIMAGE_EXTRACT_AND_RUN=1 bash build/pyinstaller/build.sh"
   },
@@ -30,7 +29,14 @@
   "bundle": {
     "active": true,
     "targets": ["appimage", "deb"],
+    "createUpdaterArtifacts": true,
     "externalBin": ["../dist/arcade-sim-server"],
+    "resources": [
+      "../roms",
+      "../cfg",
+      "../vendor/mame/mame",
+      "../vendor/mame/plugins"
+    ],
     "linux": {
       "appimage": {
         "bundleMediaFramework": true
@@ -42,5 +48,14 @@
       "icons/128x128@2x.png",
       "icons/icon.png"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEM1RDI3Q0QyMkFDOTFDRTMKUldUakhNa3EwbnpTeFZRS0FOcGhNR2ZhV2VKcUdFeGVyQytFemZwc3pPUmpPNyt4QkxheWV4ZSsK",
+      "endpoints": [
+        "https://github.com/digitalunconciousness/arcade-cabinet-simulator/releases/latest/download/latest.json"
+      ],
+      "dialog": true
+    }
   }
 }

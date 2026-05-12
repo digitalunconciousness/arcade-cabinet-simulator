@@ -99,6 +99,12 @@ The script auto-installs PyInstaller into the venv if it isn't present. The spec
 
 ### Step 2 — Build the Tauri shell
 
+**Linux:**
+```bash
+APPIMAGE_EXTRACT_AND_RUN=1 NO_STRIP=1 cargo tauri build
+```
+
+**Windows / macOS:**
 ```bash
 cargo tauri build
 ```
@@ -106,6 +112,8 @@ cargo tauri build
 Artifacts land in:
 - **Linux:** `src-tauri/target/release/bundle/appimage/*.AppImage` and `bundle/deb/*.deb`
 - **Windows:** `src-tauri/target/release/bundle/nsis/*-setup.exe`
+
+> **Linux note:** `APPIMAGE_EXTRACT_AND_RUN=1` is required on systems without `libfuse2` (Arch, Ubuntu 22.04+, Fedora 37+). It tells the AppImage tools bundled with Tauri to extract and run themselves without FUSE. `NO_STRIP=1` prevents the old bundled `strip` binary from failing on modern glibc libraries that use `.relr.dyn` relocations.
 
 > Note: `cargo tauri build` automatically runs `bash build/pyinstaller/build.sh` via the `beforeBuildCommand` hook in `tauri.conf.json`. Step 1 is only needed separately if you want the sidecar binary for testing without building the full app.
 
