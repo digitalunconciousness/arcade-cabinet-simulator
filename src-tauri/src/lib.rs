@@ -212,7 +212,9 @@ pub fn run() {
 async fn boot(app: AppHandle) -> Result<(), String> {
     // Rotate log: truncate on each fresh boot so we don't accumulate stale entries.
     let _ = std::fs::write("/tmp/arcade-sim-boot.log", "");
+    let channel = app_release_channel();
     boot_log(&format!("boot start — exe={}", std::env::current_exe().map(|p| p.display().to_string()).unwrap_or_else(|_| "?".into())));
+    boot_log(&format!("release_channel={channel}"));
     boot_log(&format!("cwd={}", std::env::current_dir().map(|p| p.display().to_string()).unwrap_or_else(|_| "?".into())));
     boot_log(&format!("HOME={}", std::env::var("HOME").unwrap_or_else(|_| "(unset)".into())));
     boot_log(&format!("DISPLAY={}", std::env::var("DISPLAY").unwrap_or_else(|_| "(unset)".into())));
@@ -750,10 +752,20 @@ fn save_mame_binary(path: &Path) -> io::Result<()> {
     std::fs::write(config_file, serde_json::to_string_pretty(&config)? + "\n")
 }
 
+fn app_release_channel() -> String {
+    std::env::var("ARCADE_SIM_CHANNEL")
+        .ok()
+        .map(|s| s.trim().to_lowercase())
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| "stable".to_string())
+}
+
 // ── Auto-updater ──────────────────────────────────────────────────────────────
 
 fn check_for_update(app: AppHandle) {
     tauri::async_runtime::spawn(async move {
+        let channel = app_release_channel();
+        eprintln!("[arcade-sim] updater channel={channel}");
         let updater = match app.updater() {
             Ok(u) => u,
             Err(e) => {

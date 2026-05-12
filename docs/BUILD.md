@@ -189,6 +189,26 @@ The workflow:
 
 Artifacts are attached to the GitHub Release automatically by `tauri-action`.
 
+### Release channels
+
+This repo now has two release channels:
+
+1. **Stable** (`.github/workflows/release.yml`):
+  - Triggered by SemVer tags like `v1.2.3`.
+  - Publishes a normal GitHub release (not pre-release).
+  - Uses `src-tauri/tauri.conf.json`.
+
+2. **Nightly** (`.github/workflows/nightly.yml`):
+  - Triggered by schedule (daily) or manual dispatch.
+  - Publishes to a fixed prerelease tag `nightly`.
+  - Uses `src-tauri/tauri.nightly.conf.json` with a separate app identifier
+    (`com.arcade-sim.desktop.nightly`) so nightly installs can coexist with stable.
+  - Sets version dynamically as `0.1.0-nightly.<run_number>` per CI run.
+
+Nightly and stable are intentionally separate so updater feeds and installs do not cross over.
+
+For release operations details, see `docs/RELEASE_CHANNELS.md`.
+
 ### CI secrets
 
 | Secret | Purpose |

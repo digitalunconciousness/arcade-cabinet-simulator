@@ -2,8 +2,9 @@
 
 ## Requirements
 
-- A self-built or pre-built **MAME** binary (≥ 0.260 recommended). The app does not bundle MAME.
 - A legal **Centipede ROM set** (`centiped3` or compatible) in a directory you choose.
+- The installer bundles a tested **MAME** runtime and required `cabinet_bus` plugin files.
+  You can still override with your own MAME path in config if needed.
 - For Linux: 64-bit x86 system running Ubuntu 20.04+ or equivalent (glibc 2.31+).
 - For Windows: Windows 10 version 1803 or later (WebView2 must be installed — it ships with Windows 11 and is auto-installed on Windows 10 by Windows Update).
 
@@ -19,11 +20,14 @@
    ./arcade-fault-simulator_x.y.z_amd64.AppImage
    ```
 
-3. On **first launch**, a dialog asks you to locate your MAME binary. Browse to it (e.g. `/usr/local/bin/mame` or wherever you built it). The path is saved to `~/.arcade-sim/config.json` and is not asked again.
+3. On **first launch**, the app validates the bundled MAME runtime.
 
-4. A second dialog asks for your ROM directory. Point it at the folder containing `centiped3.zip`.
+4. A dialog asks for your ROM directory. Point it at the folder containing `centiped3.zip`.
 
-5. The simulator window opens. Click **Load → Centipede Rev 3**, then select a fault scenario from the left panel.
+5. If bundled MAME is missing or invalid on your machine, the app falls back
+  to a file picker for a local MAME binary and stores the path in `~/.arcade-sim/config.json`.
+
+6. The simulator window opens. Click **Load → Centipede Rev 3**, then select a fault scenario from the left panel.
 
 ### Linux — `.deb` package
 
@@ -55,7 +59,8 @@ Or add `"display": ":2"` to `~/.arcade-sim/config.json`.
 
 3. The installer adds a Start Menu entry and a desktop shortcut. Launch **Arcade Fault Simulator**.
 
-4. First-run dialogs ask for the MAME binary path and ROM directory, same as Linux.
+4. First-run asks for ROM directory. If bundled MAME is unavailable, the app
+  prompts for a local MAME binary path.
 
 ### WebView2
 
@@ -87,6 +92,19 @@ All three keys can also be set via environment variables, which take precedence 
 | `mame_binary` | `ARCADE_SIM_MAME_BINARY` |
 | `rom_path` | `ARCADE_SIM_ROM_PATH` |
 | `display` | `ARCADE_SIM_DISPLAY` |
+
+`mame_binary` is optional when the bundled runtime is available.
+
+---
+
+## Stable vs Nightly
+
+- **Stable** is the default release channel for end users.
+- **Nightly** is an opt-in prerelease channel for testers.
+
+Nightly builds use a separate app identifier and can be installed side-by-side
+with stable. Use nightly only if you are comfortable with frequent updates and
+occasional regressions.
 
 ---
 
