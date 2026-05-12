@@ -38,6 +38,47 @@
       font-size: 0.85rem;
       color: var(--fg-dim);
     }
+    .stage {
+      min-height: 1.1rem;
+      font-size: 0.82rem;
+      color: var(--fg);
+      opacity: 0.9;
+      text-align: center;
+    }
+    .progress-wrap {
+      width: min(420px, 80vw);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: stretch;
+    }
+    .progress-track {
+      width: 100%;
+      height: 8px;
+      background: #1f2937;
+      border: 1px solid #2f3b4a;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #2f81f7 0%, #58a6ff 100%);
+      transition: width 220ms ease;
+    }
+    .progress-meta {
+      display: flex;
+      justify-content: space-between;
+      color: var(--fg-dim);
+      font-size: 0.75rem;
+    }
+    .error {
+      color: #ff7b72;
+      font-size: 0.8rem;
+      max-width: min(640px, 85vw);
+      text-align: center;
+      white-space: pre-wrap;
+    }
     /* Pulsing dot spinner */
     .dots {
       display: flex;
@@ -60,12 +101,65 @@
 <body>
   <div class="splash">
     <div class="logo">Arcade <span>Fault</span> Simulator</div>
+    <div class="progress-wrap" aria-label="Startup progress">
+      <div class="progress-track"><div class="progress-fill" id="bar"></div></div>
+      <div class="progress-meta">
+        <span id="stage">Preparing startup...</span>
+        <span id="pct">0%</span>
+      </div>
+    </div>
     <div class="dots">
       <div class="dot"></div>
       <div class="dot"></div>
       <div class="dot"></div>
     </div>
     <div class="message" id="msg">Starting simulator…</div>
+    <div class="error" id="err"></div>
   </div>
+  <script>
+    (function () {
+      const bar = document.getElementById("bar");
+      const pct = document.getElementById("pct");
+      const stage = document.getElementById("stage");
+      const msg = document.getElementById("msg");
+      const err = document.getElementById("err");
+
+      let value = 0;
+      let lastTick = Date.now();
+
+      function render(next, text) {
+        value = Math.max(value, Math.min(100, next));
+        bar.style.width = value + "%";
+        pct.textContent = value + "%";
+        if (text) {
+          stage.textContent = text;
+          msg.textContent = text;
+        }
+        if (value >= 100) {
+          msg.textContent = "Loading interface...";
+        }
+        lastTick = Date.now();
+      }
+
+      // Rust boot() calls this via window.eval so splash can show real stage progress.
+      window.__bootProgress = function (next, text) {
+        err.textContent = "";
+        render(Number(next) || 0, String(text || "Starting..."));
+      };
+
+      window.__bootError = function (text) {
+        const t = String(text || "Boot failed");
+        err.textContent = "Startup error: " + t;
+        msg.textContent = "Startup failed";
+      };
+
+      // If no boot events arrive yet, keep UI alive with a gentle pre-boot ramp.
+      setInterval(function () {
+        if (Date.now() - lastTick > 600 && value < 55) {
+          render(value + 1, "Starting simulator...");
+        }
+      }, 180);
+    })();
+  </script>
 </body>
 </html>

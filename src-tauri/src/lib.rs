@@ -58,9 +58,9 @@ pub fn run() {
             }
             let handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
-                if let Err(e) = boot(handle).await {
+                if let Err(e) = boot(handle.clone()).await {
                     eprintln!("[arcade-sim] boot error: {e}");
-                    set_splash_error(&app.handle(), &e);
+                    set_splash_error(&handle, &e);
                 }
             });
             Ok(())
@@ -93,6 +93,13 @@ pub fn run() {
 // ── Boot sequence ─────────────────────────────────────────────────────────────
 
 async fn boot(app: AppHandle) -> Result<(), String> {
+    // Rotate log: truncate on each fresh boot so we don't accumulate stale entries.
+    let _ = std::fs::write("/tmp/arcade-sim-boot.log", "");
+    boot_log(&format!("boot start — exe={}", std::env::current_exe().map(|p| p.display().to_string()).unwrap_or_else(|_| "?".into())));
+    boot_log(&format!("cwd={}", std::env::current_dir().map(|p| p.display().to_string()).unwrap_or_else(|_| "?".into())));
+    boot_log(&format!("HOME={}", std::env::var("HOME").unwrap_or_else(|_| "(unset)".into())));
+    boot_log(&format!("DISPLAY={}", std::env::var("DISPLAY").unwrap_or_else(|_| "(unset)".into())));
+    boot_log(&format!("PATH={}", std::env::var("PATH").unwrap_or_else(|_| "(unset)".into())));
     // Best-effort cleanup in case a prior run left children alive.
     set_splash_status(&app, 5, "Cleaning stale processes");
     kill_stale_processes();
@@ -108,12 +115,27 @@ async fn boot(app: AppHandle) -> Result<(), String> {
 
     // 2. Start MAME emulator with cabinet_bus plugin.
     set_splash_status(&app, 45, "Launching MAME");
-    eprintln!("[arcade-sim] starting MAME…");
+    boot_log("starting MAME…");
     let mame_child = start_mame(&app, xvfb_display).await?;
     app.state::<SidecarState>().0.lock().unwrap().mame = Some(mame_child);
     // Give MAME a moment to initialize and open its window.
     set_splash_status(&app, 60, "MAME booting and loading ROM");
     tokio::time::sleep(Duration::from_millis(2000)).await;
+    // Verify MAME is still running — if it crashed early (bad ROM path, missing
+    // plugin, etc.) we want to report that now rather than hanging on the sidecar.
+    let mame_still_alive = std::process::Command::new("pgrep")
+        .args(["-f", "vendor/mame/mame"])
+        .output()
+        .map(|o| o.status.success())
+        .unwrap_or(false);
+    if !mame_still_alive {
+        boot_log("MAME exited unexpectedly — check paths and ROM");
+        return Err(
+            "MAME exited immediately. Check that roms/centiped3.zip exists and \
+             vendor/mame/plugins/cabinet_bus is present.".to_string()
+        );
+    }
+    boot_log("MAME still running — OK");
 
     // 3. Spawn the Python sidecar (arcade-sim-server) with DISPLAY set.
     // Clear PYTHONHOME and PYTHONPATH so the PyInstaller bootloader uses its
@@ -265,8 +287,10 @@ async fn start_mame(app: &AppHandle, display: &str) -> Result<CommandChild, Stri
     env.insert("DISPLAY".to_string(), display.to_string());
     env.insert("SDL_VIDEODRIVER".to_string(), "x11".to_string());
 
-    eprintln!("[arcade-sim] MAME: binary={mame_bin}, roms={}, cfg={}, plugins={}",
-        rom_path.display(), cfg_path.display(), plugins_path.display());
+    boot_log(&format!("MAME binary={mame_bin}"));
+    boot_log(&format!("  rom_path={} exists={}", rom_path.display(), rom_path.exists()));
+    boot_log(&format!("  cfg_path={} exists={}", cfg_path.display(), cfg_path.exists()));
+    boot_log(&format!("  plugins_path={} exists={}", plugins_path.display(), plugins_path.exists()));
 
     let (_rx, child) = app.shell()
         .command(&mame_bin)
@@ -425,9 +449,26 @@ fn kill_stale_processes() {
         .output();
 }
 
+/// Append a timestamped line to /tmp/arcade-sim-boot.log AND stderr.
+fn boot_log(msg: &str) {
+    use std::io::Write as _;
+    let ts = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    eprintln!("[arcade-sim] {msg}");
+    if let Ok(mut f) = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open("/tmp/arcade-sim-boot.log")
+    {
+        let _ = f.write_all(format!("[{ts}] {msg}\n").as_bytes());
+    }
+}
+
 fn set_splash_status(app: &AppHandle, percent: u8, message: &str) {
     if let Some(window) = app.get_webview_window("main") {
-        let msg = serde_json::to_string(message).unwrap_or_else(|_| "\"Starting…\"".to_string());
+        let msg = serde_json::to_string(message).unwrap_or_else(|_| "\"Starting...\"".to_string());
         let script = format!(
             "if (window.__bootProgress) {{ window.__bootProgress({}, {}); }}",
             percent.min(100),
