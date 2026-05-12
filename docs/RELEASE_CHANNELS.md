@@ -28,6 +28,10 @@ nightly installs can coexist with stable installs on the same machine.
 - Stable feed endpoint: `.../releases/latest/download/latest.json`
 - Nightly feed endpoint: `.../releases/download/nightly/latest.json`
 
+The CI workflows rewrite these URLs from the current hosting server URL, so the
+same release process works on GitHub or a Forgejo instance without changing the
+application code.
+
 Because stable and nightly use separate identifiers and endpoints, update checks
 stay within their own channel and avoid accidental cross-channel upgrades.
 

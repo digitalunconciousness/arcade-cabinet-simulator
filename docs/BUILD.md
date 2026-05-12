@@ -207,6 +207,10 @@ This repo now has two release channels:
 
 Nightly and stable are intentionally separate so updater feeds and installs do not cross over.
 
+The release workflows derive updater download URLs from the current server URL,
+which keeps the same build/release flow usable on GitHub or Forgejo-compatible
+hosts.
+
 For release operations details, see `docs/RELEASE_CHANNELS.md`.
 
 ### CI secrets
