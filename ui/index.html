@@ -37,7 +37,6 @@
   <section class="mame-pane" id="mame-pane" hidden>
     <h2>Centipede emulator (MAME)</h2>
     <div class="mame-pane-inner">
-      <!-- Live video feed (Xvfb + ffmpeg MJPEG stream) -->
       <div class="mame-video-col" id="mame-video-col">
         <img id="mame-video-feed" class="mame-video-feed"
              alt="MAME live view" aria-label="Live MAME game video">
@@ -45,7 +44,6 @@
           no video stream —<br>install <code>xorg-server-xvfb</code>
         </div>
       </div>
-      <!-- Stats + controls -->
       <div class="mame-controls-col">
         <div class="mame-grid">
           <div class="mame-stat">
@@ -66,9 +64,9 @@
           </div>
         </div>
         <div class="mame-controls">
-          <button id="mame-pause"  type="button">Pause</button>
+          <button id="mame-pause" type="button">Pause</button>
           <button id="mame-resume" type="button">Resume</button>
-          <button id="mame-reset"  type="button">Soft reset</button>
+          <button id="mame-reset" type="button">Soft reset</button>
         </div>
         <div class="mame-kb-legend" id="mame-kb-legend" aria-label="Keyboard controls">
           <div class="mame-kb-title">Keyboard controls <small>(click video first)</small></div>

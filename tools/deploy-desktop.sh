@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+DEST_DIR="${DEST_DIR:-$HOME/Applications}"
+APP_SRC="$ROOT_DIR/src-tauri/target/release/arcade-sim"
+SIDECAR_SRC="$ROOT_DIR/src-tauri/target/release/arcade-sim-server"
+APP_DST="$DEST_DIR/ArcadeFaultSimulator.AppImage"
+SIDECAR_DST="$DEST_DIR/arcade-sim-server"
+
+if [[ ! -f "$APP_SRC" ]]; then
+  echo "Missing app binary: $APP_SRC"
+  echo "Build first: cd $ROOT_DIR/src-tauri && cargo build --release"
+  exit 1
+fi
+
+if [[ ! -f "$SIDECAR_SRC" ]]; then
+  echo "Missing sidecar binary: $SIDECAR_SRC"
+  echo "Build first: cd $ROOT_DIR/src-tauri && cargo build --release"
+  exit 1
+fi
+
+mkdir -p "$DEST_DIR"
+
+# Stop running instances before replacing binaries.
+pkill -f "ArcadeFaultSimulator.AppImage|target/release/arcade-sim|arcade-sim-server --tauri-sidecar|Xvfb :99|mame .* -plugin cabinet_bus" 2>/dev/null || true
+sleep 1
+
+cp "$APP_SRC" "$APP_DST.new"
+cp "$SIDECAR_SRC" "$SIDECAR_DST.new"
+chmod +x "$APP_DST.new" "$SIDECAR_DST.new"
+mv -f "$APP_DST.new" "$APP_DST"
+mv -f "$SIDECAR_DST.new" "$SIDECAR_DST"
+
+# Register / update the .desktop entry so App Center launches from the
+# correct working directory and without the APPIMAGE_EXTRACT_AND_RUN flag.
+DESKTOP_DIR="$HOME/.local/share/applications"
+mkdir -p "$DESKTOP_DIR"
+cat > "$DESKTOP_DIR/arcade-fault-simulator.desktop" <<EOF
+[Desktop Entry]
+Name=Arcade Fault Simulator
+Comment=Arcade cabinet fault simulation and diagnosis
+Exec=$APP_DST
+Path=$ROOT_DIR
+Icon=applications-games
+Terminal=false
+Type=Application
+Categories=Game;Education;
+EOF
+update-desktop-database "$DESKTOP_DIR" 2>/dev/null || true
+
+echo "Deployed:"
+echo "  $APP_DST"
+echo "  $SIDECAR_DST"
+echo "  $DESKTOP_DIR/arcade-fault-simulator.desktop (Path=$ROOT_DIR)"
+
+if [[ "${1:-}" == "--launch" ]]; then
+  nohup "$APP_DST" >/tmp/arcade-app.log 2>&1 &
+  echo "Launched app (log: /tmp/arcade-app.log)"
+fi

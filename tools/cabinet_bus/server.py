@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import subprocess
 import sys
 import threading
@@ -29,6 +30,7 @@ from typing import Optional
 # Local import; runner.py lives next to this file.
 sys.path.insert(0, str(Path(__file__).parent))
 import runner  # noqa: E402
+from config import load_config, save_config  # noqa: E402
 from mame_client import MameClient  # noqa: E402
 
 # Peripherals package lives one level up.
@@ -51,11 +53,25 @@ except Exception:  # noqa: BLE001
     summarize_model = None
 
 from flask import Flask, Response, abort, jsonify, request, send_from_directory  # noqa: E402
+from werkzeug.exceptions import HTTPException  # noqa: E402
 
 
 # Repo layout. Discovered relative to this file.
 HERE = Path(__file__).resolve().parent
-REPO_ROOT = HERE.parent.parent
+
+
+def _bundle_root() -> Path:
+    """Root directory for bundled data assets.
+
+    In a PyInstaller --onefile build, all ``datas`` entries land under
+    ``sys._MEIPASS``.  In normal development the root is the repo root.
+    """
+    if getattr(sys, "frozen", False):
+        return Path(sys._MEIPASS)  # type: ignore[attr-defined]
+    return HERE.parent.parent
+
+
+REPO_ROOT = _bundle_root()
 INSTRUMENTED_DIR = REPO_ROOT / "build" / "instrumented"
 DEFAULT_TEMPLATE = INSTRUMENTED_DIR / "sync_generator.cpp"
 DEFAULT_MANIFEST = INSTRUMENTED_DIR / "sync_generator.manifest.json"
@@ -119,12 +135,35 @@ def create_app(
     }
 
     # Cache the manifest at boot; it's small and rarely changes.
+    # Missing manifest is non-fatal — the app still starts so the UI loads.
+    _manifest_error: str = ""
     if not manifest_path.exists():
-        raise FileNotFoundError(
+        _manifest_error = (
             f"manifest not found at {manifest_path}; "
             f"run tools/preprocessor/instrument.py first"
         )
-    manifest = json.loads(manifest_path.read_text())
+        manifest = []
+    else:
+        try:
+            raw_manifest = json.loads(manifest_path.read_text())
+        except (OSError, json.JSONDecodeError) as e:
+            _manifest_error = f"failed to load manifest at {manifest_path}: {e}"
+            raw_manifest = []
+
+        # Accept only well-formed rows so /api/run never crashes while
+        # normalizing request faults.
+        manifest = []
+        if isinstance(raw_manifest, list):
+            for entry in raw_manifest:
+                if not isinstance(entry, dict):
+                    continue
+                if not entry.get("fault_device"):
+                    continue
+                manifest.append(entry)
+        else:
+            _manifest_error = (
+                f"manifest at {manifest_path} must be a JSON list of objects"
+            )
     manifest_by_refpin = {
         (e.get("refdes", ""), e.get("pin", "")): e.get("fault_device", "")
         for e in manifest
@@ -172,12 +211,28 @@ def create_app(
         except Exception as e:  # noqa: BLE001
             schematic_load_error = str(e)
 
+    _template_error: str = ""
     if not template_path.exists():
-        raise FileNotFoundError(
-            f"instrumented netlist not found at {template_path}"
-        )
+        _template_error = f"instrumented netlist not found at {template_path}"
+
+    # In bundled builds, vendor/mame/nltool may be absent from _MEIPASS.
+    # Fall back to nltool next to the configured MAME binary or PATH.
     if not nltool_path.exists():
-        raise FileNotFoundError(
+        cfg = load_config()
+        mame_bin = (
+            os.environ.get("ARCADE_SIM_MAME_BINARY", "").strip()
+            or cfg.get("mame_binary", "").strip()
+            or shutil.which("mame")
+            or ""
+        )
+        if mame_bin:
+            candidate = Path(mame_bin).resolve().parent / "nltool"
+            if candidate.exists():
+                nltool_path = candidate
+
+    _nltool_error: str = ""
+    if not nltool_path.exists():
+        _nltool_error = (
             f"nltool not built at {nltool_path}; "
             f"run `make -j3 SOURCES=src/mame/atari/centiped.cpp TOOLS=1` "
             f"in vendor/mame"
@@ -202,12 +257,33 @@ def create_app(
             "modes": runner.MODE_LABELS,
         })
 
+    @app.errorhandler(Exception)
+    def api_error_handler(err: Exception):
+        # Ensure API clients never receive Flask's HTML error page.
+        if request.path.startswith("/api/"):
+            if isinstance(err, HTTPException):
+                return jsonify({"error": err.description}), int(err.code or 500)
+            return jsonify({"error": f"internal server error: {err}"}), 500
+        if isinstance(err, HTTPException):
+            return err
+        raise err
+
+    @app.errorhandler(404)
+    def api_not_found(err):
+        # Return JSON for /api/* 404s instead of HTML.
+        if request.path.startswith("/api/"):
+            return jsonify({"error": "not found"}), 404
+        return err
+
     @app.route("/api/run", methods=["POST"])
     def api_run():
         body = request.get_json(silent=True) or {}
         faults_in = body.get("faults", {}) or {}
         # Normalize: only allow keys that appear in the manifest.
-        manifest_devices = {e["fault_device"] for e in manifest}
+        manifest_devices = {
+            e.get("fault_device") for e in manifest
+            if isinstance(e, dict) and e.get("fault_device")
+        }
         faults = dict(schematic_faults)
         for k, v in faults_in.items():
             if k not in manifest_devices:
@@ -233,8 +309,12 @@ def create_app(
             result = runner.run(spec)
         except ValueError as e:
             return jsonify({"error": str(e)}), 400
+        except FileNotFoundError as e:
+            return jsonify({"error": str(e), "hint": _nltool_error or _template_error}), 503
         except subprocess.TimeoutExpired:  # type: ignore[name-defined]
             return jsonify({"error": "nltool timed out"}), 504
+        except Exception as e:  # noqa: BLE001
+            return jsonify({"error": f"simulation failed: {e}"}), 500
 
         return jsonify({
             "waveforms": runner.waveforms_to_json(result.waveforms),
@@ -252,6 +332,25 @@ def create_app(
         if board_package is not None:
             bid = board_package.board_id
         return jsonify({"status": "ok", "board_id": bid})
+
+    @app.route("/api/mame/runtime_info")
+    def api_mame_runtime_info():
+        """Report MAME binary + ROM path discovery state.
+
+        Used by the Tauri first-run dialog to decide whether to show the
+        MAME path picker.  Never raises; returns safe defaults if anything
+        is misconfigured.
+        """
+        import shutil
+        cfg = load_config()
+        mame_bin = cfg["mame_binary"] or shutil.which("mame") or ""
+        mame_found = bool(mame_bin and Path(mame_bin).is_file())
+        return jsonify({
+            "mame_found": mame_found,
+            "mame_path": mame_bin or None,
+            "rom_path": cfg["rom_path"] or None,
+            "display": cfg["display"] or _resolve_mame_display(),
+        })
 
     # ---------- Schematic import + click-to-fault foundations ----------
 
@@ -747,11 +846,15 @@ def create_app(
     def _resolve_mame_display() -> str:
         """Best-effort display resolution for mame video capture.
 
-        Preferred source is MAME_DISPLAY env (set by run-demo.sh).  If that is
-        absent and an Xvfb :99 process is running, fall back to :99 so a manual
-        Flask restart still preserves video streaming.
+        Preferred source is MAME_DISPLAY env (set by run-demo.sh).  Falls back
+        to ARCADE_SIM_DISPLAY (set by Tauri before spawning the sidecar).  If
+        neither is set and an Xvfb :99 process is running, falls back to :99 so
+        a manual Flask restart still preserves video streaming.
         """
-        disp = os.environ.get("MAME_DISPLAY", "").strip()
+        disp = (
+            os.environ.get("MAME_DISPLAY", "").strip()
+            or os.environ.get("ARCADE_SIM_DISPLAY", "").strip()
+        )
         if disp:
             return disp
         try:

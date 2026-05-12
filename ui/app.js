@@ -50,87 +50,208 @@
     bannerSubs:       document.getElementById("banner-subs"),
   };
 
-  /** @type {{fault_targets: Array, log_nets: string[], duration_s: number, modes: object}} */
-  let manifest = null;
+  const tauriInvoke = (() => {
+    const invoke = window.__TAURI__?.core?.invoke;
+    return typeof invoke === "function" ? invoke.bind(window.__TAURI__.core) : null;
+  })();
 
-  /** @type {Object<string, number>} */
-  const faults = {};
-
-  /** @type {any|null} */
-  let crtState = null;
-  /** @type {any|null} */
-  let trackballState = null;
-  /** @type {any|null} */
-  let audioState = null;
-
-  let audioCtx = null;
-  let audioToneOsc = null;
-  let audioHumOsc = null;
-  let audioToneGain = null;
-  let audioHumGain = null;
-  let audioDrive = null;
-  let audioLowpass = null;
-  let audioMaster = null;
-  let lastAudioProfileSig = "";
-
-  // Layout for the fault-pin badges. Keyed by fault_device. The (x, y) is the
-  // SVG coordinate where the badge should sit. Tuned to match index.html.
-  const PIN_LAYOUT = {
-    FB_CLK_Q:   { x: 150, y: 160, anchor: "above" },
-    FB_H_LO_RC: { x: 315, y: 190, anchor: "above" },
-    FB_H_HI_RC: { x: 480, y: 190, anchor: "above" },
-    FB_H_HI_QB: { x: 600, y:  80, anchor: "above" },
-    FB_H_HI_QC: { x: 580, y:  80, anchor: "above" },
-    FB_H_HI_QD: { x: 560, y:  80, anchor: "above" },
-    FB_V_LO_QC: { x: 555, y: 270, anchor: "below" },
-    FB_V_LO_QD: { x: 575, y: 270, anchor: "below" },
+  const KEY_BUTTON_MAP = {
+    ControlLeft: "P1 Button 1",
+    Digit1: "1 Player Start",
+    Digit2: "2 Player Start",
+    Digit5: "Coin 1",
+    Numpad1: "1 Player Start",
+    Numpad2: "2 Player Start",
+    Numpad5: "Coin 1",
   };
 
-  const MODE_CLASS = {
-    0: "normal",
-    1: "stuck-hi",
-    2: "stuck-lo",
-    3: "open",
+  const KEY_TRACKBALL_CODE_MAP = {
+    KeyA: { dx: -3, dy: 0 },
+    KeyD: { dx: 3, dy: 0 },
+    KeyW: { dx: 0, dy: -3 },
+    KeyS: { dx: 0, dy: 3 },
   };
 
-  const EXPECTED_MANIFEST_VERSION = 1;
+  const _kbHeldMove = new Set();
+  const _kbHeldButtons = new Set();
+  let _trackballRaf = 0;
 
-  // ---------- networking ----------
-
-  async function fetchJSON(url, opts) {
-    const res = await fetch(url, opts);
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`${res.status}: ${text}`);
-    }
-    return await res.json();
+  function _updateKbHeldDisplay() {
+    if (!els.mameKbHeld) return;
+    const held = [];
+    for (const code of _kbHeldMove) held.push(code);
+    for (const code of _kbHeldButtons) held.push(code);
+    els.mameKbHeld.textContent = held.length ? "held: " + held.join(" + ") : "";
   }
 
-  async function reloadWaveforms() {
-    setStatus("running nltool…");
-    try {
-      const data = await fetchJSON("/api/run", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ faults }),
-      });
-      const ms = data.duration_s * 1000;
-      els.waveMeta.textContent =
-        `simulation window: ${ms.toFixed(3)} ms · faults active: ${data.fault_mode_count}`;
-      for (const net of manifest.log_nets) {
-        renderWaveform(net, data.waveforms[net] || [], data.duration_s);
+  function _invokeMame(command, payload) {
+    if (!tauriInvoke) return Promise.reject(new Error("Tauri invoke unavailable"));
+    return tauriInvoke(command, payload);
+  }
+
+  function _sendMameButton(action, name) {
+    if (!name) return;
+    void _invokeMame(`mame_${action}`, { name }).catch(() => {});
+  }
+
+  function _sendTrackballDelta(dx, dy) {
+    if (dx === 0 && dy === 0) return;
+    void _invokeMame("mame_trackball_delta", { dx, dy }).catch(() => {});
+  }
+
+  function _scheduleTrackballPump() {
+    if (_trackballRaf) return;
+    const pump = () => {
+      _trackballRaf = 0;
+      if (_kbHeldMove.size === 0) return;
+      let dx = 0;
+      let dy = 0;
+      for (const code of _kbHeldMove) {
+        const delta = KEY_TRACKBALL_CODE_MAP[code];
+        if (delta) {
+          dx += delta.dx;
+          dy += delta.dy;
+        }
       }
-      setStatus("ready");
-    } catch (err) {
-      setStatus("error: " + err.message, true);
-    }
+      _sendTrackballDelta(dx, dy);
+      _trackballRaf = window.requestAnimationFrame(pump);
+    };
+    _trackballRaf = window.requestAnimationFrame(pump);
   }
 
-  // ---------- rendering ----------
+  function initKeyboardControls() {
+    const isTypingTarget = (el) =>
+      el.tagName === "INPUT" || el.tagName === "SELECT" ||
+      el.tagName === "TEXTAREA" || el.isContentEditable;
 
-  function setStatus(msg, isError = false) {
-    els.status.textContent = msg;
-    els.status.classList.toggle("error", isError);
+    const focusMamePane = () => {
+      if (!els.mamePane) return;
+      if (els.mamePane.tabIndex < 0) els.mamePane.tabIndex = 0;
+      try { els.mamePane.focus({ preventScroll: true }); }
+      catch { els.mamePane.focus(); }
+    };
+
+    els.mamePane?.addEventListener("pointerdown", focusMamePane);
+    setTimeout(focusMamePane, 0);
+
+    document.addEventListener("keydown", (ev) => {
+      if (els.mamePane?.hidden) return;
+      if (isTypingTarget(ev.target)) return;
+
+      const moveDelta = KEY_TRACKBALL_CODE_MAP[ev.code];
+      if (moveDelta) {
+        if (_kbHeldMove.has(ev.code)) return;
+        ev.preventDefault();
+        _kbHeldMove.add(ev.code);
+        _scheduleTrackballPump();
+        _updateKbHeldDisplay();
+        return;
+      }
+
+      const buttonName = KEY_BUTTON_MAP[ev.code];
+      if (buttonName) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        _kbHeldButtons.add(ev.code);
+        _sendMameButton("press_button", buttonName);
+        _updateKbHeldDisplay();
+      }
+    }, true);
+
+    document.addEventListener("keyup", (ev) => {
+      if (isTypingTarget(ev.target)) return;
+
+      const moveDelta = KEY_TRACKBALL_CODE_MAP[ev.code];
+      if (moveDelta && _kbHeldMove.has(ev.code)) {
+        _kbHeldMove.delete(ev.code);
+        _updateKbHeldDisplay();
+        if (_kbHeldMove.size === 0 && _trackballRaf) {
+          cancelAnimationFrame(_trackballRaf);
+          _trackballRaf = 0;
+        }
+        return;
+      }
+
+      const buttonName = KEY_BUTTON_MAP[ev.code];
+      if (buttonName && _kbHeldButtons.has(ev.code)) {
+        _kbHeldButtons.delete(ev.code);
+        _sendMameButton("release_button", buttonName);
+        _updateKbHeldDisplay();
+      }
+    }, true);
+
+    window.addEventListener("blur", () => {
+      _kbHeldMove.clear();
+      for (const code of _kbHeldButtons) {
+        const buttonName = KEY_BUTTON_MAP[code];
+        if (buttonName) _sendMameButton("release_button", buttonName);
+      }
+      _kbHeldButtons.clear();
+      if (_trackballRaf) {
+        cancelAnimationFrame(_trackballRaf);
+        _trackballRaf = 0;
+      }
+      _updateKbHeldDisplay();
+    });
+  }
+
+  function initMouseControls() {
+    if (!els.mameVideoCol) return;
+
+    let dragging = false;
+    let activePointerId = null;
+    let lastX = 0;
+    let lastY = 0;
+
+    if (document.pointerLockElement && document.exitPointerLock) {
+      document.exitPointerLock();
+    }
+
+    els.mameVideoCol.addEventListener("pointerdown", (ev) => {
+      if (els.mamePane?.hidden) return;
+      dragging = true;
+      activePointerId = ev.pointerId;
+      lastX = ev.clientX;
+      lastY = ev.clientY;
+      if (typeof els.mameVideoCol.setPointerCapture === "function") {
+        els.mameVideoCol.setPointerCapture(ev.pointerId);
+      }
+      els.mameVideoCol.classList.add("dragging");
+      ev.preventDefault();
+    });
+
+    els.mameVideoCol.addEventListener("pointermove", (ev) => {
+      if (!dragging) return;
+      if (activePointerId !== null && ev.pointerId !== activePointerId) return;
+      const dx = Math.round(ev.clientX - lastX);
+      const dy = Math.round(ev.clientY - lastY);
+      lastX = ev.clientX;
+      lastY = ev.clientY;
+      _sendTrackballDelta(dx, dy);
+    });
+
+    const stopDrag = (ev) => {
+      if (!dragging) return;
+      if (ev && activePointerId !== null && ev.pointerId !== activePointerId) return;
+      dragging = false;
+      if (activePointerId !== null && typeof els.mameVideoCol.releasePointerCapture === "function") {
+        try {
+          els.mameVideoCol.releasePointerCapture(activePointerId);
+        } catch {}
+      }
+      activePointerId = null;
+      els.mameVideoCol.classList.remove("dragging");
+    };
+
+    els.mameVideoCol.addEventListener("pointerup", stopDrag);
+    els.mameVideoCol.addEventListener("pointercancel", stopDrag);
+    els.mameVideoCol.addEventListener("pointerleave", stopDrag);
+
+    window.addEventListener("blur", () => {
+      dragging = false;
+      activePointerId = null;
+      els.mameVideoCol.classList.remove("dragging");
+    });
   }
 
   function renderFaultPins() {
@@ -575,7 +696,6 @@
     els.mamePane.hidden = false;
     els.mameOffline.hidden = true;
     if (!_mameWasAvailable) {
-      // Defensive reset so stale held movement state cannot linger.
       _kbHeldMove.clear();
       _updateKbHeldDisplay();
     }
@@ -585,39 +705,35 @@
     els.mamePaused.classList.toggle("paused", !!data.paused);
     els.mameFrame.textContent = data.frame ?? "—";
     els.mameVersion.textContent = `${data.app || "mame"} ${data.version || ""}`.trim();
-    els.mamePauseBtn.disabled  = !!data.paused;
+    els.mamePauseBtn.disabled = !!data.paused;
     els.mameResumeBtn.disabled = !data.paused;
   }
 
-    // Probe /api/mame/video/available and wire up the MJPEG <img> feed.
-    // Retries until available so late-starting Xvfb is picked up automatically.
-    let _videoInitDone = false;
-    async function initMameVideo() {
-      if (_videoInitDone) return;
-      try {
-        const res = await fetch("/api/mame/video/available");
-        const data = res.ok ? await res.json() : { available: false };
-        if (data.available) {
-          _videoInitDone = true;
-          els.mameVideoFeed.src = "/api/mame/video";
-          els.mameVideoFeed.hidden = false;
-          els.mameVideoUnavail.hidden = true;
-          // Reload the stream if the browser drops it (Xvfb restart, etc.)
-          els.mameVideoFeed.addEventListener("error", () => {
-            _videoInitDone = false;
-            els.mameVideoFeed.hidden = true;
-            els.mameVideoUnavail.hidden = false;
-          });
-        } else {
+  let _videoInitDone = false;
+  async function initMameVideo() {
+    if (_videoInitDone) return;
+    try {
+      const res = await fetch("/api/mame/video/available");
+      const data = res.ok ? await res.json() : { available: false };
+      if (data.available) {
+        _videoInitDone = true;
+        els.mameVideoFeed.src = "/api/mame/video";
+        els.mameVideoFeed.hidden = false;
+        els.mameVideoUnavail.hidden = true;
+        els.mameVideoFeed.addEventListener("error", () => {
+          _videoInitDone = false;
           els.mameVideoFeed.hidden = true;
           els.mameVideoUnavail.hidden = false;
-          // Don't set _videoInitDone — will retry on next poll cycle.
-        }
-      } catch {
+        });
+      } else {
         els.mameVideoFeed.hidden = true;
         els.mameVideoUnavail.hidden = false;
       }
+    } catch {
+      els.mameVideoFeed.hidden = true;
+      els.mameVideoUnavail.hidden = false;
     }
+  }
 
   async function mameAction(path) {
     try {
@@ -633,24 +749,229 @@
 
   function refreshMameVideoStream() {
     if (!els.mameVideoFeed) return;
-    // Reconnect so the server can rebuild ffmpeg filters from current CRT state.
     els.mameVideoFeed.src = `/api/mame/video?t=${Date.now()}`;
   }
 
-  els.mamePauseBtn.addEventListener("click",  () => mameAction("pause"));
+  els.mamePauseBtn.addEventListener("click", () => mameAction("pause"));
   els.mameResumeBtn.addEventListener("click", () => mameAction("resume"));
-  els.mameResetBtn.addEventListener("click",  () => mameAction("soft_reset"));
+  els.mameResetBtn.addEventListener("click", () => mameAction("soft_reset"));
 
-  // ---------- Phase 6 preview ----------
+  // ---------- Phase 6 preview — WebGL CRT shader renderer ----------
+  //
+  // All .glsl files are WebGL 1 / GLSL ES 1.00 (varying, texture2D,
+  // gl_FragColor) and are served at /static/shaders/<name>.glsl.
+  //
+  // Boot sequence (once, at init):
+  //   1. _crtGl.prefetch() fetches all 10 .glsl sources.
+  //   2. On first renderCrtPreview call, _crtGl.init() creates the
+  //      WebGL1 context and compiles every shader program.
+  //   3. Each frame: draw test pattern to offscreen canvas, upload as
+  //      texture, run the current shader, blit to the visible canvas.
+  //
+  // Falls back silently to Canvas 2D if WebGL is unavailable.
+
+  const _crtGl = (() => {
+    const VERT_SRC = `
+attribute vec2 a_pos;
+varying vec2 v_uv;
+void main() {
+  v_uv = a_pos * 0.5 + 0.5;
+  gl_Position = vec4(a_pos, 0.0, 1.0);
+}`;
+
+    const SHADER_NAMES = [
+      "crt_normal", "crt_dim_picture", "crt_no_hv",
+      "crt_brightness_drift", "crt_weak_focus", "crt_ringing_ghosting",
+      "crt_bad_deflection_caps", "crt_sync_lock_failure",
+      "crt_vertical_collapse", "crt_horizontal_collapse",
+    ];
+
+    let gl = null;
+    let vbo = null;
+    const programs = {};   // name → { program, uniforms }
+    const sources = {};    // name → glsl source string
+    let offscreen = null;  // OffscreenCanvas or plain <canvas>
+    let failed = false;
+
+    function _compileShader(type, src) {
+      const sh = gl.createShader(type);
+      gl.shaderSource(sh, src);
+      gl.compileShader(sh);
+      if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+        console.warn("[crt-gl] shader compile:", gl.getShaderInfoLog(sh), "\n---\n", src);
+        gl.deleteShader(sh);
+        return null;
+      }
+      return sh;
+    }
+
+    function _buildProgram(fsSrc) {
+      const vs = _compileShader(gl.VERTEX_SHADER, VERT_SRC);
+      const fs = _compileShader(gl.FRAGMENT_SHADER, fsSrc);
+      if (!vs || !fs) return null;
+      const prog = gl.createProgram();
+      gl.attachShader(prog, vs);
+      gl.attachShader(prog, fs);
+      gl.linkProgram(prog);
+      gl.deleteShader(vs);
+      gl.deleteShader(fs);
+      if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+        console.warn("[crt-gl] link:", gl.getProgramInfoLog(prog));
+        gl.deleteProgram(prog);
+        return null;
+      }
+      return {
+        program: prog,
+        uniforms: {
+          u_texture:  gl.getUniformLocation(prog, "u_texture"),
+          u_time:     gl.getUniformLocation(prog, "u_time"),
+          u_brightness: gl.getUniformLocation(prog, "u_brightness"),
+        },
+        attribs: {
+          a_pos: gl.getAttribLocation(prog, "a_pos"),
+        },
+      };
+    }
+
+    function init(canvas) {
+      if (failed || gl) return;
+      try {
+        gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+        if (!gl) { failed = true; return; }
+
+        // Full-screen quad: two triangles covering NDC.
+        const verts = new Float32Array([-1,-1, 1,-1, -1,1, 1,1]);
+        vbo = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+        gl.bufferData(gl.ARRAY_BUFFER, verts, gl.STATIC_DRAW);
+
+        // Compile a program for each fetched shader source.
+        let allOk = true;
+        for (const name of SHADER_NAMES) {
+          const src = sources[name];
+          if (!src) { allOk = false; continue; }
+          const entry = _buildProgram(src);
+          if (!entry) { allOk = false; continue; }
+          programs[name] = entry;
+        }
+        if (!allOk) {
+          console.warn("[crt-gl] some shaders failed; will fall back per-effect");
+        }
+
+        // Offscreen canvas for 2D test-pattern generation.
+        try {
+          offscreen = new OffscreenCanvas(canvas.width, canvas.height);
+        } catch (_) {
+          offscreen = document.createElement("canvas");
+          offscreen.width = canvas.width;
+          offscreen.height = canvas.height;
+        }
+      } catch (e) {
+        console.warn("[crt-gl] init failed:", e);
+        failed = true;
+      }
+    }
+
+    function render(canvas, effect, time, brightness) {
+      if (failed) return false;
+      init(canvas);
+      if (!gl) return false;
+      const entry = programs[effect] || programs["crt_normal"];
+      if (!entry) return false;
+
+      // Resize offscreen canvas if needed.
+      if (offscreen.width !== canvas.width || offscreen.height !== canvas.height) {
+        offscreen.width = canvas.width;
+        offscreen.height = canvas.height;
+      }
+
+      // Draw the base test pattern on the offscreen 2D canvas.
+      const octx = offscreen.getContext("2d");
+      const w = offscreen.width, h = offscreen.height;
+      octx.fillStyle = "#000";
+      octx.fillRect(0, 0, w, h);
+      const bars = ["#ffffff","#ffd400","#00d4ff","#2bd900","#d94d2b","#ff00ff","#2a6bff","#333333"];
+      const bw = Math.floor(w / bars.length);
+      bars.forEach((c, i) => {
+        octx.fillStyle = c;
+        octx.fillRect(i * bw, 10, bw, Math.floor(h * 0.45));
+      });
+      octx.strokeStyle = "#73ff7a";
+      octx.lineWidth = 2;
+      for (let y = 0; y < h; y += 8) {
+        octx.beginPath(); octx.moveTo(0, y + 0.5); octx.lineTo(w, y + 0.5); octx.stroke();
+      }
+
+      // Upload offscreen canvas as a WebGL texture.
+      const tex = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      try {
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, offscreen);
+      } catch (_) {
+        // OffscreenCanvas may not be accepted on all WebKitGTK versions.
+        const tmp = (offscreen instanceof HTMLCanvasElement)
+          ? offscreen
+          : (() => { const c = document.createElement("canvas"); c.width=w; c.height=h; c.getContext("2d").drawImage(offscreen, 0, 0); return c; })();
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, tmp);
+      }
+
+      // Draw.
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.useProgram(entry.program);
+      gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+      gl.enableVertexAttribArray(entry.attribs.a_pos);
+      gl.vertexAttribPointer(entry.attribs.a_pos, 2, gl.FLOAT, false, 0, 0);
+      gl.uniform1i(entry.uniforms.u_texture, 0);
+      if (entry.uniforms.u_time !== null)
+        gl.uniform1f(entry.uniforms.u_time, time);
+      if (entry.uniforms.u_brightness !== null)
+        gl.uniform1f(entry.uniforms.u_brightness, brightness);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      gl.deleteTexture(tex);
+      return true;
+    }
+
+    async function prefetch() {
+      const results = await Promise.allSettled(
+        SHADER_NAMES.map(name =>
+          fetch(`/static/shaders/${name}.glsl`)
+            .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
+            .then(src => { sources[name] = src; })
+        )
+      );
+      const failures = results.filter(r => r.status === "rejected").length;
+      if (failures > 0) {
+        console.warn(`[crt-gl] ${failures}/${SHADER_NAMES.length} shader(s) failed to fetch`);
+      }
+    }
+
+    return { prefetch, render };
+  })();
 
   function renderCrtPreview() {
     if (!els.crtPreview || !crtState) return;
     const canvas = els.crtPreview;
+    const effect = crtState.shader_effect || "crt_normal";
+    const b = Math.max(0, Math.min(2, crtState.effective_brightness || 1));
+    const time = performance.now() / 1000.0;
+
+    // Try the WebGL shader path first.
+    if (_crtGl.render(canvas, effect, time, b)) {
+      els.crtPreviewMeta.textContent = `effect: ${effect} · brightness: ${b.toFixed(2)} [gl]`;
+      return;
+    }
+
+    // Canvas 2D fallback (used when WebGL is unavailable or a shader failed
+    // to compile, and as the reference implementation during development).
     const ctx = canvas.getContext("2d");
     const w = canvas.width;
     const h = canvas.height;
 
-    // Base test pattern (standalone, no MAME framebuffer dependency).
+    // Base test pattern.
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, w, h);
     const bars = ["#ffffff", "#ffd400", "#00d4ff", "#2bd900", "#d94d2b", "#ff00ff", "#2a6bff", "#333333"];
@@ -668,8 +989,7 @@
       ctx.stroke();
     }
 
-    // Apply effect profile approximating shader categories.
-    const effect = crtState.shader_effect || "crt_normal";
+    // Apply effect approximations.
     if (effect === "crt_vertical_collapse") {
       ctx.globalAlpha = 0.9;
       ctx.drawImage(canvas, 0, Math.floor(h * 0.48), w, 4, 0, Math.floor(h * 0.44), w, 16);
@@ -705,7 +1025,6 @@
       ctx.globalAlpha = 1;
     }
 
-    const b = Math.max(0, Math.min(2, crtState.effective_brightness || 1));
     const alpha = Math.max(0, Math.min(0.92, 1 - (b / 1.2)));
     ctx.fillStyle = `rgba(0,0,0,${alpha})`;
     ctx.fillRect(0, 0, w, h);
@@ -759,187 +1078,6 @@
     els.trackballPad.addEventListener("pointercancel", stopDrag);
   }
 
-  // ---------- Keyboard controls for MAME ----------
-  //
-  // Rather than going through the Lua TCP plugin (which has polarity bugs,
-  // axis inversion, and HTTP round-trip lag), we inject events directly into
-  // the MAME X11 window on the Xvfb display via xdotool.  MAME receives the
-  // same events as if a real keyboard/mouse were attached — no Lua glue needed.
-  //
-  // Key layout (matches MAME's default centiped3 bindings):
-  //   Space / LCtrl  → P1 Button 1 (fire)   → xdotool key "ctrl"
-  //   5              → Coin 1                → xdotool key "5"
-  //   1              → 1 Player Start        → xdotool key "1"
-  //   2              → 2 Players Start       → xdotool key "2"
-  //   WASD           → trackball             → xdotool mousemove_relative
-
-  // ev.code → xdotool key name for momentary / toggled buttons.
-  const KEY_XDOTOOL_MAP = {
-    ControlLeft:  "ctrl",   // P1 Button 1
-    Digit1:       "1",
-    Digit2:       "2",
-    Digit5:       "5",
-    Numpad1:      "1",
-    Numpad2:      "2",
-    Numpad5:      "5",
-    Escape:       "Escape",
-  };
-
-  // WASD → xdotool arrow key events (MAME's native keyboard trackball emulation).
-  // Arrow keys avoid all cursor-boundary issues; MAME handles sensitivity internally.
-  const KEY_TRACKBALL_CODE_MAP = {
-    KeyA: "Left",
-    KeyD: "Right",
-    KeyW: "Up",
-    KeyS: "Down",
-  };
-
-  // Currently held state for WASD arrow keys only.
-  // Buttons use atomic xdotool key (no open hold state, nothing can get stuck).
-  const _kbHeldMove   = new Set();
-
-  function _updateKbHeldDisplay() {
-    if (!els.mameKbHeld) return;
-    els.mameKbHeld.textContent = _kbHeldMove.size
-      ? "held: " + [..._kbHeldMove].join(" + ")
-      : "";
-  }
-
-  function _xdoKey(action, key) {
-    postJSON("/api/mame/xkey", { action, key }).catch(() => {});
-  }
-
-  function _xdoMouse(dx, dy) {
-    postJSON("/api/mame/xmouse", { dx, dy }).catch(() => {});
-  }
-
-  function initKeyboardControls() {
-    const isTypingTarget = (el) =>
-      el.tagName === "INPUT" || el.tagName === "SELECT" ||
-      el.tagName === "TEXTAREA" || el.isContentEditable;
-
-    const focusMamePane = () => {
-      if (!els.mamePane) return;
-      if (els.mamePane.tabIndex < 0) els.mamePane.tabIndex = 0;
-      try { els.mamePane.focus({ preventScroll: true }); }
-      catch { els.mamePane.focus(); }
-    };
-
-    els.mamePane?.addEventListener("pointerdown", focusMamePane);
-    setTimeout(focusMamePane, 0);
-
-    document.addEventListener("keydown", (ev) => {
-      if (els.mamePane?.hidden) return;
-      if (isTypingTarget(ev.target)) return;
-
-      // WASD → arrow key hold (MAME native trackball emulation)
-      const arrowKey = KEY_TRACKBALL_CODE_MAP[ev.code];
-      if (arrowKey) {
-        if (_kbHeldMove.has(ev.code)) return; // already held
-        ev.preventDefault();
-        _kbHeldMove.add(ev.code);
-        _xdoKey("keydown", arrowKey);
-        _updateKbHeldDisplay();
-        return;
-      }
-
-      // Button → atomic xdotool key (press+release in one shot).
-      // This prevents stuck-key: if keyup is ever lost (tab switch, Ctrl+R,
-      // any browser shortcut), nothing stays held in X11.
-      // OS key-repeat sends repeated keydown events → repeated atomic fires.
-      const xkey = KEY_XDOTOOL_MAP[ev.code];
-      if (xkey) {
-        ev.preventDefault();
-        ev.stopPropagation();
-        _xdoKey("key", xkey);
-      }
-    }, true);
-
-    document.addEventListener("keyup", (ev) => {
-      if (isTypingTarget(ev.target)) return;
-
-      const arrowKey = KEY_TRACKBALL_CODE_MAP[ev.code];
-      if (arrowKey && _kbHeldMove.has(ev.code)) {
-        _kbHeldMove.delete(ev.code);
-        _xdoKey("keyup", arrowKey);
-        _updateKbHeldDisplay();
-        return;
-      }
-      // No keyup handling needed for button keys — atomic presses have no open state.
-    }, true);
-
-    // Release held movement keys if the browser tab loses focus.
-    window.addEventListener("blur", () => {
-      for (const code of _kbHeldMove) {
-        const ak = KEY_TRACKBALL_CODE_MAP[code];
-        if (ak) _xdoKey("keyup", ak);
-      }
-      _kbHeldMove.clear();
-      _updateKbHeldDisplay();
-    });
-  }
-
-  function initMouseControls() {
-    if (!els.mameVideoCol) return;
-
-    let dragging = false;
-    let activePointerId = null;
-    let lastX = 0;
-    let lastY = 0;
-
-    // Make sure we never leave the user in pointer-lock mode.
-    if (document.pointerLockElement && document.exitPointerLock) {
-      document.exitPointerLock();
-    }
-
-    els.mameVideoCol.addEventListener("pointerdown", (ev) => {
-      if (els.mamePane?.hidden) return;
-      // Center the Xvfb cursor so the drag has full room in every direction.
-      postJSON("/api/mame/xcenter", {}).catch(() => {});
-      dragging = true;
-      activePointerId = ev.pointerId;
-      lastX = ev.clientX;
-      lastY = ev.clientY;
-      if (typeof els.mameVideoCol.setPointerCapture === "function") {
-        els.mameVideoCol.setPointerCapture(ev.pointerId);
-      }
-      els.mameVideoCol.classList.add("dragging");
-      ev.preventDefault();
-    });
-
-    els.mameVideoCol.addEventListener("pointermove", (ev) => {
-      if (!dragging) return;
-      if (activePointerId !== null && ev.pointerId !== activePointerId) return;
-      const dx = Math.round(ev.clientX - lastX);
-      const dy = Math.round(ev.clientY - lastY);
-      lastX = ev.clientX;
-      lastY = ev.clientY;
-      if (dx !== 0 || dy !== 0) _xdoMouse(dx, dy);
-    });
-
-    const stopDrag = (ev) => {
-      if (!dragging) return;
-      if (ev && activePointerId !== null && ev.pointerId !== activePointerId) return;
-      dragging = false;
-      if (activePointerId !== null && typeof els.mameVideoCol.releasePointerCapture === "function") {
-        try {
-          els.mameVideoCol.releasePointerCapture(activePointerId);
-        } catch {}
-      }
-      activePointerId = null;
-      els.mameVideoCol.classList.remove("dragging");
-    };
-
-    els.mameVideoCol.addEventListener("pointerup", stopDrag);
-    els.mameVideoCol.addEventListener("pointercancel", stopDrag);
-    els.mameVideoCol.addEventListener("pointerleave", stopDrag);
-
-    window.addEventListener("blur", () => {
-      dragging = false;
-      activePointerId = null;
-      els.mameVideoCol.classList.remove("dragging");
-    });
-  }
 
   function createDistortionCurve(amount) {
     const k = Math.max(0, amount) * 400;
@@ -1093,7 +1231,6 @@
             setStatus("MAME is paused; fault may not be visually obvious until resumed", true);
           }
         }
-        // Warn if any CRT fault couldn't reach MAME.
         const mameUnreachable = (result.faults || []).some(
           f => f.mame_available === false
         );
@@ -1495,6 +1632,8 @@
     initTrackballPad();
     initKeyboardControls();
     initMouseControls();
+    // Prefetch CRT shader sources so the WebGL path is ready at first frame.
+    _crtGl.prefetch().catch(() => {});
     if (els.audioToneStart) {
       els.audioToneStart.addEventListener("click", () => { void startTone(); });
     }

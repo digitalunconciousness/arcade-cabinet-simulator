@@ -287,6 +287,47 @@ def test_schematic_faults_are_merged_into_run_spec():
             assert captured["faults"].get("FB_V_LO_QC") == 1
 
 
+def test_run_ignores_malformed_manifest_rows():
+    with TemporaryDirectory() as d:
+        tmp = Path(d)
+        template = tmp / "sync_generator.cpp"
+        template.write_text("NETLIST_START(main)\n{\n\tSOLVER(s,48000)\n}\n")
+
+        # Missing fault_device is malformed but should not crash /api/run.
+        manifest_path = tmp / "sync_generator.manifest.json"
+        manifest_path.write_text(json.dumps([{"refdes": "U1", "pin": "QA"}]))
+
+        nltool = tmp / "nltool"
+        nltool.write_text("#!/bin/sh\nexit 0\n")
+
+        ui_dir = tmp / "ui"
+        ui_dir.mkdir(parents=True, exist_ok=True)
+        (ui_dir / "index.html").write_text("<html><body>ok</body></html>")
+        (ui_dir / "app.js").write_text("console.log('ok');")
+
+        app = create_app(
+            template_path=template,
+            manifest_path=manifest_path,
+            nltool_path=nltool,
+            ui_dir=ui_dir,
+            mame_client=StubMameClient(),
+            peripheral_registry=PeripheralRegistry(),
+            scenario_loader=lambda: [],
+        )
+        client = app.test_client()
+
+        with patch("server.runner.run") as fake_run:
+            fake_run.return_value = SimpleNamespace(
+                waveforms={"HSYNC_n": [], "VSYNC_n": []},
+                duration_s=0.001,
+                fault_mode_count=0,
+                stderr="",
+            )
+            run_res = client.post("/api/run", json={"faults": {}})
+
+        assert run_res.status_code == 200
+
+
 if __name__ == "__main__":
     failed = 0
     for name in sorted(dir()):

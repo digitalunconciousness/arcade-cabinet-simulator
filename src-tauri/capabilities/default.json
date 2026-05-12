@@ -1,0 +1,22 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Default capabilities for the Arcade Fault Simulator desktop app.",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    {
+      "identifier": "shell:allow-execute",
+      "allow": [
+        {
+          "name": "arcade-sim-server",
+          "sidecar": true,
+          "args": [{ "validator": "^--tauri-sidecar$" }]
+        }
+      ]
+    },
+    "shell:allow-spawn",
+    "dialog:allow-open",
+    "updater:default"
+  ]
+}
