@@ -380,10 +380,7 @@ async fn start_mame(app: &AppHandle, display: &str) -> Result<CommandChild, Stri
 
     // Fall back to source-tree paths when running via `cargo tauri dev`.
     // Try resource_dir first, then absolute project-root fallback, then relative paths.
-    let rom_path = if rom_path.exists() { rom_path }
-        else if let Some(root) = &project_root { root.join("roms") }
-        else if Path::new("roms").exists() { PathBuf::from("roms") }
-        else { PathBuf::from("../roms") };
+    let rom_path = find_rom_path(&app_resource_path, project_root.as_ref())?;
     let cfg_path = if cfg_path.exists() { cfg_path }
         else if let Some(root) = &project_root { root.join("cfg") }
         else if Path::new("cfg").exists() { PathBuf::from("cfg") }
@@ -392,13 +389,6 @@ async fn start_mame(app: &AppHandle, display: &str) -> Result<CommandChild, Stri
         else if let Some(root) = &project_root { root.join("vendor/mame/plugins") }
         else if Path::new("vendor/mame/plugins").exists() { PathBuf::from("vendor/mame/plugins") }
         else { PathBuf::from("../vendor/mame/plugins") };
-
-    if !rom_path.exists() {
-        return Err(format!(
-            "ROM path not found at {}; make sure roms/centiped3.zip exists",
-            rom_path.display()
-        ));
-    }
 
     // Start MAME with cabinet_bus plugin. The plugin listens on port 5051 for
     // TCP commands from the Flask server.
@@ -480,6 +470,68 @@ fn find_mame_binary(resource_dir: &Path) -> Result<String, String> {
     Err(
         "MAME binary not found. Build vendor/mame/mame or set mame_binary in ~/.arcade-sim/config.json".to_string()
     )
+}
+
+fn find_rom_path(resource_dir: &Path, project_root: Option<&PathBuf>) -> Result<PathBuf, String> {
+    // 1. Explicit env override.
+    if let Ok(path) = std::env::var("ARCADE_SIM_ROM_PATH") {
+        let p = PathBuf::from(path);
+        return validate_rom_path(&p);
+    }
+
+    // 2. Config file override.
+    if let Some(home) = std::env::var_os("HOME").map(PathBuf::from) {
+        let config_file = home.join(".arcade-sim/config.json");
+        if let Ok(content) = std::fs::read_to_string(&config_file) {
+            if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+                if let Some(path) = json.get("rom_path").and_then(|v| v.as_str()) {
+                    let p = PathBuf::from(path);
+                    return validate_rom_path(&p);
+                }
+            }
+        }
+    }
+
+    // 3. Bundled and dev fallbacks.
+    let candidates = [
+        resource_dir.join("roms"),
+        project_root.map(|p| p.join("roms")).unwrap_or_default(),
+        PathBuf::from("roms"),
+        PathBuf::from("../roms"),
+    ];
+
+    for candidate in candidates {
+        if candidate.as_os_str().is_empty() {
+            continue;
+        }
+        if let Ok(path) = validate_rom_path(&candidate) {
+            return Ok(path);
+        }
+    }
+
+    Err(
+        "ROM directory not found or missing centiped3.zip. Set ARCADE_SIM_ROM_PATH or \
+         configure rom_path in ~/.arcade-sim/config.json"
+            .to_string(),
+    )
+}
+
+fn validate_rom_path(path: &Path) -> Result<PathBuf, String> {
+    if !path.exists() {
+        return Err(format!("ROM path does not exist: {}", path.display()));
+    }
+    if !path.is_dir() {
+        return Err(format!("ROM path is not a directory: {}", path.display()));
+    }
+
+    let required = path.join("centiped3.zip");
+    if !required.exists() {
+        return Err(format!(
+            "ROM directory {} is missing centiped3.zip",
+            path.display()
+        ));
+    }
+    Ok(path.to_path_buf())
 }
 
 fn find_project_root() -> Option<PathBuf> {
