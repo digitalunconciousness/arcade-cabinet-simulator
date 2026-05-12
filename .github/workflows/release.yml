@@ -71,6 +71,7 @@ jobs:
         shell: bash
         env:
           RELEASE_BASE_URL: ${{ github.server_url }}/${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
         run: |
           python3 - <<'PY'
           import json
@@ -78,6 +79,7 @@ jobs:
           from pathlib import Path
           p = Path('src-tauri/tauri.conf.json')
           data = json.loads(p.read_text())
+          data['version'] = os.environ['RELEASE_TAG'].lstrip('v')
           data['plugins']['updater']['endpoints'] = [
               f"{os.environ['RELEASE_BASE_URL']}/releases/latest/download/latest.json"
           ]
@@ -167,8 +169,9 @@ jobs:
         shell: pwsh
         env:
           RELEASE_BASE_URL: ${{ github.server_url }}/${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
         run: |
-          python -c 'import json, os, pathlib; p = pathlib.Path("src-tauri/tauri.conf.json"); data = json.loads(p.read_text()); data["plugins"]["updater"]["endpoints"] = [os.environ["RELEASE_BASE_URL"] + "/releases/latest/download/latest.json"]; data["build"]["beforeBuildCommand"] = "bash build/pyinstaller/build.sh"; data["bundle"]["targets"] = ["nsis"]; data["bundle"]["createUpdaterArtifacts"] = False; data["bundle"]["resources"] = [r for r in data["bundle"]["resources"] if (p.parent / r).exists()]; p.write_text(json.dumps(data, indent=2) + "\n")'
+          python -c 'import json, os, pathlib; p = pathlib.Path("src-tauri/tauri.conf.json"); data = json.loads(p.read_text()); data["version"] = os.environ["RELEASE_TAG"].lstrip("v"); data["plugins"]["updater"]["endpoints"] = [os.environ["RELEASE_BASE_URL"] + "/releases/latest/download/latest.json"]; data["build"]["beforeBuildCommand"] = "bash build/pyinstaller/build.sh"; data["bundle"]["targets"] = ["nsis"]; data["bundle"]["createUpdaterArtifacts"] = False; data["bundle"]["resources"] = [r for r in data["bundle"]["resources"] if (p.parent / r).exists()]; p.write_text(json.dumps(data, indent=2) + "\n")'
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
