@@ -61,14 +61,24 @@ fi
 # Tauri sidecar lookup requires the binary to also exist with the target-triple
 # suffix (e.g. arcade-sim-server-x86_64-unknown-linux-gnu).  Copy it now so
 # `cargo tauri build` bundles the real ELF rather than the dev stub.
-if [[ "$(uname -s)" == "Linux" ]]; then
-    TARGET_TRIPLE="${BINARY}-x86_64-unknown-linux-gnu"
-    cp "$BINARY" "$TARGET_TRIPLE"
-    echo "==> copied to $TARGET_TRIPLE"
-elif [[ "$(uname -s)" == "Darwin" ]]; then
-    cp "$BINARY" "${BINARY}-x86_64-apple-darwin"
-    echo "==> copied to ${BINARY}-x86_64-apple-darwin"
-fi
+case "$(uname -s)" in
+    Linux)
+        TARGET_TRIPLE="${BINARY}-x86_64-unknown-linux-gnu"
+        cp "$BINARY" "$TARGET_TRIPLE"
+        echo "==> copied to $TARGET_TRIPLE"
+        ;;
+    Darwin)
+        cp "$BINARY" "${BINARY}-x86_64-apple-darwin"
+        echo "==> copied to ${BINARY}-x86_64-apple-darwin"
+        ;;
+    MINGW*|MSYS*|CYGWIN*)
+        WINDOWS_BINARY="${BINARY}.exe"
+        if [[ -f "$WINDOWS_BINARY" ]]; then
+            cp "$WINDOWS_BINARY" "${BINARY}-x86_64-pc-windows-msvc.exe"
+            echo "==> copied to ${BINARY}-x86_64-pc-windows-msvc.exe"
+        fi
+        ;;
+esac
 
 echo "==> build complete: $BINARY"
 echo ""
