@@ -50,111 +50,208 @@
     bannerSubs:       document.getElementById("banner-subs"),
   };
 
-  /** @type {{fault_targets: Array, log_nets: string[], duration_s: number, modes: object}} */
-  let manifest = null;
+  const tauriInvoke = (() => {
+    const invoke = window.__TAURI__?.core?.invoke;
+    return typeof invoke === "function" ? invoke.bind(window.__TAURI__.core) : null;
+  })();
 
-  /** @type {Object<string, number>} */
-  const faults = {};
-
-  /** @type {any|null} */
-  let crtState = null;
-  /** @type {any|null} */
-  let trackballState = null;
-  /** @type {any|null} */
-  let audioState = null;
-
-  let audioCtx = null;
-  let audioToneOsc = null;
-  let audioHumOsc = null;
-  let audioToneGain = null;
-  let audioHumGain = null;
-  let audioDrive = null;
-  let audioLowpass = null;
-  let audioMaster = null;
-  let lastAudioProfileSig = "";
-
-  // Layout for the fault-pin badges. Keyed by fault_device. The (x, y) is the
-  // SVG coordinate where the badge should sit. Tuned to match index.html.
-  const PIN_LAYOUT = {
-    FB_CLK_Q:   { x: 150, y: 160, anchor: "above" },
-    FB_H_LO_RC: { x: 315, y: 190, anchor: "above" },
-    FB_H_HI_RC: { x: 480, y: 190, anchor: "above" },
-    FB_H_HI_QB: { x: 600, y:  80, anchor: "above" },
-    FB_H_HI_QC: { x: 580, y:  80, anchor: "above" },
-    FB_H_HI_QD: { x: 560, y:  80, anchor: "above" },
-    FB_V_LO_QC: { x: 555, y: 270, anchor: "below" },
-    FB_V_LO_QD: { x: 575, y: 270, anchor: "below" },
+  const KEY_BUTTON_MAP = {
+    ControlLeft: "P1 Button 1",
+    Digit1: "1 Player Start",
+    Digit2: "2 Player Start",
+    Digit5: "Coin 1",
+    Numpad1: "1 Player Start",
+    Numpad2: "2 Player Start",
+    Numpad5: "Coin 1",
   };
 
-  const MODE_CLASS = {
-    0: "normal",
-    1: "stuck-hi",
-    2: "stuck-lo",
-    3: "open",
+  const KEY_TRACKBALL_CODE_MAP = {
+    KeyA: { dx: -3, dy: 0 },
+    KeyD: { dx: 3, dy: 0 },
+    KeyW: { dx: 0, dy: -3 },
+    KeyS: { dx: 0, dy: 3 },
   };
 
-  const EXPECTED_MANIFEST_VERSION = 1;
+  const _kbHeldMove = new Set();
+  const _kbHeldButtons = new Set();
+  let _trackballRaf = 0;
 
-  // ---------- networking ----------
-
-  async function fetchJSON(url, opts) {
-    const res = await fetch(url, opts);
-    if (!res.ok) {
-      const text = await res.text();
-      let detail = text.trim();
-
-      // Prefer structured API errors, but gracefully collapse HTML error pages
-      // into a short message so status banners remain readable.
-      try {
-        const parsed = JSON.parse(detail);
-        if (parsed && typeof parsed.error === "string" && parsed.error.trim()) {
-          detail = parsed.error.trim();
-        }
-      } catch {
-        const htmlP = detail.match(/<p>(.*?)<\/p>/i);
-        if (htmlP && htmlP[1]) {
-          detail = htmlP[1].replace(/<[^>]+>/g, "").trim();
-        } else if (/^\s*<!doctype html>|^\s*<html/i.test(detail)) {
-          detail = "internal server error";
-        }
-      }
-
-      throw new Error(`${res.status}: ${detail}`);
-    }
-    return await res.json();
+  function _updateKbHeldDisplay() {
+    if (!els.mameKbHeld) return;
+    const held = [];
+    for (const code of _kbHeldMove) held.push(code);
+    for (const code of _kbHeldButtons) held.push(code);
+    els.mameKbHeld.textContent = held.length ? "held: " + held.join(" + ") : "";
   }
 
-  async function reloadWaveforms() {
-    setStatus("running nltool…");
-    try {
-      const data = await fetchJSON("/api/run", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ faults }),
-      });
-      const ms = data.duration_s * 1000;
-      els.waveMeta.textContent =
-        `simulation window: ${ms.toFixed(3)} ms · faults active: ${data.fault_mode_count}`;
-      for (const net of manifest.log_nets) {
-        renderWaveform(net, data.waveforms[net] || [], data.duration_s);
-      }
-      setStatus("ready");
-    } catch (err) {
-      const msg = String(err?.message || err || "waveform simulation unavailable");
-      if (/nltool|timed out|timeout/i.test(msg)) {
-        setStatus("ready (waveforms unavailable)");
-      } else {
-        setStatus("ready (simulation unavailable)");
-      }
-      console.warn("waveform reload failed", err);
-    }
+  function _invokeMame(command, payload) {
+    if (!tauriInvoke) return Promise.reject(new Error("Tauri invoke unavailable"));
+    return tauriInvoke(command, payload);
   }
 
-  // ---------- rendering ----------
+  function _sendMameButton(action, name) {
+    if (!name) return;
+    void _invokeMame(`mame_${action}`, { name }).catch(() => {});
+  }
 
-  function setStatus(msg, isError = false) {
-    els.status.textContent = msg;
-    els.status.classList.toggle("error", isError);
+  function _sendTrackballDelta(dx, dy) {
+    if (dx === 0 && dy === 0) return;
+    void _invokeMame("mame_trackball_delta", { dx, dy }).catch(() => {});
+  }
+
+  function _scheduleTrackballPump() {
+    if (_trackballRaf) return;
+    const pump = () => {
+      _trackballRaf = 0;
+      if (_kbHeldMove.size === 0) return;
+      let dx = 0;
+      let dy = 0;
+      for (const code of _kbHeldMove) {
+        const delta = KEY_TRACKBALL_CODE_MAP[code];
+        if (delta) {
+          dx += delta.dx;
+          dy += delta.dy;
+        }
+      }
+      _sendTrackballDelta(dx, dy);
+      _trackballRaf = window.requestAnimationFrame(pump);
+    };
+    _trackballRaf = window.requestAnimationFrame(pump);
+  }
+
+  function initKeyboardControls() {
+    const isTypingTarget = (el) =>
+      el.tagName === "INPUT" || el.tagName === "SELECT" ||
+      el.tagName === "TEXTAREA" || el.isContentEditable;
+
+    const focusMamePane = () => {
+      if (!els.mamePane) return;
+      if (els.mamePane.tabIndex < 0) els.mamePane.tabIndex = 0;
+      try { els.mamePane.focus({ preventScroll: true }); }
+      catch { els.mamePane.focus(); }
+    };
+
+    els.mamePane?.addEventListener("pointerdown", focusMamePane);
+    setTimeout(focusMamePane, 0);
+
+    document.addEventListener("keydown", (ev) => {
+      if (els.mamePane?.hidden) return;
+      if (isTypingTarget(ev.target)) return;
+
+      const moveDelta = KEY_TRACKBALL_CODE_MAP[ev.code];
+      if (moveDelta) {
+        if (_kbHeldMove.has(ev.code)) return;
+        ev.preventDefault();
+        _kbHeldMove.add(ev.code);
+        _scheduleTrackballPump();
+        _updateKbHeldDisplay();
+        return;
+      }
+
+      const buttonName = KEY_BUTTON_MAP[ev.code];
+      if (buttonName) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        _kbHeldButtons.add(ev.code);
+        _sendMameButton("press_button", buttonName);
+        _updateKbHeldDisplay();
+      }
+    }, true);
+
+    document.addEventListener("keyup", (ev) => {
+      if (isTypingTarget(ev.target)) return;
+
+      const moveDelta = KEY_TRACKBALL_CODE_MAP[ev.code];
+      if (moveDelta && _kbHeldMove.has(ev.code)) {
+        _kbHeldMove.delete(ev.code);
+        _updateKbHeldDisplay();
+        if (_kbHeldMove.size === 0 && _trackballRaf) {
+          cancelAnimationFrame(_trackballRaf);
+          _trackballRaf = 0;
+        }
+        return;
+      }
+
+      const buttonName = KEY_BUTTON_MAP[ev.code];
+      if (buttonName && _kbHeldButtons.has(ev.code)) {
+        _kbHeldButtons.delete(ev.code);
+        _sendMameButton("release_button", buttonName);
+        _updateKbHeldDisplay();
+      }
+    }, true);
+
+    window.addEventListener("blur", () => {
+      _kbHeldMove.clear();
+      for (const code of _kbHeldButtons) {
+        const buttonName = KEY_BUTTON_MAP[code];
+        if (buttonName) _sendMameButton("release_button", buttonName);
+      }
+      _kbHeldButtons.clear();
+      if (_trackballRaf) {
+        cancelAnimationFrame(_trackballRaf);
+        _trackballRaf = 0;
+      }
+      _updateKbHeldDisplay();
+    });
+  }
+
+  function initMouseControls() {
+    if (!els.mameVideoCol) return;
+
+    let dragging = false;
+    let activePointerId = null;
+    let lastX = 0;
+    let lastY = 0;
+
+    if (document.pointerLockElement && document.exitPointerLock) {
+      document.exitPointerLock();
+    }
+
+    els.mameVideoCol.addEventListener("pointerdown", (ev) => {
+      if (els.mamePane?.hidden) return;
+      dragging = true;
+      activePointerId = ev.pointerId;
+      lastX = ev.clientX;
+      lastY = ev.clientY;
+      if (typeof els.mameVideoCol.setPointerCapture === "function") {
+        els.mameVideoCol.setPointerCapture(ev.pointerId);
+      }
+      els.mameVideoCol.classList.add("dragging");
+      ev.preventDefault();
+    });
+
+    els.mameVideoCol.addEventListener("pointermove", (ev) => {
+      if (!dragging) return;
+      if (activePointerId !== null && ev.pointerId !== activePointerId) return;
+      const dx = Math.round(ev.clientX - lastX);
+      const dy = Math.round(ev.clientY - lastY);
+      lastX = ev.clientX;
+      lastY = ev.clientY;
+      _sendTrackballDelta(dx, dy);
+    });
+
+    const stopDrag = (ev) => {
+      if (!dragging) return;
+      if (ev && activePointerId !== null && ev.pointerId !== activePointerId) return;
+      dragging = false;
+      if (activePointerId !== null && typeof els.mameVideoCol.releasePointerCapture === "function") {
+        try {
+          els.mameVideoCol.releasePointerCapture(activePointerId);
+        } catch {}
+      }
+      activePointerId = null;
+      els.mameVideoCol.classList.remove("dragging");
+    };
+
+    els.mameVideoCol.addEventListener("pointerup", stopDrag);
+    els.mameVideoCol.addEventListener("pointercancel", stopDrag);
+    els.mameVideoCol.addEventListener("pointerleave", stopDrag);
+
+    window.addEventListener("blur", () => {
+      dragging = false;
+      activePointerId = null;
+      els.mameVideoCol.classList.remove("dragging");
+    });
   }
 
   function renderFaultPins() {
@@ -981,160 +1078,6 @@ void main() {
     els.trackballPad.addEventListener("pointercancel", stopDrag);
   }
 
-  // ---------- Keyboard controls for MAME ----------
-
-  const KEY_XDOTOOL_MAP = {
-    ControlLeft: "ctrl",
-    Digit1: "1",
-    Digit2: "2",
-    Digit5: "5",
-    Numpad1: "1",
-    Numpad2: "2",
-    Numpad5: "5",
-    Escape: "Escape",
-  };
-
-  const KEY_TRACKBALL_CODE_MAP = {
-    KeyA: "Left",
-    KeyD: "Right",
-    KeyW: "Up",
-    KeyS: "Down",
-  };
-
-  const _kbHeldMove = new Set();
-
-  function _updateKbHeldDisplay() {
-    if (!els.mameKbHeld) return;
-    els.mameKbHeld.textContent = _kbHeldMove.size
-      ? "held: " + [..._kbHeldMove].join(" + ")
-      : "";
-  }
-
-  function _xdoKey(action, key) {
-    postJSON("/api/mame/xkey", { action, key }).catch(() => {});
-  }
-
-  function _xdoMouse(dx, dy) {
-    postJSON("/api/mame/xmouse", { dx, dy }).catch(() => {});
-  }
-
-  function initKeyboardControls() {
-    const isTypingTarget = (el) =>
-      el.tagName === "INPUT" || el.tagName === "SELECT" ||
-      el.tagName === "TEXTAREA" || el.isContentEditable;
-
-    const focusMamePane = () => {
-      if (!els.mamePane) return;
-      if (els.mamePane.tabIndex < 0) els.mamePane.tabIndex = 0;
-      try { els.mamePane.focus({ preventScroll: true }); }
-      catch { els.mamePane.focus(); }
-    };
-
-    els.mamePane?.addEventListener("pointerdown", focusMamePane);
-    setTimeout(focusMamePane, 0);
-
-    document.addEventListener("keydown", (ev) => {
-      if (els.mamePane?.hidden) return;
-      if (isTypingTarget(ev.target)) return;
-
-      const arrowKey = KEY_TRACKBALL_CODE_MAP[ev.code];
-      if (arrowKey) {
-        if (_kbHeldMove.has(ev.code)) return;
-        ev.preventDefault();
-        _kbHeldMove.add(ev.code);
-        _xdoKey("keydown", arrowKey);
-        _updateKbHeldDisplay();
-        return;
-      }
-
-      const xkey = KEY_XDOTOOL_MAP[ev.code];
-      if (xkey) {
-        ev.preventDefault();
-        ev.stopPropagation();
-        _xdoKey("key", xkey);
-      }
-    }, true);
-
-    document.addEventListener("keyup", (ev) => {
-      if (isTypingTarget(ev.target)) return;
-
-      const arrowKey = KEY_TRACKBALL_CODE_MAP[ev.code];
-      if (arrowKey && _kbHeldMove.has(ev.code)) {
-        _kbHeldMove.delete(ev.code);
-        _xdoKey("keyup", arrowKey);
-        _updateKbHeldDisplay();
-      }
-    }, true);
-
-    window.addEventListener("blur", () => {
-      for (const code of _kbHeldMove) {
-        const arrowKey = KEY_TRACKBALL_CODE_MAP[code];
-        if (arrowKey) _xdoKey("keyup", arrowKey);
-      }
-      _kbHeldMove.clear();
-      _updateKbHeldDisplay();
-    });
-  }
-
-  function initMouseControls() {
-    if (!els.mameVideoCol) return;
-
-    let dragging = false;
-    let activePointerId = null;
-    let lastX = 0;
-    let lastY = 0;
-
-    if (document.pointerLockElement && document.exitPointerLock) {
-      document.exitPointerLock();
-    }
-
-    els.mameVideoCol.addEventListener("pointerdown", (ev) => {
-      if (els.mamePane?.hidden) return;
-      postJSON("/api/mame/xcenter", {}).catch(() => {});
-      dragging = true;
-      activePointerId = ev.pointerId;
-      lastX = ev.clientX;
-      lastY = ev.clientY;
-      if (typeof els.mameVideoCol.setPointerCapture === "function") {
-        els.mameVideoCol.setPointerCapture(ev.pointerId);
-      }
-      els.mameVideoCol.classList.add("dragging");
-      ev.preventDefault();
-    });
-
-    els.mameVideoCol.addEventListener("pointermove", (ev) => {
-      if (!dragging) return;
-      if (activePointerId !== null && ev.pointerId !== activePointerId) return;
-      const dx = Math.round(ev.clientX - lastX);
-      const dy = Math.round(ev.clientY - lastY);
-      lastX = ev.clientX;
-      lastY = ev.clientY;
-      if (dx !== 0 || dy !== 0) _xdoMouse(dx, dy);
-    });
-
-    const stopDrag = (ev) => {
-      if (!dragging) return;
-      if (ev && activePointerId !== null && ev.pointerId !== activePointerId) return;
-      dragging = false;
-      if (activePointerId !== null && typeof els.mameVideoCol.releasePointerCapture === "function") {
-        try {
-          els.mameVideoCol.releasePointerCapture(activePointerId);
-        } catch {}
-      }
-      activePointerId = null;
-      els.mameVideoCol.classList.remove("dragging");
-    };
-
-    els.mameVideoCol.addEventListener("pointerup", stopDrag);
-    els.mameVideoCol.addEventListener("pointercancel", stopDrag);
-    els.mameVideoCol.addEventListener("pointerleave", stopDrag);
-
-    window.addEventListener("blur", () => {
-      dragging = false;
-      activePointerId = null;
-      els.mameVideoCol.classList.remove("dragging");
-    });
-  }
 
   function createDistortionCurve(amount) {
     const k = Math.max(0, amount) * 400;

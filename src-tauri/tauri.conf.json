@@ -9,6 +9,7 @@
     "beforeBuildCommand": "NO_STRIP=1 APPIMAGE_EXTRACT_AND_RUN=1 bash build/pyinstaller/build.sh"
   },
   "app": {
+    "withGlobalTauri": true,
     "windows": [
       {
         "label": "main",

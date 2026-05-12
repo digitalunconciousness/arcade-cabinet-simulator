@@ -21,7 +21,7 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use std::collections::HashMap;
 
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Manager, State};
 use tauri_plugin_shell::process::{CommandChild, CommandEvent};
 use tauri_plugin_shell::ShellExt;
 use tauri_plugin_updater::UpdaterExt;
@@ -36,6 +36,117 @@ struct AppProcesses {
 /// Shared handles to running processes.
 struct SidecarState(Mutex<AppProcesses>);
 
+/// Persistent socket bridge to the cabinet_bus Lua plugin inside MAME.
+struct MameSocketState {
+    writer: Option<std::net::TcpStream>,
+    reader: Option<BufReader<std::net::TcpStream>>,
+}
+
+struct MameSocketBridge(Mutex<MameSocketState>);
+
+impl MameSocketState {
+    fn new() -> Self {
+        Self { writer: None, reader: None }
+    }
+
+    fn close(&mut self) {
+        self.writer.take();
+        self.reader.take();
+    }
+
+    fn ensure_connection(&mut self) -> Result<(), String> {
+        if self.writer.is_some() && self.reader.is_some() {
+            return Ok(());
+        }
+        let addr = "127.0.0.1:5051";
+        let socket_addr: SocketAddr = addr
+            .parse()
+            .map_err(|e: std::net::AddrParseError| e.to_string())?;
+        let stream = std::net::TcpStream::connect_timeout(&socket_addr, Duration::from_millis(750))
+            .map_err(|e| format!("MAME plugin not reachable at {addr}: {e}"))?;
+        stream
+            .set_read_timeout(Some(Duration::from_millis(750)))
+            .map_err(|e| e.to_string())?;
+        stream
+            .set_write_timeout(Some(Duration::from_millis(750)))
+            .map_err(|e| e.to_string())?;
+        let reader = stream
+            .try_clone()
+            .map(BufReader::new)
+            .map_err(|e| e.to_string())?;
+        self.reader = Some(reader);
+        self.writer = Some(stream);
+        Ok(())
+    }
+
+    fn send_json(&mut self, cmd: &serde_json::Value) -> Result<serde_json::Value, String> {
+        for attempt in 1..=2 {
+            match self.send_json_once(cmd) {
+                Ok(reply) => return Ok(reply),
+                Err(err) if attempt == 1 => {
+                    self.close();
+                    boot_log(&format!("retrying MAME socket command after error: {err}"));
+                }
+                Err(err) => return Err(err),
+            }
+        }
+        Err("unexpected MAME socket retry failure".to_string())
+    }
+
+    fn send_json_once(&mut self, cmd: &serde_json::Value) -> Result<serde_json::Value, String> {
+        self.ensure_connection()?;
+        let payload = serde_json::to_string(cmd).map_err(|e| e.to_string())? + "\n";
+        {
+            let writer = self.writer.as_mut().ok_or_else(|| "missing MAME socket writer".to_string())?;
+            writer.write_all(payload.as_bytes()).map_err(|e| e.to_string())?;
+        }
+
+        let mut response_line = String::new();
+        let bytes_read = {
+            let reader = self.reader.as_mut().ok_or_else(|| "missing MAME socket reader".to_string())?;
+            reader.read_line(&mut response_line).map_err(|e| e.to_string())?
+        };
+        if bytes_read == 0 {
+            self.close();
+            return Err("MAME closed the plugin socket".to_string());
+        }
+
+        let reply: serde_json::Value = serde_json::from_str(response_line.trim()).map_err(|e| e.to_string())?;
+        if reply.get("ok").and_then(|v| v.as_bool()) == Some(false) {
+            let err = reply
+                .get("error")
+                .and_then(|v| v.as_str())
+                .unwrap_or("MAME command failed")
+                .to_string();
+            return Err(err);
+        }
+        Ok(reply)
+    }
+}
+
+fn send_mame_command(bridge: &State<'_, MameSocketBridge>, cmd: serde_json::Value) -> Result<(), String> {
+    let mut state = bridge.0.lock().map_err(|_| "MAME bridge lock poisoned".to_string())?;
+    state.send_json(&cmd).map(|_| ())
+}
+
+#[tauri::command]
+fn mame_press_button(bridge: State<'_, MameSocketBridge>, name: String) -> Result<(), String> {
+    send_mame_command(&bridge, serde_json::json!({"cmd": "press_button", "name": name}))
+}
+
+#[tauri::command]
+fn mame_release_button(bridge: State<'_, MameSocketBridge>, name: String) -> Result<(), String> {
+    send_mame_command(&bridge, serde_json::json!({"cmd": "release_button", "name": name}))
+}
+
+#[tauri::command]
+fn mame_trackball_delta(bridge: State<'_, MameSocketBridge>, dx: i32, dy: i32) -> Result<(), String> {
+    if dx == 0 && dy == 0 {
+        return Ok(());
+    }
+    send_mame_command(&bridge, serde_json::json!({"cmd": "trackball_delta", "dx": dx, "dy": dy}))
+}
+
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
@@ -46,6 +157,12 @@ pub fn run() {
             mame: None,
             sidecar: None,
         })))
+        .manage(MameSocketBridge(Mutex::new(MameSocketState::new())))
+        .invoke_handler(tauri::generate_handler![
+            mame_press_button,
+            mame_release_button,
+            mame_trackball_delta,
+        ])
         .setup(|app| {
             // In release builds, navigate to the splash screen immediately
             // so the window shows something while the sidecar starts.
