@@ -743,7 +743,12 @@ def create_app(
         if not ident:
             return jsonify({"error": "missing 'id'"}), 400
         try:
-            return jsonify(peripherals.apply_fault(ident, fault))
+            result = peripherals.apply_fault(ident, fault)
+            # Push CRT state to MAME immediately so the visual change appears
+            # without waiting for the 1-second PSU watcher cycle.
+            if str(ident).upper().startswith("CRT"):
+                result["mame_available"] = _push_crt_to_mame()
+            return jsonify(result)
         except ValueError as e:
             return jsonify({"error": str(e)}), 400
 
@@ -756,7 +761,11 @@ def create_app(
         if not ident or not param:
             return jsonify({"error": "missing 'id' or 'param'"}), 400
         try:
-            return jsonify(peripherals.adjust(ident, param, value))
+            result = peripherals.adjust(ident, param, value)
+            # CRT brightness/focus adjustments should reach MAME immediately.
+            if str(ident).upper().startswith("CRT"):
+                result["mame_available"] = _push_crt_to_mame()
+            return jsonify(result)
         except (ValueError, TypeError) as e:
             return jsonify({"error": str(e)}), 400
 

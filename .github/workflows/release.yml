@@ -83,7 +83,6 @@ jobs:
           data['plugins']['updater']['endpoints'] = [
               f"{os.environ['RELEASE_BASE_URL']}/releases/latest/download/latest.json"
           ]
-          data['bundle']['createUpdaterArtifacts'] = False
           data['bundle']['resources'] = [
               r for r in data['bundle']['resources'] if (p.parent / r).exists()
           ]
@@ -129,6 +128,8 @@ jobs:
           ARCADE_SIM_CHANNEL: stable
           NO_STRIP: "1"
           APPIMAGE_EXTRACT_AND_RUN: "1"
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           releaseId: ${{ needs.create-release.outputs.release_id }}
 
@@ -171,7 +172,7 @@ jobs:
           RELEASE_BASE_URL: ${{ github.server_url }}/${{ github.repository }}
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
-          python -c 'import json, os, pathlib; p = pathlib.Path("src-tauri/tauri.conf.json"); data = json.loads(p.read_text()); data["version"] = os.environ["RELEASE_TAG"].lstrip("v"); data["plugins"]["updater"]["endpoints"] = [os.environ["RELEASE_BASE_URL"] + "/releases/latest/download/latest.json"]; data["build"]["beforeBuildCommand"] = "bash build/pyinstaller/build.sh"; data["bundle"]["targets"] = ["nsis"]; data["bundle"]["createUpdaterArtifacts"] = False; data["bundle"]["resources"] = [r for r in data["bundle"]["resources"] if (p.parent / r).exists()]; p.write_text(json.dumps(data, indent=2) + "\n")'
+          python -c 'import json, os, pathlib; p = pathlib.Path("src-tauri/tauri.conf.json"); data = json.loads(p.read_text()); data["version"] = os.environ["RELEASE_TAG"].lstrip("v"); data["plugins"]["updater"]["endpoints"] = [os.environ["RELEASE_BASE_URL"] + "/releases/latest/download/latest.json"]; data["build"]["beforeBuildCommand"] = "bash build/pyinstaller/build.sh"; data["bundle"]["targets"] = ["nsis"]; data["bundle"]["resources"] = [r for r in data["bundle"]["resources"] if (p.parent / r).exists()]; p.write_text(json.dumps(data, indent=2) + "\n")'
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
@@ -201,6 +202,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ARCADE_SIM_CHANNEL: stable
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           releaseId: ${{ needs.create-release.outputs.release_id }}
 
@@ -257,8 +260,9 @@ jobs:
             const hasNsis = names.some(n => n.endsWith('-setup.exe'));
             const hasAppImage = names.some(n => n.endsWith('.AppImage'));
             const hasDeb = names.some(n => n.endsWith('.deb'));
+            const hasLatestJson = names.includes('latest.json');
 
-            if (!hasNsis || !hasAppImage || !hasDeb) {
+            if (!hasNsis || !hasAppImage || !hasDeb || !hasLatestJson) {
               core.setFailed(
                 `Missing expected assets. Found: ${names.join(', ')}`
               );
