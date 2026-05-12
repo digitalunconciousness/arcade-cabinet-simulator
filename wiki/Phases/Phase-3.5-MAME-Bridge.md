@@ -1,4 +1,5 @@
 # Phase 3.5 — MAME bridge
+
 **Status:** ✅ complete
 **Goal:** Wire MAME running Centipede into the cabinet bus, so the
 browser GUI can talk to a live emulator alongside the existing fault
@@ -6,7 +7,9 @@ injection on the standalone netlist. End-state: open the UI, see live
 ROM name + frame counter from MAME, click Pause / Resume / Soft reset
 and watch the running game respond.
 **Estimate:** treated as a small follow-up to Phase 3. **Actual: 1 evening.**
+
 ## What landed
+
 - `vendor/mame/plugins/cabinet_bus/init.lua` — Lua plugin running inside
   MAME. Opens a TCP listener on `127.0.0.1:5051`, accepts newline-
   delimited JSON commands, returns JSON-line replies. Hooks
@@ -31,16 +34,23 @@ and watch the running game respond.
   New endpoints: `POST /api/mame/press_button`, `POST /api/mame/release_button`,
   `POST /api/mame/clear_buttons`, `GET /api/mame/list_buttons`. Soft reset
   clears all fault state. PSU watcher does not auto-resume MAME when paused.
+- `src-tauri/src/lib.rs` + `ui/app.js` — current desktop runtime now sends
+  real-time keyboard and mouse input through Tauri IPC into a Rust-side
+  persistent socket bridge, which forwards `press_button`, `release_button`,
+  and `trackball_delta` directly to the plugin on `127.0.0.1:5051`.
 - `tools/run-demo.sh` — single-command launcher: Xvfb + MAME + Flask.
   Passes `-skip_gameinfo` so MAME starts straight into gameplay.
 - `ui/index.html` + `ui/app.js` + `ui/style.css` — emulator panel with
   live MJPEG video feed, ROM name, frame counter, paused state, and control
-  buttons. Keyboard controls: WASD drives the trackball; Space, 1, 2, 5
-  press digital buttons. Video stream retries until ffmpeg grab is ready.
+  buttons. Video stream retries until ffmpeg grab is ready.
+
 ## Protocol
+
 Both directions speak newline-terminated JSON objects. One request
 yields one reply; replies always include an `ok` boolean.
+
 Commands:
+
 - `{"cmd":"ping"}` → `{"ok":true,"pong":true,"app":"mame","version":"0.287"}`
 - `{"cmd":"get_state"}` → `{"ok":true,"rom":"centiped3","paused":false,"frame":12345,...}`
 - `{"cmd":"pause"}` → updated state with `paused:true`
@@ -56,7 +66,23 @@ Commands:
 - `{"cmd":"set_crt_fault","effect":"...","brightness":0.8}` → set active CRT visual overlay
 
 Unknown commands return `{"ok":false,"error":"..."}`.
+
+## Current runtime note
+
+The protocol above is still the canonical control surface, but the primary
+runtime changed after Phase 9:
+
+- The Linux desktop app uses `window.__TAURI__.core.invoke(...)` in the UI,
+  then forwards real-time control packets from Rust directly to the plugin
+  socket.
+- The older Flask `xkey` / `xmouse` / `xcenter` endpoints remain useful as
+  historical context and for manual testing, but they are no longer the
+  low-latency path used by the shipped desktop build.
+- If you are validating gameplay latency, use the desktop app, not the
+  browser-only `tools/run-demo.sh` path.
+
 ## Architectural choice: persistent connection + plugin reconnect
+
 MAME's `emu.file("", 7)` socket abstraction is a one-shot listener:
 when the connected client closes its socket, the listener disappears
 and a follow-up `connect()` from a fresh client gets ECONNREFUSED.
@@ -73,8 +99,11 @@ bytes arrive for ~10 seconds (~600 frames at 60 Hz), the plugin closes
 its stale socket and reopens the listener. This handles the Flask
 server restarting while MAME stays up. The 10-second grace period
 prevents false reconnects during idle periods.
+
 ## Demo recipe
+
 One command:
+
 ```bash
 source .venv/bin/activate
 bash tools/run-demo.sh
@@ -83,12 +112,16 @@ bash tools/run-demo.sh
 # ==> waiting for cabinet_bus plugin on 127.0.0.1:5051 ... ok
 # ==> starting cabinet bus server on http://127.0.0.1:5050
 ```
+
 Open `http://127.0.0.1:5050`. The MAME panel shows a live MJPEG video
 feed plus ROM, frame counter, and paused state. Click **Pause** — the
 running Centipede freezes; **Resume** lets it continue; **Soft reset**
-restarts the game and clears all injected faults.
+restarts the game and clears all injected faults. For current desktop
+controls and latency behavior, prefer the Tauri desktop shell described in
+Phase 9.
 
-Keyboard controls (browser window focused):
+Keyboard controls (desktop app / current canonical path):
+
 - **W / A / S / D** — trackball up/left/down/right
 - **Space** — fire
 - **1 / 2** — 1-player / 2-player start
@@ -97,8 +130,11 @@ Keyboard controls (browser window focused):
 **Note:** MAME must run from `vendor/mame/` to find its plugins.
 `run-demo.sh` does this automatically; launching MAME from the repo
 root will fail with `Could not load plugin: cabinet_bus`.
+
 ## Smoke-test verification (no browser needed)
+
 After both processes are up:
+
 ```bash
 curl -s http://127.0.0.1:5050/api/mame/state | python -m json.tool
 # {"app":"mame","available":true,"frame":<n>,"paused":false,"rom":"centiped3",...}
@@ -116,7 +152,9 @@ sleep 0.5
 curl -s http://127.0.0.1:5050/api/mame/state | python -m json.tool
 # frame counter is small (just-restarted)
 ```
+
 ## Gotchas
+
 - The frame counter ticks via `add_machine_frame_notifier`, which fires
   on display updates (~60 Hz when running, also during pause for UI
   redraws). The number isn't a strict CPU-cycle counter, but it's a
@@ -132,7 +170,9 @@ curl -s http://127.0.0.1:5050/api/mame/state | python -m json.tool
   `MameClient`'s persistent connection is lost and reconnect happens
   automatically on the next request. If MAME restarts while Flask
   keeps running, the same auto-reconnect handles it.
+
 ## What's still deferred (future Phase 3.5+)
+
 - Live waveform streaming via WebSocket. Current UI polls `/api/run`
   on each fault toggle; per-frame streaming would feel more like an
   oscilloscope.
@@ -144,11 +184,15 @@ curl -s http://127.0.0.1:5050/api/mame/state | python -m json.tool
 - Watching arbitrary memory addresses or netlist nets through the same
   bridge. The protocol can extend by adding new `cmd` values; UI
   consumers do the right thing.
+
 ## What unblocks Phase 4
+
 - The cabinet bus now speaks to both the standalone netlist (via
   `/api/run`) and the live emulator (via `/api/mame/*`). Phase 4
   peripheral models slot in with a third surface (`/api/peripherals/*`)
   using the same JSON-over-HTTP pattern.
+
 ## Navigation
+
 ← Previous: [Phase 3 — Cabinet bus + UI](Phase-3-Cabinet-Bus.md) ·
 Next: [Phase 4 — PSU + peripherals](Phase-4-PSU-Peripherals.md) →

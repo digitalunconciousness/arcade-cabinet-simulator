@@ -1,4 +1,5 @@
 # Phase 7 — Complete vertical-slice demo
+
 **Status:** ✅ complete — deliverables implemented and validated with live end-to-end smoke run
 **Goal:** A working prototype you can hand to someone unfamiliar with
 the project. Centipede runs in MAME; you pick a fault from a named
@@ -44,6 +45,7 @@ The Phase 6 GLSL shaders (`ui/shaders/crt_*.glsl`) are reference
 previews only. Phase 7 wires them into MAME's live output.
 
 **Approach — BGFX screen-chain JSON:**
+
 - Write `vendor/mame/bgfx/chains/cabinet_fault.json` — a BGFX chain
   that reads a `uniform vec2 u_fault` injected via the Lua plugin and
   selects the matching visual transform.
@@ -62,6 +64,7 @@ previews only. Phase 7 wires them into MAME's live output.
   ringing_ghosting. (9 effects — all already written in GLSL.)
 
 **New files:**
+
 - `vendor/mame/bgfx/chains/cabinet_fault.json`
 - `vendor/mame/bgfx/effects/cabinet_fault_crt.bgfx`
 - `tools/cabinet_bus/server.py` — new `POST /api/crt/apply` that
@@ -76,6 +79,7 @@ rail and exposes `state()["rails"]["5V"]`. Phase 7 makes every
 downstream subsystem *respond* to it inside the running emulation.
 
 **Wiring:**
+
 - **CRT dimming**: already implemented in `crt.py`
   (`_psu_5v_scale()`). Phase 7 propagates the computed
   `effective_brightness` to BGFX via `set_crt_fault`.
@@ -99,6 +103,7 @@ A JSON file per scenario in `tests/scenarios/`. The runner loads them
 into the browser UI dropdown.
 
 **Schema (`tests/scenarios/<id>.json`):**
+
 ```json
 {
   "id": "dim-psu-5v",
@@ -119,7 +124,7 @@ into the browser UI dropdown.
 **Initial 12 scenarios to author:**
 
 | # | ID | Subsystems | Visible effect |
-|---|-----|-----------|---------------|
+| - | -- | ---------- | -------------- |
 | 1 | dim-psu-5v | PSU, CRT, Trackball | Dim picture + heavy controls |
 | 2 | vertical-collapse | CRT | Screen collapses to horizontal bar |
 | 3 | dead-trackball-x | Trackball | Can't steer left/right |
@@ -145,11 +150,13 @@ Loads scenario JSON; posts each fault to the cabinet-bus API
 summary dict.
 
 **Server endpoints (new):**
+
 - `GET  /api/scenarios` — list all scenario metadata (id, title, difficulty)
 - `POST /api/scenarios/{id}/apply` — apply all faults in the scenario
 - `POST /api/scenarios/{id}/clear` — clear all faults in the scenario
 
 **Browser UI additions (`ui/index.html` + `ui/app.js`):**
+
 - Scenario dropdown + **Apply** / **Clear** buttons (top of page, always visible)
 - Active-scenario banner showing title + affected subsystems
 - Per-subsystem fault badges on the existing peripheral cards
@@ -159,6 +166,7 @@ summary dict.
 ### 7.5 — One-command launch (`tools/run-demo.sh`)
 
 Update `tools/run-demo.sh` so a single command:
+
 1. Starts the Flask cabinet-bus server in the background.
 2. Launches MAME with Centipede + the `cabinet_bus` plugin +
    `cabinet_fault` BGFX chain.
@@ -181,7 +189,7 @@ browser-open call added.
 ## Deliverables
 
 | File | Status |
-|------|--------|
+| ---- | ------ |
 | `vendor/mame/bgfx/chains/cabinet_fault.json` | NEW |
 | `vendor/mame/bgfx/effects/cabinet_fault_crt.bgfx` | NEW |
 | `vendor/mame/plugins/cabinet_bus/init.lua` | MODIFY (set_crt_fault cmd) |
@@ -209,6 +217,7 @@ This is the prototype-quality milestone: compelling enough to show a
 friend who has never heard of arcade fault simulation.
 
 Validation note (May 2026):
+
 - `tools/run-demo.sh` launched MAME + cabinet bus + UI successfully
 - `/api/mame/video/available` returned `available: true`
 - Scenario apply/clear validated for `dim-psu-5v` and `multi-fault`
@@ -235,5 +244,6 @@ Validation note (May 2026):
 ---
 
 ## Navigation
+
 ← Previous: [Phase 6 — CRT + trackball + audio](Phase-6-CRT-Trackball-Audio.md) ·
-Next: Phase 8 — Schematic/PCB/probe views + training scoring (planned)
+Next: [Phase 8 — Schematic board packages + training surfaces](Phase-8-Schematic-Board-Package.md)
