@@ -229,7 +229,7 @@ jobs:
   verify-release-assets:
     needs: [create-release, release-linux, release-windows]
     permissions:
-      contents: read
+      contents: write
     runs-on: ubuntu-22.04
     steps:
       - name: Verify release has expected assets
