@@ -12,10 +12,18 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 VENV="$REPO_ROOT/.venv"
-PYTHON="${VENV}/bin/python"
-PYINSTALLER="${VENV}/bin/pyinstaller"
 DIST_DIR="${DIST_DIR:-${REPO_ROOT}/dist}"
 SPEC="$REPO_ROOT/build/pyinstaller/server.spec"
+
+# Support both POSIX venv layout (.venv/bin/python) and Windows layout
+# (.venv/Scripts/python.exe) when invoked from Git Bash on CI runners.
+if [[ -x "${VENV}/bin/python" ]]; then
+    PYTHON="${VENV}/bin/python"
+elif [[ -x "${VENV}/Scripts/python.exe" ]]; then
+    PYTHON="${VENV}/Scripts/python.exe"
+else
+    PYTHON=""
+fi
 
 # ── pre-flight checks ────────────────────────────────────────────────────────
 if [[ ! -x "$PYTHON" ]]; then
@@ -24,7 +32,7 @@ if [[ ! -x "$PYTHON" ]]; then
     exit 1
 fi
 
-if [[ ! -x "$PYINSTALLER" ]]; then
+if ! "$PYTHON" -c "import PyInstaller" >/dev/null 2>&1; then
     echo "==> installing pyinstaller into venv ..."
     "$PYTHON" -m pip install --quiet pyinstaller
 fi
@@ -38,7 +46,7 @@ echo "    spec:      $SPEC"
 echo "    dist:      $DIST_DIR"
 echo "    workpath:  $REPO_ROOT/build/pyinstaller/work"
 
-"$PYINSTALLER" \
+"$PYTHON" -m PyInstaller \
     --distpath "$DIST_DIR" \
     --workpath "$REPO_ROOT/build/pyinstaller/work" \
     --noconfirm \
