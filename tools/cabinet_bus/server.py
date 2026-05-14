@@ -374,6 +374,91 @@ def create_app(
     def api_schematic_faults():
         return jsonify({"faults": schematic_faults})
 
+    # Maps (fault_device, mode) → CRT effect name.
+    # Mode 1=STUCK_HI, 2=STUCK_LO, 3=OPEN.
+    _FAULT_TO_CRT: dict[tuple[str, int], str] = {
+        # Master clock — stuck-low freezes all counters; stuck-high corrupts timing
+        ("FB_CLK_Q",    1): "bad_deflection_caps",
+        ("FB_CLK_Q",    2): "sync_lock_failure",
+        ("FB_CLK_Q",    3): "sync_lock_failure",
+        # H_LO carry-out — kills all sync
+        ("FB_H_LO_RC",  1): "sync_lock_failure",
+        ("FB_H_LO_RC",  2): "sync_lock_failure",
+        ("FB_H_LO_RC",  3): "sync_lock_failure",
+        # H_HI carry-out — VSYNC never fires → vertical collapse
+        ("FB_H_HI_RC",  1): "vertical_collapse",
+        ("FB_H_HI_RC",  2): "vertical_collapse",
+        ("FB_H_HI_RC",  3): "vertical_collapse",
+        # HSYNC decoder inputs — stuck-low eliminates pulse; stuck-high widens it
+        ("FB_H_HI_QD",  1): "ringing_ghosting",
+        ("FB_H_HI_QD",  2): "horizontal_collapse",
+        ("FB_H_HI_QD",  3): "ringing_ghosting",
+        ("FB_H_HI_QC",  1): "ringing_ghosting",
+        ("FB_H_HI_QC",  2): "horizontal_collapse",
+        ("FB_H_HI_QC",  3): "ringing_ghosting",
+        ("FB_H_HI_QB",  1): "ringing_ghosting",
+        ("FB_H_HI_QB",  2): "horizontal_collapse",
+        ("FB_H_HI_QB",  3): "ringing_ghosting",
+        # VSYNC decoder inputs — locks/eliminates VSYNC → vertical collapse
+        ("FB_V_LO_QD",  1): "vertical_collapse",
+        ("FB_V_LO_QD",  2): "vertical_collapse",
+        ("FB_V_LO_QD",  3): "sync_lock_failure",
+        ("FB_V_LO_QC",  1): "vertical_collapse",
+        ("FB_V_LO_QC",  2): "vertical_collapse",
+        ("FB_V_LO_QC",  3): "sync_lock_failure",
+        # Address counter bits — aliased chip-selects → tile chaos
+        ("FB_ADDR_CTR_QA", 1): "ringing_ghosting",
+        ("FB_ADDR_CTR_QA", 2): "ringing_ghosting",
+        ("FB_ADDR_CTR_QA", 3): "ringing_ghosting",
+        ("FB_ADDR_CTR_QB", 1): "ringing_ghosting",
+        ("FB_ADDR_CTR_QB", 2): "ringing_ghosting",
+        ("FB_ADDR_CTR_QB", 3): "ringing_ghosting",
+    }
+
+    # Most-severe effect wins when multiple faults are active.
+    _CRT_PRIORITY = [
+        "vertical_collapse",
+        "horizontal_collapse",
+        "sync_lock_failure",
+        "bad_deflection_caps",
+        "ringing_ghosting",
+    ]
+
+    def _push_schematic_effects_to_mame() -> None:
+        """Translate active schematic_faults into live MAME CRT + memory effects."""
+        # Pick the highest-priority CRT effect across all active faults.
+        chosen: Optional[str] = None
+        for device, mode in schematic_faults.items():
+            if mode == 0:
+                continue
+            effect = _FAULT_TO_CRT.get((device, mode))
+            if effect is None:
+                continue
+            if chosen is None or _CRT_PRIORITY.index(effect) < _CRT_PRIORITY.index(chosen):
+                chosen = effect
+        try:
+            mame.set_crt_fault(chosen or "normal", 1.0)
+        except ConnectionError:
+            pass
+
+        # Address counter faults: arm stuck-byte on spread VRAM cells to
+        # simulate video address aliasing (wrong tiles displayed).
+        addr_devices = {"FB_ADDR_CTR_QA", "FB_ADDR_CTR_QB"}
+        addr_active = any(
+            m != 0 for d, m in schematic_faults.items() if d in addr_devices
+        )
+        # Arm or clear the deterministic set of VRAM cells without touching
+        # stuck bytes owned by other subsystems (PSU watcher, scenario runner).
+        total_cells = CENTIPED_VRAM_COLS * CENTIPED_VRAM_ROWS
+        step = max(1, total_cells // 32)
+        value: Optional[int] = 0xFF if addr_active else None
+        for i in range(0, total_cells, step):
+            addr = CENTIPED_VRAM_BASE + i
+            try:
+                mame.stuck_byte(addr, value)
+            except ConnectionError:
+                return
+
     @app.route("/api/schematic/fault/apply", methods=["POST"])
     def api_schematic_fault_apply():
         body = request.get_json(silent=True) or {}
@@ -401,6 +486,8 @@ def create_app(
         else:
             schematic_faults[fault_device] = mode
 
+        _push_schematic_effects_to_mame()
+
         return jsonify({
             "ok": True,
             "refdes": refdes,
@@ -424,9 +511,11 @@ def create_app(
             if not fault_device:
                 return jsonify({"error": f"no instrumented fault target for {refdes}.{pin}"}), 404
             schematic_faults.pop(fault_device, None)
+            _push_schematic_effects_to_mame()
             return jsonify({"ok": True, "faults": schematic_faults})
 
         schematic_faults.clear()
+        _push_schematic_effects_to_mame()
         return jsonify({"ok": True, "faults": schematic_faults})
 
     # ---------- MAME bridge ----------
