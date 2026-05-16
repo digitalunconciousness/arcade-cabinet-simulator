@@ -24,9 +24,15 @@
     mamePaused:      document.getElementById("mame-paused"),
     mameFrame:       document.getElementById("mame-frame"),
     mameVersion:     document.getElementById("mame-version"),
+    mameStuckCount:  document.getElementById("mame-stuck-count"),
+    mameCrtEffect:   document.getElementById("mame-crt-effect"),
     mamePauseBtn:    document.getElementById("mame-pause"),
     mameResumeBtn:   document.getElementById("mame-resume"),
     mameResetBtn:    document.getElementById("mame-reset"),
+    mameDipBtn:      document.getElementById("mame-dip-btn"),
+    dipDialog:       document.getElementById("dip-dialog"),
+    dipDialogBody:   document.getElementById("dip-dialog-body"),
+    dipDialogClose:  document.getElementById("dip-dialog-close"),
     mameKbHeld:      document.getElementById("mame-kb-held"),
     periphGrid:      document.getElementById("peripherals-grid"),
     periphReset:     document.getElementById("peripherals-reset"),
@@ -310,7 +316,7 @@
       row.className = "fault-row";
       row.innerHTML = `
         <div class="fault-name">${fault_device}</div>
-        <div class="fault-pin">${target.refdes}.${target.pin}</div>
+        <div class="fault-pin">${target ? `${target.refdes}.${target.pin}` : "—"}</div>
         <div class="fault-mode">mode ${mode} — ${manifest.modes[mode]}</div>
       `;
       els.faultsList.appendChild(row);
@@ -430,10 +436,17 @@
   });
 
   els.resetButton.addEventListener("click", async () => {
+    try {
+      await postJSON("/api/mame/soft_reset", {});
+    } catch {
+      // Server clears schematic_faults before touching MAME;
+      // safe to clear the UI even when MAME is offline.
+    }
     for (const k of Object.keys(faults)) delete faults[k];
     renderFaultPins();
     renderFaultsList();
     await reloadWaveforms();
+    await loadPeripherals();
   });
 
   // ---------- Peripherals (Phase 4) ----------
@@ -521,9 +534,13 @@
       trim.value = p.trim_5v;
       trim.addEventListener("input", () => { trimVal.textContent = `${parseFloat(trim.value).toFixed(2)} V`; });
       trim.addEventListener("change", async () => {
-        await postJSON("/api/peripherals/adjust",
-                       { id: p.id, param: "trim_5v", value: parseFloat(trim.value) });
-        await loadPeripherals();
+        try {
+          await postJSON("/api/peripherals/adjust",
+                         { id: p.id, param: "trim_5v", value: parseFloat(trim.value) });
+          await loadPeripherals();
+        } catch (err) {
+          console.error("trim adjust failed", err);
+        }
       });
       trimWrap.appendChild(trimLabel);
       trimWrap.appendChild(trim);
@@ -543,8 +560,12 @@
       btn.className = "periph-action";
       btn.textContent = "Insert coin";
       btn.addEventListener("click", async () => {
-        await postJSON("/api/peripherals/coin", {});
-        await loadPeripherals();
+        try {
+          await postJSON("/api/peripherals/coin", {});
+          await loadPeripherals();
+        } catch (err) {
+          console.error("coin insert failed", err);
+        }
       });
       card.appendChild(btn);
     }
@@ -602,9 +623,13 @@
         p.supported_faults.map(f => `<option value="${f}">${f}</option>`).join("");
       sel.value = p.fault === "NORMAL" ? "" : p.fault;
       sel.addEventListener("change", async () => {
-        await postJSON("/api/peripherals/fault",
-                       { id: p.id, fault: sel.value });
-        await loadPeripherals();
+        try {
+          await postJSON("/api/peripherals/fault",
+                         { id: p.id, fault: sel.value });
+          await loadPeripherals();
+        } catch (err) {
+          console.error("peripheral fault update failed", err);
+        }
       });
       wrap.appendChild(sel);
       card.appendChild(wrap);
@@ -635,12 +660,16 @@
         val.textContent = Number(range.value).toFixed(2);
       });
       range.addEventListener("change", async () => {
-        await postJSON("/api/peripherals/adjust", {
-          id: p.id,
-          param: name,
-          value: parseFloat(range.value),
-        });
-        await loadPeripherals();
+        try {
+          await postJSON("/api/peripherals/adjust", {
+            id: p.id,
+            param: name,
+            value: parseFloat(range.value),
+          });
+          await loadPeripherals();
+        } catch (err) {
+          console.error("param adjust failed", err);
+        }
       });
       wrap.appendChild(label);
       wrap.appendChild(range);
@@ -659,18 +688,29 @@
     return "";
   }
 
+  async function fetchJSON(url) {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  }
+
   async function postJSON(url, body) {
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
-    return res.ok ? await res.json() : null;
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
   }
 
   els.periphReset.addEventListener("click", async () => {
-    await postJSON("/api/peripherals/reset", {});
-    await loadPeripherals();
+    try {
+      await postJSON("/api/peripherals/reset", {});
+      await loadPeripherals();
+    } catch (err) {
+      console.error("peripherals reset failed", err);
+    }
   });
 
   // ---------- MAME bridge ----------
@@ -721,6 +761,12 @@
     els.mameVersion.textContent = `${data.app || "mame"} ${data.version || ""}`.trim();
     els.mamePauseBtn.disabled = !!data.paused;
     els.mameResumeBtn.disabled = !data.paused;
+    const stuck = data.stuck_count ?? 0;
+    els.mameStuckCount.textContent = stuck;
+    els.mameStuckCount.classList.toggle("active", stuck > 0);
+    const effect = data.crt_effect || "normal";
+    els.mameCrtEffect.textContent = effect;
+    els.mameCrtEffect.classList.toggle("active", effect !== "normal");
   }
 
   let _videoInitDone = false;
@@ -768,7 +814,68 @@
 
   els.mamePauseBtn.addEventListener("click", () => mameAction("pause"));
   els.mameResumeBtn.addEventListener("click", () => mameAction("resume"));
-  els.mameResetBtn.addEventListener("click", () => mameAction("soft_reset"));
+  els.mameResetBtn.addEventListener("click", async () => {
+    await mameAction("soft_reset");
+    for (const k of Object.keys(faults)) delete faults[k];
+    renderFaultPins();
+    renderFaultsList();
+  });
+
+  // ---------- DIP switch modal ----------
+  els.mameDipBtn.addEventListener("click", async () => {
+    els.dipDialog.showModal();
+    els.dipDialogBody.innerHTML = '<p class="dip-loading">Loading…</p>';
+    try {
+      const data = await fetchJSON("/api/mame/dip_switches");
+      const switches = (data && data.dip_switches) || [];
+      if (!switches.length) {
+        els.dipDialogBody.innerHTML = '<p class="dip-unavail">No DIP switches available (MAME may be offline or no named settings found).</p>';
+        return;
+      }
+      const frag = document.createDocumentFragment();
+      for (const sw of switches) {
+        const row = document.createElement("div");
+        row.className = "dip-row";
+        const label = document.createElement("div");
+        label.innerHTML = `<div class="dip-name">${sw.name}</div><div class="dip-port">${sw.port}</div>`;
+        const sel = document.createElement("select");
+        sel.className = "dip-select";
+        for (const opt of sw.settings) {
+          const o = document.createElement("option");
+          o.value = opt.value;
+          o.textContent = opt.name;
+          if (opt.value === sw.value) o.selected = true;
+          sel.appendChild(o);
+        }
+        sel.addEventListener("change", async () => {
+          sel.disabled = true;
+          try {
+            await postJSON("/api/mame/dip_switch", {
+              port: sw.port,
+              name: sw.name,
+              value: parseInt(sel.value, 10),
+            });
+          } catch (e) {
+            console.warn("DIP set failed:", e);
+          } finally {
+            sel.disabled = false;
+          }
+        });
+        row.appendChild(label);
+        row.appendChild(sel);
+        frag.appendChild(row);
+      }
+      els.dipDialogBody.replaceChildren(frag);
+    } catch (e) {
+      els.dipDialogBody.innerHTML = `<p class="dip-unavail">Failed to load DIP switches: ${e.message}</p>`;
+    }
+  });
+
+  els.dipDialogClose.addEventListener("click", () => els.dipDialog.close());
+  els.dipDialog.addEventListener("click", (e) => {
+    // Click on ::backdrop closes the dialog
+    if (e.target === els.dipDialog) els.dipDialog.close();
+  });
 
   // ---------- Phase 6 preview — WebGL CRT shader renderer ----------
   //
@@ -1231,6 +1338,7 @@ void main() {
       const s = getSelectedScenario();
       if (!s) return;
       els.scenarioApply.disabled = true;
+      els.scenarioClear.disabled = true;
       els.scenarioApply.textContent = "Applying…";
       try {
         const result = await postJSON(`/api/scenarios/${encodeURIComponent(s.id)}/apply`, {});
@@ -1254,9 +1362,11 @@ void main() {
         }
       } catch (err) {
         console.error("apply scenario failed", err);
+        setStatus("scenario apply failed: " + err.message, true);
       } finally {
         els.scenarioApply.disabled = false;
         els.scenarioApply.textContent = "Apply";
+        els.scenarioClear.disabled = !getSelectedScenario();
       }
     });
   }
@@ -1266,6 +1376,7 @@ void main() {
       const s = getSelectedScenario();
       if (!s) return;
       els.scenarioClear.disabled = true;
+      els.scenarioApply.disabled = true;
       els.scenarioClear.textContent = "Clearing…";
       try {
         await postJSON(`/api/scenarios/${encodeURIComponent(s.id)}/clear`, {});
@@ -1275,9 +1386,11 @@ void main() {
         await loadPeripherals();
       } catch (err) {
         console.error("clear scenario failed", err);
+        setStatus("scenario clear failed: " + err.message, true);
       } finally {
         els.scenarioClear.disabled = false;
         els.scenarioClear.textContent = "Clear";
+        els.scenarioApply.disabled = !getSelectedScenario();
       }
     });
   }

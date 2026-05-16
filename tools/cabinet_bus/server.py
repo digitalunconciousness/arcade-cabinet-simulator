@@ -169,6 +169,7 @@ def create_app(
         for e in manifest
     }
     schematic_faults: dict[str, int] = {}
+    _schematic_faults_lock = threading.Lock()
 
     # Optional board package / KiCad netlist import path (Stage 8 foundation).
     package_path = board_package_path
@@ -240,12 +241,18 @@ def create_app(
 
     @app.route("/")
     def index():
-        return send_from_directory(ui_dir, "index.html")
+        resp = send_from_directory(ui_dir, "index.html")
+        resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        resp.headers["Pragma"] = "no-cache"
+        return resp
 
     @app.route("/static/<path:filename>")
     def static_file(filename):
         # Restrict to the ui/ directory so we don't serve random files.
-        return send_from_directory(ui_dir, filename)
+        resp = send_from_directory(ui_dir, filename)
+        resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        resp.headers["Pragma"] = "no-cache"
+        return resp
 
     @app.route("/api/manifest")
     def api_manifest():
@@ -426,9 +433,11 @@ def create_app(
 
     def _push_schematic_effects_to_mame() -> None:
         """Translate active schematic_faults into live MAME CRT + memory effects."""
+        with _schematic_faults_lock:
+            snapshot = dict(schematic_faults)
         # Pick the highest-priority CRT effect across all active faults.
         chosen: Optional[str] = None
-        for device, mode in schematic_faults.items():
+        for device, mode in snapshot.items():
             if mode == 0:
                 continue
             effect = _FAULT_TO_CRT.get((device, mode))
@@ -445,7 +454,7 @@ def create_app(
         # simulate video address aliasing (wrong tiles displayed).
         addr_devices = {"FB_ADDR_CTR_QA", "FB_ADDR_CTR_QB"}
         addr_active = any(
-            m != 0 for d, m in schematic_faults.items() if d in addr_devices
+            m != 0 for d, m in snapshot.items() if d in addr_devices
         )
         # Arm or clear the deterministic set of VRAM cells without touching
         # stuck bytes owned by other subsystems (PSU watcher, scenario runner).
@@ -481,10 +490,11 @@ def create_app(
                 "hint": "instrument the target net and map it in fault_map.json so it appears in the board package",
             }), 404
 
-        if mode == 0:
-            schematic_faults.pop(fault_device, None)
-        else:
-            schematic_faults[fault_device] = mode
+        with _schematic_faults_lock:
+            if mode == 0:
+                schematic_faults.pop(fault_device, None)
+            else:
+                schematic_faults[fault_device] = mode
 
         _push_schematic_effects_to_mame()
 
@@ -505,16 +515,25 @@ def create_app(
         body = request.get_json(silent=True) or {}
         refdes = str(body.get("refdes") or body.get("ref") or "").strip()
         pin = str(body.get("pin", "")).strip()
+        fault_device_direct = str(body.get("fault_device") or "").strip()
         if refdes and pin:
             fault_entry = fault_map_by_refpin.get((refdes, pin), {})
             fault_device = fault_entry.get("fault_device") or manifest_by_refpin.get((refdes, pin), "")
             if not fault_device:
                 return jsonify({"error": f"no instrumented fault target for {refdes}.{pin}"}), 404
-            schematic_faults.pop(fault_device, None)
+            with _schematic_faults_lock:
+                schematic_faults.pop(fault_device, None)
             _push_schematic_effects_to_mame()
             return jsonify({"ok": True, "faults": schematic_faults})
 
-        schematic_faults.clear()
+        if fault_device_direct:
+            with _schematic_faults_lock:
+                schematic_faults.pop(fault_device_direct, None)
+            _push_schematic_effects_to_mame()
+            return jsonify({"ok": True, "faults": schematic_faults})
+
+        with _schematic_faults_lock:
+            schematic_faults.clear()
         _push_schematic_effects_to_mame()
         return jsonify({"ok": True, "faults": schematic_faults})
 
@@ -552,7 +571,8 @@ def create_app(
     @app.route("/api/mame/soft_reset", methods=["POST"])
     def api_mame_reset():
         # Clear all injected faults so the reset starts clean.
-        schematic_faults.clear()
+        with _schematic_faults_lock:
+            schematic_faults.clear()
         try:
             mame.clear_stuck()
         except ConnectionError:
@@ -561,12 +581,15 @@ def create_app(
             mame.clear_buttons()
         except ConnectionError:
             pass
+        peripherals.reset_all()
+        result = _mame_request("soft_reset")
+        # Push CRT=normal AFTER soft_reset so MAME's overlay is clean
+        # even if soft_reset re-initialises the plugin's CRT state.
         try:
             mame.set_crt_fault("normal", 1.0)
         except ConnectionError:
             pass
-        peripherals.reset_all()
-        return _mame_request("soft_reset")
+        return result
 
     # Centipede video-RAM map (centiped_state::centiped_base_map):
     #   0x0400-0x07BF = 32 cols x 30 rows of tile indices, byte-per-cell.
@@ -671,6 +694,27 @@ def create_app(
     @app.route("/api/mame/list_buttons")
     def api_mame_list_buttons():
         return _mame_request("list_buttons")
+
+    @app.route("/api/mame/dip_switches")
+    def api_mame_dip_switches():
+        return _mame_request("list_dip_switches")
+
+    @app.route("/api/mame/dip_switch", methods=["POST"])
+    def api_mame_set_dip_switch():
+        body = request.get_json(silent=True) or {}
+        port = str(body.get("port", "")).strip()
+        name = str(body.get("name", "")).strip()
+        if not port or not name:
+            return jsonify({"error": "port and name are required"}), 400
+        try:
+            value = int(body["value"])
+        except (KeyError, TypeError, ValueError):
+            return jsonify({"error": "value (int) is required"}), 400
+        try:
+            reply = mame.set_dip_switch(port, name, value)
+            return jsonify({"available": True, **reply})
+        except ConnectionError as e:
+            return jsonify({"available": False, "error": str(e)}), 503
 
     @app.route("/api/mame/trackball_delta", methods=["POST"])
     def api_mame_trackball_delta():
@@ -902,14 +946,16 @@ def create_app(
                 "hint": "restart via tools/run-demo.sh so MAME and Xvfb share the same display",
             }), 503
 
-        # Build a best-effort visual filter chain from current CRT state.
-        crt_state = peripherals.crt.state()
-        effect = crt_state["shader_effect"].replace("crt_", "")
-        brightness = float(crt_state.get("effective_brightness", 1.0))
+        capture_size = _capture_size()
 
-        def stream():
+        def _crt_filter_now() -> tuple[str, float]:
+            cs = peripherals.crt.state()
+            e = cs["shader_effect"].replace("crt_", "")
+            b = float(cs.get("effective_brightness", 1.0))
+            return e, b
+
+        def _start_ffmpeg(effect: str, brightness: float):
             vf_chain = _video_filter_chain(effect, brightness)
-            capture_size = _capture_size()
             cmd = [
                 "ffmpeg", "-hide_banner", "-loglevel", "quiet",
                 "-f", "x11grab", "-framerate", "15",
@@ -919,14 +965,36 @@ def create_app(
                 "-f", "mpjpeg", "-q:v", "5",
                 "pipe:1",
             ]
-            proc = subprocess.Popen(
-                cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL
-            )
+            return subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+
+        def stream():
+            cur_effect, cur_brightness = _crt_filter_now()
+            proc = _start_ffmpeg(cur_effect, cur_brightness)
+            reads_since_check = 0
+            # Re-poll CRT state every ~30 reads (~2 s at 15 fps) and restart
+            # ffmpeg with updated filters when the effect changes.
+            CHECK_INTERVAL = 30
             try:
                 while True:
                     chunk = proc.stdout.read(4096)
                     if not chunk:
-                        break
+                        # ffmpeg exited; restart with current state.
+                        cur_effect, cur_brightness = _crt_filter_now()
+                        proc = _start_ffmpeg(cur_effect, cur_brightness)
+                        reads_since_check = 0
+                        continue
+                    reads_since_check += 1
+                    if reads_since_check >= CHECK_INTERVAL:
+                        reads_since_check = 0
+                        new_effect, new_brightness = _crt_filter_now()
+                        if new_effect != cur_effect or abs(new_brightness - cur_brightness) > 0.02:
+                            proc.terminate()
+                            try:
+                                proc.wait(timeout=1)
+                            except subprocess.TimeoutExpired:
+                                proc.kill()
+                            cur_effect, cur_brightness = new_effect, new_brightness
+                            proc = _start_ffmpeg(cur_effect, cur_brightness)
                     yield chunk
             finally:
                 proc.terminate()
@@ -1203,6 +1271,17 @@ def create_app(
         if scenario is None:
             return jsonify({"error": f"unknown scenario: {scenario_id!r}"}), 404
         mame_pre = _ensure_mame_running()
+        # Clear stuck bytes and CRT overlay from any previous scenario before
+        # applying the new one so effects don't bleed across scenario switches.
+        try:
+            mame.clear_stuck()
+        except ConnectionError:
+            pass
+        try:
+            mame.set_crt_fault("normal", 1.0)
+        except ConnectionError:
+            pass
+        peripherals.reset_all()
         results = _apply_scenario_faults(scenario["faults"])
         return jsonify({"id": scenario_id, "applied": True, "faults": results, "mame": mame_pre})
 
@@ -1213,6 +1292,18 @@ def create_app(
         if scenario is None:
             return jsonify({"error": f"unknown scenario: {scenario_id!r}"}), 404
         mame_pre = _ensure_mame_running()
+        # Mirror the pre-apply cleanup so clearing a scenario always returns
+        # the system to a known-clean state, regardless of whether the
+        # scenario's clear_faults list is complete.
+        try:
+            mame.clear_stuck()
+        except ConnectionError:
+            pass
+        try:
+            mame.set_crt_fault("normal", 1.0)
+        except ConnectionError:
+            pass
+        peripherals.reset_all()
         results = _apply_scenario_faults(scenario.get("clear_faults", []))
         return jsonify({"id": scenario_id, "cleared": True, "faults": results, "mame": mame_pre})
 

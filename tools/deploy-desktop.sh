@@ -3,20 +3,39 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DEST_DIR="${DEST_DIR:-$HOME/Applications}"
-APP_SRC="$ROOT_DIR/src-tauri/target/release/arcade-sim"
-SIDECAR_SRC="$ROOT_DIR/src-tauri/target/release/arcade-sim-server"
+
+# Prefer the real AppImage bundle produced by `cargo tauri build` (via
+# build-release.sh).  Fall back to the raw ELF from `cargo build --release`
+# so quick iteration builds still work.
+APPIMAGE_BUNDLE=$(find "$ROOT_DIR/src-tauri/target/release/bundle/appimage" \
+    -maxdepth 1 -name "*.AppImage" 2>/dev/null | sort -V | tail -1)
+
+if [[ -n "$APPIMAGE_BUNDLE" ]]; then
+  APP_SRC="$APPIMAGE_BUNDLE"
+else
+  APP_SRC="$ROOT_DIR/src-tauri/target/release/arcade-sim"
+  echo "warning: no AppImage bundle found, falling back to raw ELF"
+  echo "         run 'bash build-release.sh' for a proper AppImage"
+fi
+
+# The sidecar ships inside the AppImage bundle but also needs to sit next
+# to the installed AppImage so the Tauri sidecar resolver finds it at
+# runtime.  Use the copy produced by build/pyinstaller/build.sh (dist/).
+SIDECAR_SRC="${ROOT_DIR}/dist/arcade-sim-server"
+# Always deploy to a fixed no-spaces filename so the .desktop Exec= line
+# never needs quoting (many launchers break on spaces in Exec= paths).
 APP_DST="$DEST_DIR/ArcadeFaultSimulator.AppImage"
 SIDECAR_DST="$DEST_DIR/arcade-sim-server"
 
 if [[ ! -f "$APP_SRC" ]]; then
   echo "Missing app binary: $APP_SRC"
-  echo "Build first: cd $ROOT_DIR/src-tauri && cargo build --release"
+  echo "Build first: bash build-release.sh"
   exit 1
 fi
 
 if [[ ! -f "$SIDECAR_SRC" ]]; then
   echo "Missing sidecar binary: $SIDECAR_SRC"
-  echo "Build first: cd $ROOT_DIR/src-tauri && cargo build --release"
+  echo "Build first: bash build-release.sh   (or: bash build/pyinstaller/build.sh)"
   exit 1
 fi
 

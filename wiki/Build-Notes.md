@@ -11,12 +11,18 @@ sudo pacman -Syu --needed \
   glm pugixml lua \
   kicad kicad-library kicad-library-3d \
   xorg-server-xvfb \
+  fuse2 \
   gtkwave fd ripgrep
 ```
 
 `xorg-server-xvfb` is required for `run-demo.sh` to stream MAME video to the
 browser. Without it MAME opens a real window on `$DISPLAY` and the video feed
 is unavailable.
+
+`fuse2` is required by the AppImage toolchain (`linuxdeploy`) when building
+the release bundle with `bash build-release.sh`. Without it the build falls
+back to extract-and-run mode (`APPIMAGE_EXTRACT_AND_RUN=1`), which works but
+is slower and noisier.
 
 ## Python venv
 
@@ -73,11 +79,19 @@ Running `./vendor/mame/mame` from the repo root fails with
 ## Running the desktop app locally
 
 ```bash
+bash build-release.sh
+```
+
+This builds the PyInstaller sidecar, produces the Tauri AppImage, deploys
+both to `~/Applications/`, and updates the `.desktop` entry.
+
+For a quick iteration build without AppImage packaging:
+```bash
 cd /home/jackie/arcade-sim/src-tauri
 cargo build --release
-
-cd /home/jackie/arcade-sim
+cd ..
 bash tools/deploy-desktop.sh --launch
+```
 ```
 
 This deploys three things:
@@ -133,6 +147,7 @@ head log_FB1.Y.log
 | `fatal: No names found, cannot describe anything.` during build | Benign — shallow git clone has no tags. MAME embeds "unknown" in version. |
 | `Could not load plugin: cabinet_bus` | MAME launched from wrong directory — must run from inside `vendor/mame/`. |
 | `port 5050/5051 already in use` | Kill stale processes: `pkill -f 'mame\|cabinet_bus'`, then retry. |
+| `failed to bundle project 'failed to run linuxdeploy'` / `unknown type [0x13] section '.relr.dyn'` | Old `strip` inside linuxdeploy fails on modern glibc. Use `bash build-release.sh` (sets `NO_STRIP=1`) or pass `NO_STRIP=1` manually. |
 
 ## Disk usage at end of Phase 1
 

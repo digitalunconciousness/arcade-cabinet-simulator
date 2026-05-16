@@ -153,6 +153,61 @@ arcade-sim/                  <- AppImage, deb, or local desktop deploy root
 6. Real-time gameplay input avoids the old HTTP + `xdotool` path in the shipped desktop runtime.
 7. `docs/INSTALL.md`, `docs/BUILD.md`, and the canonical wiki pages are accurate.
 
+## Post-ship improvements
+
+The following features were added after the Phase 9 baseline was committed.
+They are bundled in the same AppImage and do not constitute a new phase.
+
+### Live fault diagnostics in the MAME stats panel
+
+- **Stuck bytes counter** — `snapshot_state()` in the Lua plugin now returns
+  `stuck_count` (number of RAM addresses currently stuck). The value is
+  displayed in the MAME stats grid and turns amber when non-zero.
+- **CRT overlay indicator** — `snapshot_state()` also returns `crt_effect`
+  (e.g. `"burn-in"`, `"normal"`) and `crt_brightness`. The indicator turns
+  amber when any non-normal CRT fault is active.
+
+These give the technician trainee immediate visual confirmation that a fault
+scenario has taken effect in the emulator — previously there was no in-UI
+feedback beyond the game's video output.
+
+### DIP Switches panel
+
+A *DIP Switches…* button in the MAME controls area opens a modal dialog that
+enumerates all named DIP switch fields from the running game's `ioport`
+system. Each switch appears as a labelled `<select>` dropdown. Changing a
+value sends a `POST /api/mame/dip_switch` request which calls
+`manager.machine.ioport.ports[tag].fields[name]:set_value(v)` in the Lua
+plugin.
+
+- `GET /api/mame/dip_switches` — list all ports + fields + current values
+- `POST /api/mame/dip_switch` — set `{port, name, value}`
+- Lua: `list_dip_switches` / `set_dip_switch` command handlers
+- Python: `MameClient.list_dip_switches()` / `MameClient.set_dip_switch()`
+
+This allows instructors to pre-configure the game (lives, bonus life,
+difficulty) without leaving the simulator UI.
+
+### Build process — proper AppImage packaging
+
+The project now ships a proper AppImage (produced by `linuxdeploy` via
+`cargo tauri build`) rather than a raw ELF copy. A `build-release.sh`
+wrapper at the repo root encodes the required `NO_STRIP=1` and
+`APPIMAGE_EXTRACT_AND_RUN=1` env vars so the build just works. `fuse2` added
+to system prerequisites.
+
+### Fault injection reliability fixes
+
+- `fetchJSON` helper re-added to `app.js` (had been deleted in a previous
+  commit while call sites remained, causing silent failures).
+- `postJSON` now throws on non-2xx responses instead of returning `null`.
+- Apply/Clear scenario buttons are mutually disabled while a request is
+  in-flight (prevents double-submissions and stuck button states).
+- `api_scenario_clear` now flushes stuck bytes and CRT state in MAME before
+  running the scenario's clear-faults list.
+- `schematic_faults` dict now protected by a `threading.Lock` to prevent
+  data races when multiple endpoints read/write it concurrently.
+
 ## Navigation
 
 ← Previous: [Phase 8 — Schematic board packages + training surfaces](Phase-8-Schematic-Board-Package.md) ·

@@ -25,8 +25,20 @@ sudo apt install \
     libayatana-appindicator3-dev \
     librsvg2-dev \
     patchelf \
-    xvfb
+    xvfb \
+    libfuse2
 ```
+
+On Arch Linux (or any distro without `libfuse2` in the apt repos):
+```bash
+sudo pacman -S fuse2
+```
+
+> **Why fuse2?** The AppImage toolchain (`linuxdeploy`) mounts itself via
+> FUSE during the build.  Without FUSE 2 the build falls back to
+> `APPIMAGE_EXTRACT_AND_RUN=1` mode (handled automatically by
+> `build-release.sh`), but having fuse2 is cleaner and avoids other
+> AppImage-related headaches at runtime.
 
 ### Windows only
 
@@ -86,7 +98,25 @@ The Tauri shell connects to `http://127.0.0.1:5050` as the dev URL (configured i
 
 ## Building the release AppImage / installer
 
-### Step 1 — Build the Python sidecar (PyInstaller)
+### One-step build (recommended)
+
+```bash
+bash build-release.sh
+```
+
+This script sets the required env vars, runs `cargo tauri build` (which
+automatically rebuilds the Python sidecar via `beforeBuildCommand`), and
+on Linux deploys the resulting AppImage to `~/Applications/` and updates
+the `.desktop` entry.
+
+Use `--no-deploy` if you only want the build artifacts without deploying:
+```bash
+bash build-release.sh --no-deploy
+```
+
+### Manual steps (for CI or if you need more control)
+
+#### Step 1 — Build the Python sidecar (PyInstaller)
 
 ```bash
 cd /path/to/arcade-sim
@@ -97,11 +127,11 @@ bash build/pyinstaller/build.sh
 
 The script auto-installs PyInstaller into the venv if it isn't present. The spec is at `build/pyinstaller/server.spec`.
 
-### Step 2 — Build the Tauri shell
+#### Step 2 — Build the Tauri shell
 
 **Linux:**
 ```bash
-APPIMAGE_EXTRACT_AND_RUN=1 NO_STRIP=1 cargo tauri build
+NO_STRIP=1 APPIMAGE_EXTRACT_AND_RUN=1 cargo tauri build
 ```
 
 **Windows / macOS:**
@@ -113,7 +143,15 @@ Artifacts land in:
 - **Linux:** `src-tauri/target/release/bundle/appimage/*.AppImage` and `bundle/deb/*.deb`
 - **Windows:** `src-tauri/target/release/bundle/nsis/*-setup.exe`
 
-> **Linux note:** `APPIMAGE_EXTRACT_AND_RUN=1` is required on systems without `libfuse2` (Arch, Ubuntu 22.04+, Fedora 37+). It tells the AppImage tools bundled with Tauri to extract and run themselves without FUSE. `NO_STRIP=1` prevents the old bundled `strip` binary from failing on modern glibc libraries that use `.relr.dyn` relocations.
+> **Linux note — `NO_STRIP=1`:** Required on all Linux systems.  The `strip`
+> binary bundled inside linuxdeploy's AppImage is too old to handle
+> `.relr.dyn` sections present in modern glibc libraries, and the build fails
+> if stripping is attempted.
+>
+> **Linux note — `APPIMAGE_EXTRACT_AND_RUN=1`:** Required on systems without
+> `libfuse2` (Arch, Ubuntu 22.04+, Fedora 37+). It tells the AppImage tools
+> bundled with Tauri to extract and run themselves without FUSE. Safe to pass
+> even when fuse2 is installed.
 
 > Note: `cargo tauri build` automatically runs `bash build/pyinstaller/build.sh` via the `beforeBuildCommand` hook in `tauri.conf.json`. Step 1 is only needed separately if you want the sidecar binary for testing without building the full app.
 

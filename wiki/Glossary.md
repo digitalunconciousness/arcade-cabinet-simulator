@@ -38,6 +38,11 @@ Project-specific terms and arcade jargon that show up across the docs.
   of cabinets.
 - **CRT chassis** — the analog board that drives a CRT monitor (deflection,
   HV, video amp). For Centipede this is a Wells-Gardner 19K6100.
+- **DIP switch** — a bank of small on/off switches on the PCB that configure
+  game settings (lives per credit, bonus life threshold, difficulty, demo
+  sound) without requiring ROM changes. Centipede uses two 8-position banks.
+  In the simulator the *DIP Switches…* panel lets you toggle them at runtime
+  via MAME's `ioport` API.
 - **Service manual** — the official paper documentation arcade ops used
   for repair. We rely on TM-182 (Centipede) as the source of truth for
   schematics and fault categories.

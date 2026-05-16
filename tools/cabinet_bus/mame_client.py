@@ -196,6 +196,19 @@ class MameClient:
             "brightness": float(brightness),
         })
 
+    def list_dip_switches(self) -> dict:
+        """Return all named DIP switch fields and their current/default values."""
+        return self.send({"cmd": "list_dip_switches"})
+
+    def set_dip_switch(self, port: str, name: str, value: int) -> dict:
+        """Set a DIP switch field to the given value for the current session."""
+        return self.send({
+            "cmd": "set_dip_switch",
+            "port": str(port),
+            "name": str(name),
+            "value": int(value),
+        })
+
     def _ensure_connection(self) -> None:
         """Open the cached socket if not already up."""
         if self._sock is not None:

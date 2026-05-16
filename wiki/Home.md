@@ -8,7 +8,7 @@ The master plan is in [`arcade_cabinet_fault_simulator_plan.md`](../arcade_cabin
 
 ## Current status
 
-**Phase 9 complete — Linux desktop shell shipped.**
+**Phase 9 complete — Linux desktop shell shipped; live fault diagnostics added.**
 The simulator now runs as a Tauri desktop app that orchestrates the full
 local runtime instead of relying on a manually-started browser session.
 
@@ -17,14 +17,23 @@ local runtime instead of relying on a manually-started browser session.
   `/api/health`, then navigates the WebView to the live UI.
 - `ui/splash.html` shows boot-stage progress and boot errors while the
   desktop app starts.
-- `tools/deploy-desktop.sh` copies both the desktop binary and the sidecar
-  into `~/Applications/`, writes the `.desktop` entry used by App Center,
-  and sets `Path=` so launches are stable outside a terminal.
-- Real-time MAME controls are now desktop-first: `ui/app.js` sends input
+- `build-release.sh` is the single command to rebuild the full AppImage and
+  deploy it to `~/Applications/`. It wraps `cargo tauri build` with the
+  required `NO_STRIP=1` and `APPIMAGE_EXTRACT_AND_RUN=1` flags and runs the
+  PyInstaller sidecar build automatically via the `beforeBuildCommand` hook.
+- Real-time MAME controls are desktop-first: `ui/app.js` sends input
   through `window.__TAURI__.core.invoke(...)`, and Rust forwards commands
   directly to the MAME plugin socket on `127.0.0.1:5051`.
 - Boot diagnostics are written to `/tmp/arcade-sim-boot.log`, which makes
   App Center launch failures debuggable without a terminal.
+- **Live fault diagnostics:** The MAME stats panel now shows a real-time
+  *Stuck bytes* counter (increments as RAM fault bytes accumulate) and a
+  *CRT overlay* indicator that reflects the active shader effect name and
+  brightness. Both turn amber when a fault is active.
+- **DIP Switches:** A *DIP Switches…* button in the MAME controls panel opens
+  a modal with the full Centipede DIP switch list. Each switch renders as a
+  labelled dropdown wired to `GET /api/mame/dip_switches` and
+  `POST /api/mame/dip_switch`, backed by the Lua plugin's `ioport` enumeration.
 
 Latest details: `Phases/Phase-9-Desktop-Productization.md`.
 

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <title>Arcade Cabinet Fault Simulator — Sync Generator</title>
-  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/style.css?v=2">
 </head>
 <body>
   <header>
@@ -62,11 +62,20 @@
             <div class="mame-stat-label">Build</div>
             <div class="mame-stat-value" id="mame-version">—</div>
           </div>
+          <div class="mame-stat">
+            <div class="mame-stat-label">Stuck bytes</div>
+            <div class="mame-stat-value" id="mame-stuck-count">0</div>
+          </div>
+          <div class="mame-stat">
+            <div class="mame-stat-label">CRT overlay</div>
+            <div class="mame-stat-value" id="mame-crt-effect">normal</div>
+          </div>
         </div>
         <div class="mame-controls">
           <button id="mame-pause" type="button">Pause</button>
           <button id="mame-resume" type="button">Resume</button>
           <button id="mame-reset" type="button">Soft reset</button>
+          <button id="mame-dip-btn" type="button">DIP Switches…</button>
         </div>
         <div class="mame-kb-legend" id="mame-kb-legend" aria-label="Keyboard controls">
           <div class="mame-kb-title">Keyboard controls <small>(click video first)</small></div>
@@ -300,6 +309,17 @@
     <button id="popover-close" type="button">Close</button>
   </div>
 
-  <script src="/static/app.js"></script>
+  <!-- DIP switch dialog -->
+  <dialog id="dip-dialog" aria-label="DIP Switch Settings">
+    <div class="dip-dialog-header">
+      <h2>DIP Switch Settings</h2>
+      <button id="dip-dialog-close" type="button" aria-label="Close">✕</button>
+    </div>
+    <div id="dip-dialog-body" class="dip-dialog-body">
+      <p class="dip-loading">Loading…</p>
+    </div>
+  </dialog>
+
+  <script src="/static/app.js?v=2"></script>
 </body>
 </html>

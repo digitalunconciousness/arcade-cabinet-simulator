@@ -81,6 +81,14 @@ case "$(uname -s)" in
 esac
 
 echo "==> build complete: $BINARY"
+
+# Keep the copy next to the app binary in ~/Applications up to date so the
+# desktop-entry launch path always gets the latest sidecar.
+if [[ -d "${HOME}/Applications" ]]; then
+    cp "$BINARY" "${HOME}/Applications/arcade-sim-server"
+    echo "==> installed to ~/Applications/arcade-sim-server"
+fi
+
 echo ""
 echo "Quick smoke test:"
 echo "  $BINARY --tauri-sidecar &"
