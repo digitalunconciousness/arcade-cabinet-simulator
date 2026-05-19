@@ -89,6 +89,40 @@
   const _kbHeldMove = new Set();
   const _kbHeldButtons = new Set();
   let _trackballRaf = 0;
+  let lastAudioProfileSig = "";
+
+  let audioState = null;
+  let crtState = null;
+  let trackballState = null;
+  let audioCtx = null;
+  let audioToneOsc = null;
+  let audioHumOsc = null;
+  let audioToneGain = null;
+  let audioHumGain = null;
+  let audioDrive = null;
+  let audioLowpass = null;
+  let audioMaster = null;
+
+  let manifest = { fault_targets: [], modes: {}, log_nets: [] };
+  const faults = {};
+
+  const PIN_LAYOUT = {
+    FB_CLK_Q:   { x: 150, y: 160, anchor: "above" },
+    FB_H_LO_RC: { x: 315, y: 190, anchor: "above" },
+    FB_H_HI_RC: { x: 480, y: 190, anchor: "above" },
+    FB_H_HI_QB: { x: 600, y: 80,  anchor: "above" },
+    FB_H_HI_QC: { x: 580, y: 80,  anchor: "above" },
+    FB_H_HI_QD: { x: 560, y: 80,  anchor: "above" },
+    FB_V_LO_QC: { x: 555, y: 270, anchor: "below" },
+    FB_V_LO_QD: { x: 575, y: 270, anchor: "below" },
+  };
+
+  const MODE_CLASS = {
+    0: "normal",
+    1: "stuck-hi",
+    2: "stuck-lo",
+    3: "open",
+  };
 
   function _updateKbHeldDisplay() {
     if (!els.mameKbHeld) return;
@@ -1097,7 +1131,10 @@ void main() {
 
     // Canvas 2D fallback (used when WebGL is unavailable or a shader failed
     // to compile, and as the reference implementation during development).
-    const ctx = canvas.getContext("2d");
+    const ctx = typeof canvas.getContext === "function"
+      ? canvas.getContext("2d")
+      : null;
+    if (!ctx) return;
     const w = canvas.width;
     const h = canvas.height;
 

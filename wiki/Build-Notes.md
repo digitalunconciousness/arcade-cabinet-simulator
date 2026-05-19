@@ -85,13 +85,21 @@ bash build-release.sh
 This builds the PyInstaller sidecar, produces the Tauri AppImage, deploys
 both to `~/Applications/`, and updates the `.desktop` entry.
 
+The top-level `make` target runs the same rebuild-and-deploy flow:
+
+```bash
+make
+```
+
+Use `make package` or `bash build-release.sh --no-deploy` when you want
+fresh artifacts without updating the installed desktop app.
+
 For a quick iteration build without AppImage packaging:
 ```bash
 cd /home/jackie/arcade-sim/src-tauri
 cargo build --release
 cd ..
 bash tools/deploy-desktop.sh --launch
-```
 ```
 
 This deploys three things:
@@ -133,6 +141,95 @@ backend selection. Available drivers on this box: `pipewire`,
 ./vendor/mame/nltool --cmd=run --time_to_run=0.005 -l FB1.Y \
     -D FAULT_MODE=1 tests/netlist/fault_buffer_test.cpp
 head log_FB1.Y.log
+```
+
+## Incident notes: white screen + offline panel (May 2026)
+
+### Root causes
+
+- Linux WebKit subprocess instability under sandboxed launches from desktop/App Center.
+- Socket bridge churn between Python client and Lua plugin caused status flapping/timeouts.
+- Frontend runtime exceptions in `ui/app.js` (missing globals/constants after refactors) prevented status/UI updates, which looked like backend offline.
+- Noisy reconnect and polling logs made it hard to distinguish true failures from healthy traffic.
+
+### Fixes by file
+
+- `src-tauri/src/main.rs`
+  - Added Linux runtime hardening env setup (including sandbox-disable flag for this deployment mode).
+- `tools/deploy-desktop.sh`
+  - Updated desktop launcher env handling so App Center launches use the same runtime flags.
+- `src-tauri/src/lib.rs`
+  - Added boot log rotation and MAME process stdout/stderr capture to `/tmp/arcade-sim-mame.log`.
+- `tools/cabinet_bus/server.py`
+  - Enabled threaded Flask serving and added `/api/mame/diagnostic` endpoint.
+- `tools/cabinet_bus/mame_client.py`
+  - Reworked lock-safe socket lifecycle and retry behavior to avoid deadlock/reconnect loops.
+- `vendor/mame/plugins/cabinet_bus/init.lua`
+  - Improved listener startup retries and removed reconnect-on-idle behavior.
+- `ui/app.js`
+  - Restored required globals/constants and added null/guard checks in startup + peripheral/audio paths.
+
+### Verification commands (desktop path)
+
+Run from repo root unless noted:
+
+```bash
+# 1) Build and deploy desktop bits
+bash build-release.sh
+
+# 2) Confirm package outputs are fresh
+find src-tauri/target -type f \( -name '*.AppImage' -o -name '*.deb' -o -name '*.rpm' \) \
+  -printf '%TY-%Tm-%Td %TH:%TM:%TS %p\n' | sort -r | head -n 10
+
+# 3) Confirm deployed runtime artifacts
+ls -l ~/Applications/ArcadeFaultSimulator.AppImage ~/Applications/arcade-sim-server
+
+# 4) Confirm desktop entry used by launcher
+sed -n '1,200p' ~/.local/share/applications/arcade-fault-simulator.desktop
+
+# 5) Inspect startup diagnostics
+tail -n 60 /tmp/arcade-sim-boot.log
+tail -n 60 /tmp/arcade-sim-mame.log
+```
+
+### Healthy signals
+
+- UI status text transitions to `ready`.
+- MAME panel is visible and offline placeholder is hidden.
+- `/api/mame/state` and `/api/peripherals/state` return HTTP 200 repeatedly.
+- `/tmp/arcade-sim-boot.log` shows Xvfb + MAME + sidecar startup without crash loops.
+- `/tmp/arcade-sim-mame.log` shows MAME/plugin activity instead of immediate process exit.
+
+### If X then check Y
+
+- If App Center launch shows white screen, check launcher entry and Linux WebKit env in `tools/deploy-desktop.sh` and `src-tauri/src/main.rs`.
+- If panel stays offline but APIs are 200, check browser console/runtime errors and recent edits in `ui/app.js`.
+- If `/api/mame/*` hangs or times out, check socket bridge logs/diagnostic endpoint and `tools/cabinet_bus/mame_client.py` lock behavior.
+- If plugin repeatedly disconnects/reconnects, check `vendor/mame/plugins/cabinet_bus/init.lua` reconnect policy.
+- If boot log looks healthy but no cabinet state changes, confirm MAME was launched from `vendor/mame/` so plugin discovery works.
+
+### Morning checklist
+
+```bash
+cd /home/jackie/arcade-sim
+source .venv/bin/activate
+bash build-release.sh
+
+# quick health check
+python - <<'PY'
+import requests
+for url in [
+    'http://127.0.0.1:5050/api/mame/state',
+    'http://127.0.0.1:5050/api/peripherals/state',
+]:
+    try:
+        r = requests.get(url, timeout=2)
+        print(url, r.status_code)
+    except Exception as e:
+        print(url, 'ERR', e)
+PY
+
+tail -n 30 /tmp/arcade-sim-boot.log
 ```
 
 ## Common errors

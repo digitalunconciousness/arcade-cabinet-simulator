@@ -109,6 +109,15 @@ automatically rebuilds the Python sidecar via `beforeBuildCommand`), and
 on Linux deploys the resulting AppImage to `~/Applications/` and updates
 the `.desktop` entry.
 
+The top-level `make` target runs the same rebuild-and-deploy path:
+
+```bash
+make
+```
+
+Use `make package` or `bash build-release.sh --no-deploy` if you only want
+the build artifacts without updating the desktop install.
+
 Use `--no-deploy` if you only want the build artifacts without deploying:
 ```bash
 bash build-release.sh --no-deploy

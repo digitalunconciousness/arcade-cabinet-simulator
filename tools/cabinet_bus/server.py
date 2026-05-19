@@ -560,6 +560,25 @@ def create_app(
     def api_mame_ping():
         return _mame_request("ping")
 
+    @app.route("/api/mame/diagnostic")
+    def api_mame_diagnostic():
+        t0 = time.time()
+        try:
+            state = mame.get_state()
+            dt_ms = int((time.time() - t0) * 1000)
+            return jsonify({
+                "available": True,
+                "latency_ms": dt_ms,
+                "state": state,
+            })
+        except ConnectionError as e:
+            dt_ms = int((time.time() - t0) * 1000)
+            return jsonify({
+                "available": False,
+                "latency_ms": dt_ms,
+                "error": str(e),
+            }), 503
+
     @app.route("/api/mame/pause", methods=["POST"])
     def api_mame_pause():
         return _mame_request("pause")

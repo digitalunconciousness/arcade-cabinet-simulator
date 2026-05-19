@@ -17,9 +17,10 @@ local runtime instead of relying on a manually-started browser session.
   `/api/health`, then navigates the WebView to the live UI.
 - `ui/splash.html` shows boot-stage progress and boot errors while the
   desktop app starts.
-- `build-release.sh` is the single command to rebuild the full AppImage and
-  deploy it to `~/Applications/`. It wraps `cargo tauri build` with the
-  required `NO_STRIP=1` and `APPIMAGE_EXTRACT_AND_RUN=1` flags and runs the
+- `build-release.sh` is the canonical command to rebuild the full AppImage and
+  deploy it to `~/Applications/`. The top-level `make` target is wired to the
+  same rebuild-and-deploy flow. Both wrap `cargo tauri build` with the
+  required `NO_STRIP=1` and `APPIMAGE_EXTRACT_AND_RUN=1` flags and run the
   PyInstaller sidecar build automatically via the `beforeBuildCommand` hook.
 - Real-time MAME controls are desktop-first: `ui/app.js` sends input
   through `window.__TAURI__.core.invoke(...)`, and Rust forwards commands

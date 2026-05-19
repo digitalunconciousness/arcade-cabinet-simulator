@@ -212,6 +212,7 @@ pub fn run() {
 async fn boot(app: AppHandle) -> Result<(), String> {
     // Rotate log: truncate on each fresh boot so we don't accumulate stale entries.
     let _ = std::fs::write("/tmp/arcade-sim-boot.log", "");
+    let _ = std::fs::write("/tmp/arcade-sim-mame.log", "");
     let channel = app_release_channel();
     boot_log(&format!("boot start — exe={}", std::env::current_exe().map(|p| p.display().to_string()).unwrap_or_else(|_| "?".into())));
     boot_log(&format!("release_channel={channel}"));
@@ -417,7 +418,7 @@ async fn start_mame(app: &AppHandle, display: &str) -> Result<CommandChild, Stri
     boot_log(&format!("  cfg_path={} exists={}", cfg_path.display(), cfg_path.exists()));
     boot_log(&format!("  plugins_path={} exists={}", plugins_path.display(), plugins_path.exists()));
 
-    let (_rx, child) = app.shell()
+    let (mut rx, child) = app.shell()
         .command(&mame_bin)
         .args([
             "-window",
@@ -431,6 +432,37 @@ async fn start_mame(app: &AppHandle, display: &str) -> Result<CommandChild, Stri
         .envs(&env)
         .spawn()
         .map_err(|e| format!("MAME spawn failed: {e}"))?;
+
+    tauri::async_runtime::spawn(async move {
+        while let Some(event) = rx.recv().await {
+            match event {
+                CommandEvent::Stdout(bytes) => {
+                    append_mame_log("stdout", &bytes);
+                }
+                CommandEvent::Stderr(bytes) => {
+                    append_mame_log("stderr", &bytes);
+                }
+                CommandEvent::Terminated(status) => {
+                    boot_log(&format!(
+                        "MAME terminated: code={:?} signal={:?}",
+                        status.code,
+                        status.signal
+                    ));
+                    append_mame_log(
+                        "meta",
+                        format!(
+                            "MAME terminated: code={:?} signal={:?}\n",
+                            status.code,
+                            status.signal
+                        )
+                        .as_bytes(),
+                    );
+                    break;
+                }
+                _ => {}
+            }
+        }
+    });
     
     Ok(child)
 }
@@ -650,6 +682,25 @@ fn boot_log(msg: &str) {
         .open("/tmp/arcade-sim-boot.log")
     {
         let _ = f.write_all(format!("[{ts}] {msg}\n").as_bytes());
+    }
+}
+
+fn append_mame_log(stream: &str, bytes: &[u8]) {
+    use std::io::Write as _;
+    let ts = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    if let Ok(mut f) = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open("/tmp/arcade-sim-mame.log")
+    {
+        let _ = f.write_all(format!("[{ts}] [{stream}] ").as_bytes());
+        let _ = f.write_all(bytes);
+        if !bytes.ends_with(b"\n") {
+            let _ = f.write_all(b"\n");
+        }
     }
 }
 
