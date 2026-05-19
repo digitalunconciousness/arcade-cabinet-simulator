@@ -23,6 +23,12 @@ class StubMameClient:
     def get_state(self):
         raise ConnectionError("stub")
 
+    def set_crt_fault(self, effect, brightness=1.0):
+        raise ConnectionError("stub")
+
+    def stuck_byte(self, addr, value, cpu="maincpu"):
+        raise ConnectionError("stub")
+
 
 def _make_runtime_files(tmp: Path) -> tuple[Path, Path, Path, Path]:
     template = tmp / "sync_generator.cpp"
