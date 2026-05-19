@@ -8,7 +8,7 @@
       "net_name": "CLK_Q",
       "fault_device": "FB_CLK_Q",
       "fault_type": "FAULT_BUFFER",
-      "description": "Master clock output — stuck-low freezes all counters; stuck-high corrupts all timing",
+      "description": "Master clock output — stuck-low freezes all counters; stuck-high eliminates rising edges; both lose all sync (rolling/blank picture)",
       "scenarios": ["sync-lock", "address-decoder-rom"]
     },
     {
@@ -26,7 +26,7 @@
       "net_name": "H_CARRY_HI",
       "fault_device": "FB_H_HI_RC",
       "fault_type": "FAULT_BUFFER",
-      "description": "H_HI carry-out — fault prevents V_LO from incrementing; VSYNC never fires",
+      "description": "H_HI carry-out — stuck-low/open prevents V_LO from incrementing (VSYNC never fires → vertical collapse); stuck-high speeds V_LO past normal rate (VSYNC fires too often → rolling picture)",
       "scenarios": ["vertical-collapse", "sync-lock"]
     },
     {
@@ -35,7 +35,7 @@
       "net_name": "HSYNC_DEC_A",
       "fault_device": "FB_H_HI_QD",
       "fault_type": "FAULT_BUFFER",
-      "description": "H_HI bit 3 → HSYNC NAND input A — fault widens or eliminates HSYNC pulse",
+      "description": "H_HI bit 3 → HSYNC NAND input A — stuck-high widens HSYNC pulse (ghosting); stuck-low/open holds NAND input at 0 (HSYNC_n never fires → horizontal collapse)",
       "scenarios": ["sync-lock", "ringing-ghosting"]
     },
     {
@@ -44,7 +44,7 @@
       "net_name": "HSYNC_DEC_B",
       "fault_device": "FB_H_HI_QC",
       "fault_type": "FAULT_BUFFER",
-      "description": "H_HI bit 2 → HSYNC NAND input B — fault widens or eliminates HSYNC pulse",
+      "description": "H_HI bit 2 → HSYNC NAND input B — stuck-high widens HSYNC pulse (ghosting); stuck-low/open holds NAND input at 0 (HSYNC_n never fires → horizontal collapse)",
       "scenarios": ["sync-lock", "ringing-ghosting"]
     },
     {
@@ -53,7 +53,7 @@
       "net_name": "HSYNC_DEC_C",
       "fault_device": "FB_H_HI_QB",
       "fault_type": "FAULT_BUFFER",
-      "description": "H_HI bit 1 → HSYNC NAND input C — fault widens or eliminates HSYNC pulse",
+      "description": "H_HI bit 1 → HSYNC NAND input C — stuck-high widens HSYNC pulse (ghosting); stuck-low/open holds NAND input at 0 (HSYNC_n never fires → horizontal collapse)",
       "scenarios": ["sync-lock", "ringing-ghosting"]
     },
     {
@@ -62,7 +62,7 @@
       "net_name": "VSYNC_DEC_A",
       "fault_device": "FB_V_LO_QD",
       "fault_type": "FAULT_BUFFER",
-      "description": "V_LO bit 3 → VSYNC NAND input A — fault eliminates or locks VSYNC; vertical collapse",
+      "description": "V_LO bit 3 → VSYNC NAND input A — stuck-low/open eliminates VSYNC (vertical collapse); stuck-high forces VSYNC to fire at QC transition rate (rolling picture)",
       "scenarios": ["vertical-collapse", "sync-lock"]
     },
     {
@@ -71,7 +71,7 @@
       "net_name": "VSYNC_DEC_B",
       "fault_device": "FB_V_LO_QC",
       "fault_type": "FAULT_BUFFER",
-      "description": "V_LO bit 2 → VSYNC NAND input B — fault eliminates or locks VSYNC; vertical collapse",
+      "description": "V_LO bit 2 → VSYNC NAND input B — stuck-low/open eliminates VSYNC (vertical collapse); stuck-high forces VSYNC to fire at QD transition rate (rolling picture)",
       "scenarios": ["vertical-collapse", "sync-lock"]
     },
     {

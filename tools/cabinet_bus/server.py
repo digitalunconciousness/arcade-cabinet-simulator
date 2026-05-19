@@ -382,44 +382,44 @@ def create_app(
         return jsonify({"faults": schematic_faults})
 
     # Maps (fault_device, mode) → CRT effect name.
-    # Mode 1=STUCK_HI, 2=STUCK_LO, 3=OPEN.
+    # Mode 1=STUCK_HI, 2=STUCK_LO, 3=OPEN (OPEN floats to GND via pull-down → acts like STUCK_LO).
     _FAULT_TO_CRT: dict[tuple[str, int], str] = {
-        # Master clock — stuck-low freezes all counters; stuck-high corrupts timing
-        ("FB_CLK_Q",    1): "bad_deflection_caps",
+        # Master clock — any fault mode kills all counter clocking → complete sync loss
+        ("FB_CLK_Q",    1): "sync_lock_failure",
         ("FB_CLK_Q",    2): "sync_lock_failure",
         ("FB_CLK_Q",    3): "sync_lock_failure",
-        # H_LO carry-out — kills all sync
+        # H_LO carry-out — kills H_HI/V_LO enable → all sync lost regardless of mode
         ("FB_H_LO_RC",  1): "sync_lock_failure",
         ("FB_H_LO_RC",  2): "sync_lock_failure",
         ("FB_H_LO_RC",  3): "sync_lock_failure",
-        # H_HI carry-out — VSYNC never fires → vertical collapse
-        ("FB_H_HI_RC",  1): "vertical_collapse",
+        # H_HI carry-out — stuck-hi: V_LO.ENT always 1 → V_LO increments at H_LO.RC rate
+        #   → VSYNC fires ~16x too fast → rolling picture (sync_lock_failure)
+        # stuck-lo/open: V_LO.ENT always 0 → V_LO never increments → no VSYNC (vertical_collapse)
+        ("FB_H_HI_RC",  1): "sync_lock_failure",
         ("FB_H_HI_RC",  2): "vertical_collapse",
         ("FB_H_HI_RC",  3): "vertical_collapse",
-        # HSYNC decoder inputs — stuck-low eliminates pulse; stuck-high widens it
+        # HSYNC decoder inputs — stuck-hi widens HSYNC pulse (ghosting/ringing);
+        # stuck-lo/open holds NAND input at 0 → NAND always 1 → HSYNC_n never asserts (H collapse)
         ("FB_H_HI_QD",  1): "ringing_ghosting",
         ("FB_H_HI_QD",  2): "horizontal_collapse",
-        ("FB_H_HI_QD",  3): "ringing_ghosting",
+        ("FB_H_HI_QD",  3): "horizontal_collapse",
         ("FB_H_HI_QC",  1): "ringing_ghosting",
         ("FB_H_HI_QC",  2): "horizontal_collapse",
-        ("FB_H_HI_QC",  3): "ringing_ghosting",
+        ("FB_H_HI_QC",  3): "horizontal_collapse",
         ("FB_H_HI_QB",  1): "ringing_ghosting",
         ("FB_H_HI_QB",  2): "horizontal_collapse",
-        ("FB_H_HI_QB",  3): "ringing_ghosting",
-        # VSYNC decoder inputs — locks/eliminates VSYNC → vertical collapse
-        ("FB_V_LO_QD",  1): "vertical_collapse",
+        ("FB_H_HI_QB",  3): "horizontal_collapse",
+        # VSYNC decoder inputs — stuck-hi: NAND(1,other)=NOT(other) → VSYNC fires at bit rate
+        #   → rolling picture (sync_lock_failure)
+        # stuck-lo/open: NAND(0,other)=1 always → VSYNC_n never asserts (vertical_collapse)
+        ("FB_V_LO_QD",  1): "sync_lock_failure",
         ("FB_V_LO_QD",  2): "vertical_collapse",
-        ("FB_V_LO_QD",  3): "sync_lock_failure",
-        ("FB_V_LO_QC",  1): "vertical_collapse",
+        ("FB_V_LO_QD",  3): "vertical_collapse",
+        ("FB_V_LO_QC",  1): "sync_lock_failure",
         ("FB_V_LO_QC",  2): "vertical_collapse",
-        ("FB_V_LO_QC",  3): "sync_lock_failure",
-        # Address counter bits — aliased chip-selects → tile chaos
-        ("FB_ADDR_CTR_QA", 1): "ringing_ghosting",
-        ("FB_ADDR_CTR_QA", 2): "ringing_ghosting",
-        ("FB_ADDR_CTR_QA", 3): "ringing_ghosting",
-        ("FB_ADDR_CTR_QB", 1): "ringing_ghosting",
-        ("FB_ADDR_CTR_QB", 2): "ringing_ghosting",
-        ("FB_ADDR_CTR_QB", 3): "ringing_ghosting",
+        ("FB_V_LO_QC",  3): "vertical_collapse",
+        # Address counter bits — fault causes address aliasing; visual effect is tile
+        # corruption via stuck-bytes (handled separately below). No CRT effect here.
     }
 
     # Most-severe effect wins when multiple faults are active.
@@ -427,7 +427,6 @@ def create_app(
         "vertical_collapse",
         "horizontal_collapse",
         "sync_lock_failure",
-        "bad_deflection_caps",
         "ringing_ghosting",
     ]
 
