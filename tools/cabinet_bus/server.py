@@ -1440,7 +1440,7 @@ def main(argv=None):
     if not args.tauri_sidecar:
         print(f"Cabinet bus listening on http://{args.host}:{args.port}",
               file=sys.stderr)
-    app.run(host=args.host, port=args.port, debug=args.debug, use_reloader=False)
+    app.run(host=args.host, port=args.port, debug=args.debug, use_reloader=False, threaded=True)
 
 
 if __name__ == "__main__":

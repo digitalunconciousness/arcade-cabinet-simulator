@@ -226,8 +226,9 @@ async fn boot(app: AppHandle) -> Result<(), String> {
     // 1. Start Xvfb (virtual X11 display).
     let xvfb_display = ":99";
     set_splash_status(&app, 15, "Starting virtual display (Xvfb)");
-    eprintln!("[arcade-sim] starting Xvfb on {xvfb_display}…");
+    boot_log("starting Xvfb on :99\u{2026}");
     let xvfb_child = start_xvfb(&app, xvfb_display).await?;
+    boot_log("Xvfb ready");
     app.state::<SidecarState>().0.lock().unwrap().xvfb = Some(xvfb_child);
     set_splash_status(&app, 35, "Display ready");
     tokio::time::sleep(Duration::from_millis(500)).await;
@@ -235,6 +236,11 @@ async fn boot(app: AppHandle) -> Result<(), String> {
     // 2. Start MAME emulator with cabinet_bus plugin.
     set_splash_status(&app, 45, "Launching MAME");
     boot_log("starting MAME…");
+    // LIBGL_ALWAYS_SOFTWARE was set in main() so WebKitWebProcess uses Mesa’s
+    // software renderer and doesn’t crash on null GL extension pointers.
+    // Strip it here before spawning MAME so MAME keeps full hardware-GL
+    // performance (env is inherited by subprocesses via fork).
+    std::env::remove_var("LIBGL_ALWAYS_SOFTWARE");
     let mame_child = start_mame(&app, xvfb_display).await?;
     app.state::<SidecarState>().0.lock().unwrap().mame = Some(mame_child);
     // Give MAME a moment to initialize and open its window.
@@ -256,11 +262,19 @@ async fn boot(app: AppHandle) -> Result<(), String> {
     }
     boot_log("MAME still running — OK");
 
+    // 2b. Do NOT probe port 5051 here.
+    // The cabinet_bus Lua plugin only accepts ONE TCP connection at a time.
+    // If we open a probe connection and drop it without sending data, the Lua
+    // socket enters a dead state and never reopens — the Python sidecar then
+    // gets ECONNREFUSED on every poll.  The UI retries every 1 second, so the
+    // MAME panel will activate automatically once cabinet_bus is ready.
+    set_splash_status(&app, 65, "MAME loaded — waiting for cabinet_bus plugin");
+
     // 3. Spawn the Python sidecar (arcade-sim-server) with DISPLAY set.
     // Clear PYTHONHOME and PYTHONPATH so the PyInstaller bootloader uses its
     // own bundled stdlib and is not confused by any active venv on the host.
     set_splash_status(&app, 70, "Starting API sidecar");
-    eprintln!("[arcade-sim] starting arcade-sim-server sidecar…");
+    boot_log("starting arcade-sim-server sidecar\u{2026}");
     let mut env = HashMap::new();
     env.insert("PYTHONHOME".to_string(), "".to_string());
     env.insert("PYTHONPATH".to_string(), "".to_string());
@@ -311,11 +325,13 @@ async fn boot(app: AppHandle) -> Result<(), String> {
     .ok()
     .flatten()
     .ok_or_else(|| "timed out waiting for sidecar PORT".to_string())?;
+    boot_log(&format!("sidecar PORT={port}"));
 
     // 5. Poll /api/health until 200 (10 s timeout).
     let base_url = format!("http://127.0.0.1:{port}");
     set_splash_status(&app, 90, "Checking API health");
     wait_for_health(&base_url).await?;
+    boot_log("sidecar /api/health OK");
 
     // 6. Background update check — fire-and-forget.
     check_for_update(app.clone());

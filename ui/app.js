@@ -56,6 +56,14 @@
     bannerSubs:       document.getElementById("banner-subs"),
   };
 
+  const EXPECTED_MANIFEST_VERSION = 1;
+
+  function setStatus(msg, isError = false) {
+    if (!els.status) return;
+    els.status.textContent = msg;
+    els.status.classList.toggle("error", isError);
+  }
+
   const tauriInvoke = (() => {
     const invoke = window.__TAURI__?.core?.invoke;
     return typeof invoke === "function" ? invoke.bind(window.__TAURI__.core) : null;
@@ -413,7 +421,7 @@
     els.popover.hidden = true;
   }
 
-  els.popoverMode.addEventListener("change", async (e) => {
+  els.popoverMode?.addEventListener("change", async (e) => {
     if (!popoverFault) return;
     const mode = parseInt(e.target.value, 10);
     if (mode === 0) {
@@ -426,7 +434,7 @@
     await reloadWaveforms();
   });
 
-  els.popoverClose.addEventListener("click", closePopover);
+  els.popoverClose?.addEventListener("click", closePopover);
   document.addEventListener("click", (ev) => {
     if (!els.popover.hidden &&
         !els.popover.contains(ev.target) &&
@@ -435,7 +443,7 @@
     }
   });
 
-  els.resetButton.addEventListener("click", async () => {
+  els.resetButton?.addEventListener("click", async () => {
     try {
       await postJSON("/api/mame/soft_reset", {});
     } catch {
@@ -704,7 +712,7 @@
     return res.json();
   }
 
-  els.periphReset.addEventListener("click", async () => {
+  els.periphReset?.addEventListener("click", async () => {
     try {
       await postJSON("/api/peripherals/reset", {});
       await loadPeripherals();
@@ -812,9 +820,9 @@
     els.mameVideoFeed.src = `/api/mame/video?t=${Date.now()}`;
   }
 
-  els.mamePauseBtn.addEventListener("click", () => mameAction("pause"));
-  els.mameResumeBtn.addEventListener("click", () => mameAction("resume"));
-  els.mameResetBtn.addEventListener("click", async () => {
+  els.mamePauseBtn?.addEventListener("click", () => mameAction("pause"));
+  els.mameResumeBtn?.addEventListener("click", () => mameAction("resume"));
+  els.mameResetBtn?.addEventListener("click", async () => {
     await mameAction("soft_reset");
     for (const k of Object.keys(faults)) delete faults[k];
     renderFaultPins();
@@ -822,7 +830,8 @@
   });
 
   // ---------- DIP switch modal ----------
-  els.mameDipBtn.addEventListener("click", async () => {
+  els.mameDipBtn?.addEventListener("click", async () => {
+    if (!els.dipDialog || !els.dipDialogBody) return;
     els.dipDialog.showModal();
     els.dipDialogBody.innerHTML = '<p class="dip-loading">Loading…</p>';
     try {
@@ -871,8 +880,8 @@
     }
   });
 
-  els.dipDialogClose.addEventListener("click", () => els.dipDialog.close());
-  els.dipDialog.addEventListener("click", (e) => {
+  els.dipDialogClose?.addEventListener("click", () => els.dipDialog?.close());
+  els.dipDialog?.addEventListener("click", (e) => {
     // Click on ::backdrop closes the dialog
     if (e.target === els.dipDialog) els.dipDialog.close();
   });
@@ -1734,6 +1743,29 @@ void main() {
   // End of Board Inspector
   // ============================================================
 
+  // ---------- Waveform reload ----------
+  // POSTs current fault state to /api/run, then renders each net's waveform.
+  // Non-fatal: errors are shown in waveMeta but do not abort the caller.
+  async function reloadWaveforms() {
+    try {
+      const body = await postJSON("/api/run", { faults });
+      const { waveforms = {}, duration_s = 0.02 } = body;
+      if (els.waveMeta) {
+        const faultCount = body.fault_mode_count ?? 0;
+        els.waveMeta.textContent = faultCount
+          ? `${faultCount} fault(s) active — ${(duration_s * 1000).toFixed(2)} ms`
+          : `no faults — ${(duration_s * 1000).toFixed(2)} ms`;
+      }
+      for (const net of (manifest?.log_nets ?? [])) {
+        renderWaveform(net, waveforms[net] ?? [], duration_s);
+      }
+    } catch {
+      // Simulation backend unavailable (nltool not installed, etc.) — leave
+      // waveforms blank rather than crashing the whole init sequence.
+      if (els.waveMeta) els.waveMeta.textContent = "simulation unavailable";
+    }
+  }
+
   async function init() {
     setStatus("fetching manifest…");
     try {
@@ -1752,7 +1784,8 @@ void main() {
     }
     renderFaultPins();
     renderFaultsList();
-    await reloadWaveforms();
+    // Defer waveform sim so it doesn't block Flask while init runs.
+    setTimeout(() => { void reloadWaveforms(); }, 200);
     await loadPeripherals();
     await loadScenarios();
     await loadBoardInspector();
@@ -1772,7 +1805,11 @@ void main() {
     // Refresh peripherals every 2s so stuck_switch credits keep ticking.
     setInterval(loadPeripherals, 2000);
     setInterval(renderCrtPreview, 80);
+    setStatus("ready");
   }
 
-  init();
+  init().catch(err => {
+    setStatus("startup error: " + (err?.message ?? err), true);
+    console.error("init() failed:", err);
+  });
 })();
