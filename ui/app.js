@@ -80,6 +80,10 @@
   };
 
   const KEY_TRACKBALL_CODE_MAP = {
+    ArrowLeft: { dx: -3, dy: 0 },
+    ArrowRight: { dx: 3, dy: 0 },
+    ArrowUp: { dx: 0, dy: -3 },
+    ArrowDown: { dx: 0, dy: 3 },
     KeyA: { dx: -3, dy: 0 },
     KeyD: { dx: 3, dy: 0 },
     KeyW: { dx: 0, dy: -3 },
