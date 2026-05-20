@@ -71,6 +71,7 @@
 
   const KEY_BUTTON_MAP = {
     ControlLeft: "P1 Button 1",
+    Space: "P1 Button 1",
     Digit1: "1 Player Start",
     Digit2: "2 Player Start",
     Digit5: "Coin 1",
@@ -93,6 +94,8 @@
   const _kbHeldMove = new Set();
   const _kbHeldButtons = new Set();
   let _trackballRaf = 0;
+  let _mameInputCaptured = false;
+  let _dipFetchAbort = null;
   let lastAudioProfileSig = "";
 
   let audioState = null;
@@ -162,7 +165,39 @@
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ dx, dy }),
-    }).catch(() => {});
+    }).catch(() => {
+      // Back-compat fallback for older servers that haven't exposed
+      // /api/trackball/motion yet.
+      void fetch("/api/mame/trackball_delta", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dx, dy }),
+      }).catch(() => {});
+    });
+  }
+
+  function _captureMameInput() {
+    _mameInputCaptured = true;
+    if (!els.mameVideoCol) return;
+    els.mameVideoCol.classList.add("kb-captured");
+  }
+
+  function _releaseMameInput() {
+    _mameInputCaptured = false;
+    if (els.mameVideoCol) {
+      els.mameVideoCol.classList.remove("kb-captured");
+    }
+    _kbHeldMove.clear();
+    for (const code of _kbHeldButtons) {
+      const buttonName = KEY_BUTTON_MAP[code];
+      if (buttonName) _sendMameButton("release_button", buttonName);
+    }
+    _kbHeldButtons.clear();
+    if (_trackballRaf) {
+      cancelAnimationFrame(_trackballRaf);
+      _trackballRaf = 0;
+    }
+    _updateKbHeldDisplay();
   }
 
   function _scheduleTrackballPump() {
@@ -195,13 +230,23 @@
       if (els.mamePane.tabIndex < 0) els.mamePane.tabIndex = 0;
       try { els.mamePane.focus({ preventScroll: true }); }
       catch { els.mamePane.focus(); }
+      _captureMameInput();
     };
 
-    els.mamePane?.addEventListener("pointerdown", focusMamePane);
-    setTimeout(focusMamePane, 0);
+    els.mameVideoCol?.addEventListener("pointerdown", focusMamePane);
+
+    document.addEventListener("pointerdown", (ev) => {
+      const target = ev.target;
+      if (!target) return;
+      if (els.mamePane?.contains(target)) {
+        return;
+      }
+      _releaseMameInput();
+    }, true);
 
     document.addEventListener("keydown", (ev) => {
       if (els.mamePane?.hidden) return;
+      if (!_mameInputCaptured) return;
       if (isTypingTarget(ev.target)) return;
 
       const moveDelta = KEY_TRACKBALL_CODE_MAP[ev.code];
@@ -225,6 +270,7 @@
     }, true);
 
     document.addEventListener("keyup", (ev) => {
+      if (!_mameInputCaptured) return;
       if (isTypingTarget(ev.target)) return;
 
       const moveDelta = KEY_TRACKBALL_CODE_MAP[ev.code];
@@ -247,17 +293,7 @@
     }, true);
 
     window.addEventListener("blur", () => {
-      _kbHeldMove.clear();
-      for (const code of _kbHeldButtons) {
-        const buttonName = KEY_BUTTON_MAP[code];
-        if (buttonName) _sendMameButton("release_button", buttonName);
-      }
-      _kbHeldButtons.clear();
-      if (_trackballRaf) {
-        cancelAnimationFrame(_trackballRaf);
-        _trackballRaf = 0;
-      }
-      _updateKbHeldDisplay();
+      _releaseMameInput();
     });
   }
 
@@ -868,12 +904,48 @@
   });
 
   // ---------- DIP switch modal ----------
+  function _closeDipDialog() {
+    if (_dipFetchAbort) {
+      _dipFetchAbort.abort();
+      _dipFetchAbort = null;
+    }
+    els.dipDialog?.close();
+  }
+
+  async function _fetchDipSwitchesWithTimeout(timeoutMs = 5000) {
+    if (_dipFetchAbort) {
+      _dipFetchAbort.abort();
+    }
+    const controller = new AbortController();
+    _dipFetchAbort = controller;
+    const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch("/api/mame/dip_switches", { signal: controller.signal });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (e) {
+      if (controller.signal.aborted) {
+        throw new Error("request timed out");
+      }
+      throw e;
+    } finally {
+      window.clearTimeout(timer);
+      if (_dipFetchAbort === controller) {
+        _dipFetchAbort = null;
+      }
+    }
+  }
+
   els.mameDipBtn?.addEventListener("click", async () => {
     if (!els.dipDialog || !els.dipDialogBody) return;
-    els.dipDialog.showModal();
+    try {
+      els.dipDialog.showModal();
+    } catch {
+      // Some runtimes throw if already open; keep going.
+    }
     els.dipDialogBody.innerHTML = '<p class="dip-loading">Loading…</p>';
     try {
-      const data = await fetchJSON("/api/mame/dip_switches");
+      const data = await _fetchDipSwitchesWithTimeout();
       const switches = (data && data.dip_switches) || [];
       if (!switches.length) {
         els.dipDialogBody.innerHTML = '<p class="dip-unavail">No DIP switches available (MAME may be offline or no named settings found).</p>';
@@ -918,10 +990,24 @@
     }
   });
 
-  els.dipDialogClose?.addEventListener("click", () => els.dipDialog?.close());
+  els.dipDialogClose?.addEventListener("click", _closeDipDialog);
+  els.dipDialogClose?.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    _closeDipDialog();
+  });
+  els.dipDialog?.addEventListener("cancel", (e) => {
+    e.preventDefault();
+    _closeDipDialog();
+  });
   els.dipDialog?.addEventListener("click", (e) => {
     // Click on ::backdrop closes the dialog
-    if (e.target === els.dipDialog) els.dipDialog.close();
+    if (e.target === els.dipDialog) _closeDipDialog();
+  });
+  els.dipDialog?.addEventListener("close", () => {
+    if (_dipFetchAbort) {
+      _dipFetchAbort.abort();
+      _dipFetchAbort = null;
+    }
   });
 
   // ---------- Phase 6 preview — WebGL CRT shader renderer ----------

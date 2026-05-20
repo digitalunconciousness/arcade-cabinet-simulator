@@ -25,7 +25,7 @@ from pathlib import Path
 import pytest
 import requests
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 DIST_BINARY = REPO_ROOT / "dist" / "arcade-sim-server"
 PYTHON = sys.executable
 
