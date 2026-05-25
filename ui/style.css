@@ -990,11 +990,22 @@ section h2 { margin: 0 0 0.75rem 0; font-size: 0.9rem; font-weight: 600; color: 
   color: var(--fg);
   padding: 0;
   min-width: 360px;
-  max-width: 520px;
+  width: min(520px, calc(100vw - 24px));
   max-height: 80vh;
   overflow: hidden;
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  z-index: 3000;
+}
+#dip-dialog[open] {
   display: flex;
   flex-direction: column;
+}
+#dip-dialog:not([open]) {
+  display: none;
 }
 #dip-dialog::backdrop { background: rgba(0,0,0,0.55); }
 .dip-dialog-header {

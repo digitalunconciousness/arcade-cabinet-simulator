@@ -94,7 +94,6 @@
   const _kbHeldMove = new Set();
   const _kbHeldButtons = new Set();
   let _trackballRaf = 0;
-  let _mameInputCaptured = false;
   let _dipFetchAbort = null;
   let lastAudioProfileSig = "";
 
@@ -146,9 +145,21 @@
 
   function _sendMameButton(action, name) {
     if (!name) return;
-    // Route through Flask sidecar so the Python MameClient holds the sole
-    // MAME TCP socket. Tauri IPC bypasses the peripheral fault model and
-    // competes with the Python client for the single-connection socket.
+    // Prefer direct Tauri->MAME socket bridge for desktop latency and
+    // reliability. Fall back to HTTP for browser/dev mode.
+    const tauriCmd = action === "press_button" ? "mame_press_button"
+      : action === "release_button" ? "mame_release_button"
+      : "";
+    if (tauriCmd && tauriInvoke) {
+      void _invokeMame(tauriCmd, { name }).catch(() => {
+        void fetch(`/api/mame/${action}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name }),
+        }).catch(() => {});
+      });
+      return;
+    }
     void fetch(`/api/mame/${action}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -158,6 +169,22 @@
 
   function _sendTrackballDelta(dx, dy) {
     if (dx === 0 && dy === 0) return;
+    if (tauriInvoke) {
+      void _invokeMame("mame_trackball_delta", { dx, dy }).catch(() => {
+        void fetch("/api/trackball/motion", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ dx, dy }),
+        }).catch(() => {
+          void fetch("/api/mame/trackball_delta", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ dx, dy }),
+          }).catch(() => {});
+        });
+      });
+      return;
+    }
     // Use /api/trackball/motion so the peripheral fault model is applied
     // (dirty_roller, dead_opto_x/y, seized_bearing, etc.) before forwarding
     // the scaled delta to MAME. Also routes through Python MameClient.
@@ -177,13 +204,11 @@
   }
 
   function _captureMameInput() {
-    _mameInputCaptured = true;
     if (!els.mameVideoCol) return;
     els.mameVideoCol.classList.add("kb-captured");
   }
 
   function _releaseMameInput() {
-    _mameInputCaptured = false;
     if (els.mameVideoCol) {
       els.mameVideoCol.classList.remove("kb-captured");
     }
@@ -246,7 +271,7 @@
 
     document.addEventListener("keydown", (ev) => {
       if (els.mamePane?.hidden) return;
-      if (!_mameInputCaptured) return;
+      if (els.dipDialog?.hasAttribute("open")) return;
       if (isTypingTarget(ev.target)) return;
 
       const moveDelta = KEY_TRACKBALL_CODE_MAP[ev.code];
@@ -270,7 +295,7 @@
     }, true);
 
     document.addEventListener("keyup", (ev) => {
-      if (!_mameInputCaptured) return;
+      if (els.dipDialog?.hasAttribute("open")) return;
       if (isTypingTarget(ev.target)) return;
 
       const moveDelta = KEY_TRACKBALL_CODE_MAP[ev.code];
@@ -325,11 +350,15 @@
     els.mameVideoCol.addEventListener("pointermove", (ev) => {
       if (!dragging) return;
       if (activePointerId !== null && ev.pointerId !== activePointerId) return;
-      const dx = Math.round(ev.clientX - lastX);
-      const dy = Math.round(ev.clientY - lastY);
+      const rawDx = Number.isFinite(ev.movementX) ? ev.movementX : (ev.clientX - lastX);
+      const rawDy = Number.isFinite(ev.movementY) ? ev.movementY : (ev.clientY - lastY);
+      const dx = Math.round(rawDx);
+      const dy = Math.round(rawDy);
       lastX = ev.clientX;
       lastY = ev.clientY;
-      _sendTrackballDelta(dx, dy);
+      if (dx !== 0 || dy !== 0) {
+        _sendTrackballDelta(dx, dy);
+      }
     });
 
     const stopDrag = (ev) => {
@@ -904,12 +933,33 @@
   });
 
   // ---------- DIP switch modal ----------
+  function _openDipDialog() {
+    if (!els.dipDialog) return;
+    if (typeof els.dipDialog.showModal === "function") {
+      try {
+        els.dipDialog.showModal();
+        return;
+      } catch {
+        // Fall through to attribute-based open for webview compatibility.
+      }
+    }
+    els.dipDialog.setAttribute("open", "open");
+  }
+
   function _closeDipDialog() {
     if (_dipFetchAbort) {
       _dipFetchAbort.abort();
       _dipFetchAbort = null;
     }
-    els.dipDialog?.close();
+    if (!els.dipDialog) return;
+    if (typeof els.dipDialog.close === "function") {
+      try {
+        els.dipDialog.close();
+      } catch {
+        // Ignore and enforce attribute state below.
+      }
+    }
+    els.dipDialog.removeAttribute("open");
   }
 
   async function _fetchDipSwitchesWithTimeout(timeoutMs = 5000) {
@@ -936,13 +986,31 @@
     }
   }
 
+  async function _setDipSwitchWithTimeout(payload, timeoutMs = 4000) {
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch("/api/mame/dip_switch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (e) {
+      if (controller.signal.aborted) {
+        throw new Error("request timed out");
+      }
+      throw e;
+    } finally {
+      window.clearTimeout(timer);
+    }
+  }
+
   els.mameDipBtn?.addEventListener("click", async () => {
     if (!els.dipDialog || !els.dipDialogBody) return;
-    try {
-      els.dipDialog.showModal();
-    } catch {
-      // Some runtimes throw if already open; keep going.
-    }
+    _openDipDialog();
     els.dipDialogBody.innerHTML = '<p class="dip-loading">Loading…</p>';
     try {
       const data = await _fetchDipSwitchesWithTimeout();
@@ -967,15 +1035,18 @@
           sel.appendChild(o);
         }
         sel.addEventListener("change", async () => {
+          const previous = String(sw.value);
           sel.disabled = true;
           try {
-            await postJSON("/api/mame/dip_switch", {
+            await _setDipSwitchWithTimeout({
               port: sw.port,
               name: sw.name,
               value: parseInt(sel.value, 10),
             });
+            sw.value = parseInt(sel.value, 10);
           } catch (e) {
             console.warn("DIP set failed:", e);
+            sel.value = previous;
           } finally {
             sel.disabled = false;
           }
@@ -1894,6 +1965,17 @@ void main() {
   }
 
   async function init() {
+    // Ensure DIP dialog is hidden at startup for all webview variants.
+    if (els.dipDialog) {
+      els.dipDialog.removeAttribute("open");
+      if (typeof els.dipDialog.close === "function") {
+        try { els.dipDialog.close(); } catch {}
+      }
+    }
+    if (els.dipDialogBody) {
+      els.dipDialogBody.innerHTML = "";
+    }
+
     setStatus("fetching manifest…");
     try {
       manifest = await fetchJSON("/api/manifest");
