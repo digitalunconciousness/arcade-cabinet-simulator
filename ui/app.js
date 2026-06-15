@@ -45,6 +45,9 @@
     audioToneStop:   document.getElementById("audio-tone-stop"),
     // Scenario bar
     scenarioSelect:   document.getElementById("scenario-select"),
+    scenarioPicker:   document.getElementById("scenario-picker"),
+    scenarioPickerBtn: document.getElementById("scenario-picker-btn"),
+    scenarioPickerMenu: document.getElementById("scenario-picker-menu"),
     scenarioApply:    document.getElementById("scenario-apply"),
     scenarioClear:    document.getElementById("scenario-clear"),
     scenarioInfo:     document.getElementById("scenario-info"),
@@ -71,6 +74,7 @@
 
   const KEY_BUTTON_MAP = {
     ControlLeft: "P1 Button 1",
+    ControlRight: "P1 Button 1",
     Space: "P1 Button 1",
     Digit1: "1 Player Start",
     Digit2: "2 Player Start",
@@ -80,22 +84,38 @@
     Numpad5: "Coin 1",
   };
 
+  const KEY_PULSE_BUTTONS = new Set([
+    "P1 Button 1",
+    "1 Player Start",
+    "2 Player Start",
+    "Coin 1",
+  ]);
+
   const KEY_TRACKBALL_CODE_MAP = {
-    ArrowLeft: { dx: -3, dy: 0 },
-    ArrowRight: { dx: 3, dy: 0 },
-    ArrowUp: { dx: 0, dy: -3 },
-    ArrowDown: { dx: 0, dy: 3 },
-    KeyA: { dx: -3, dy: 0 },
-    KeyD: { dx: 3, dy: 0 },
-    KeyW: { dx: 0, dy: -3 },
-    KeyS: { dx: 0, dy: 3 },
+    ArrowLeft: { dx: -12, dy: 0 },
+    ArrowRight: { dx: 12, dy: 0 },
+    ArrowUp: { dx: 0, dy: -12 },
+    ArrowDown: { dx: 0, dy: 12 },
+    KeyA: { dx: -12, dy: 0 },
+    KeyD: { dx: 12, dy: 0 },
+    KeyW: { dx: 0, dy: -12 },
+    KeyS: { dx: 0, dy: 12 },
   };
+
+  const MOUSE_TRACKBALL_GAIN = 3.0;
+  const MOUSE_TRACKBALL_INVERT_X = 1;
+  const MOUSE_TRACKBALL_INVERT_Y = 1;
 
   const _kbHeldMove = new Set();
   const _kbHeldButtons = new Set();
-  let _trackballRaf = 0;
+  let _trackballTimer = 0;
   let _dipFetchAbort = null;
+  let _dipRequestSeq = 0;
+  let _dipLoading = false;
   let lastAudioProfileSig = "";
+  let _scenarioBusy = false;
+  let _openCustomPicker = null;
+  const _customSelectSync = new WeakMap();
 
   let audioState = null;
   let crtState = null;
@@ -138,69 +158,237 @@
     els.mameKbHeld.textContent = held.length ? "held: " + held.join(" + ") : "";
   }
 
-  function _invokeMame(command, payload) {
-    if (!tauriInvoke) return Promise.reject(new Error("Tauri invoke unavailable"));
-    return tauriInvoke(command, payload);
-  }
-
   function _sendMameButton(action, name) {
     if (!name) return;
-    // Prefer direct Tauri->MAME socket bridge for desktop latency and
-    // reliability. Fall back to HTTP for browser/dev mode.
-    const tauriCmd = action === "press_button" ? "mame_press_button"
-      : action === "release_button" ? "mame_release_button"
-      : "";
-    if (tauriCmd && tauriInvoke) {
-      void _invokeMame(tauriCmd, { name }).catch(() => {
-        void fetch(`/api/mame/${action}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name }),
-        }).catch(() => {});
-      });
-      return;
-    }
+    // Route through the sidecar first so one transport owns MAME plugin
+    // access. This avoids socket contention between UI and sidecar.
     void fetch(`/api/mame/${action}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name }),
-    }).catch(() => {});
+    }).catch(() => {
+      const tauriCmd = action === "press_button" ? "mame_press_button"
+        : action === "release_button" ? "mame_release_button"
+        : "";
+      if (tauriCmd && tauriInvoke) {
+        void tauriInvoke(tauriCmd, { name }).catch(() => {});
+      }
+    });
   }
 
   function _sendTrackballDelta(dx, dy) {
     if (dx === 0 && dy === 0) return;
-    if (tauriInvoke) {
-      void _invokeMame("mame_trackball_delta", { dx, dy }).catch(() => {
-        void fetch("/api/trackball/motion", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ dx, dy }),
-        }).catch(() => {
-          void fetch("/api/mame/trackball_delta", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ dx, dy }),
-          }).catch(() => {});
-        });
-      });
-      return;
-    }
-    // Use /api/trackball/motion so the peripheral fault model is applied
-    // (dirty_roller, dead_opto_x/y, seized_bearing, etc.) before forwarding
-    // the scaled delta to MAME. Also routes through Python MameClient.
+    const payload = JSON.stringify({ dx, dy });
+    // Keyboard trackball motion should go through the peripheral motion path
+    // so the in-cabinet fault model is applied consistently.
     void fetch("/api/trackball/motion", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ dx, dy }),
-    }).catch(() => {
-      // Back-compat fallback for older servers that haven't exposed
-      // /api/trackball/motion yet.
-      void fetch("/api/mame/trackball_delta", {
+      body: payload,
+    }).then((resp) => {
+      if (resp.ok) return;
+      return fetch("/api/mame/trackball_delta", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dx, dy }),
-      }).catch(() => {});
+        body: payload,
+      });
+    }).catch(() => {
+      if (tauriInvoke) {
+        void tauriInvoke("mame_trackball_delta", { dx, dy }).catch(() => {});
+      }
     });
+  }
+
+  function _setScenarioBusy(isBusy) {
+    _scenarioBusy = isBusy;
+    const hasScenario = !!getSelectedScenario();
+    if (els.scenarioSelect) {
+      els.scenarioSelect.disabled = isBusy;
+    }
+    if (els.scenarioPickerBtn) {
+      els.scenarioPickerBtn.disabled = isBusy;
+      if (isBusy) {
+        _closeScenarioPicker();
+      }
+    }
+    if (els.scenarioApply) {
+      els.scenarioApply.disabled = isBusy || !hasScenario;
+      if (!isBusy) {
+        els.scenarioApply.textContent = "Apply";
+      }
+    }
+    if (els.scenarioClear) {
+      els.scenarioClear.disabled = isBusy || !hasScenario;
+      if (!isBusy) {
+        els.scenarioClear.textContent = "Clear";
+      }
+    }
+  }
+
+  function _closeCustomPicker(picker) {
+    if (!picker) return;
+    picker.classList.remove("open");
+    const btn = picker.querySelector(":scope > .custom-select-btn");
+    btn?.setAttribute("aria-expanded", "false");
+    if (_openCustomPicker === picker) {
+      _openCustomPicker = null;
+    }
+  }
+
+  function _openPicker(picker) {
+    if (!picker) return;
+    if (_openCustomPicker && _openCustomPicker !== picker) {
+      _closeCustomPicker(_openCustomPicker);
+    }
+    picker.classList.add("open");
+    const btn = picker.querySelector(":scope > .custom-select-btn");
+    btn?.setAttribute("aria-expanded", "true");
+    _openCustomPicker = picker;
+  }
+
+  function _ensureCustomPickerGlobalHandlers() {
+    if (window.__arcadeCustomPickerHandlersBound) return;
+    window.__arcadeCustomPickerHandlersBound = true;
+
+    document.addEventListener("pointerdown", (ev) => {
+      if (!_openCustomPicker) return;
+      const target = ev.target;
+      if (target instanceof Node && _openCustomPicker.contains(target)) return;
+      _closeCustomPicker(_openCustomPicker);
+    }, true);
+
+    document.addEventListener("keydown", (ev) => {
+      if (ev.key === "Escape" && _openCustomPicker) {
+        _closeCustomPicker(_openCustomPicker);
+      }
+    }, true);
+  }
+
+  function createCustomSelect(select) {
+    if (!select) return null;
+    if (select.dataset.customSelect === "1") {
+      return {
+        wrapper: select.parentElement,
+        sync: _customSelectSync.get(select),
+      };
+    }
+
+    _ensureCustomPickerGlobalHandlers();
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "custom-select-picker";
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "custom-select-btn";
+    btn.setAttribute("aria-haspopup", "listbox");
+    btn.setAttribute("aria-expanded", "false");
+
+    const menu = document.createElement("div");
+    menu.className = "custom-select-menu";
+    menu.setAttribute("role", "listbox");
+
+    const render = () => {
+      menu.innerHTML = "";
+      for (const opt of Array.from(select.options)) {
+        const item = document.createElement("button");
+        item.type = "button";
+        item.className = "custom-select-item";
+        item.dataset.value = opt.value;
+        item.textContent = opt.textContent || opt.value;
+        if (opt.disabled) {
+          item.disabled = true;
+        }
+        if (opt.selected) {
+          item.classList.add("selected");
+        }
+        menu.appendChild(item);
+      }
+    };
+
+    const sync = () => {
+      const selected = select.options[select.selectedIndex] || null;
+      btn.textContent = selected ? (selected.textContent || selected.value) : "—";
+      for (const item of menu.querySelectorAll(".custom-select-item")) {
+        item.classList.toggle("selected", item.dataset.value === select.value);
+      }
+      btn.disabled = !!select.disabled;
+      wrapper.classList.toggle("disabled", !!select.disabled);
+    };
+
+    btn.addEventListener("click", (ev) => {
+      ev.preventDefault();
+      if (btn.disabled) return;
+      if (wrapper.classList.contains("open")) {
+        _closeCustomPicker(wrapper);
+      } else {
+        _openPicker(wrapper);
+      }
+    });
+
+    menu.addEventListener("click", (ev) => {
+      const target = ev.target;
+      if (!(target instanceof HTMLElement)) return;
+      const item = target.closest(".custom-select-item");
+      if (!item || item.hasAttribute("disabled")) return;
+      const nextValue = item.dataset.value || "";
+      if (select.value !== nextValue) {
+        select.value = nextValue;
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+      } else {
+        sync();
+      }
+      _closeCustomPicker(wrapper);
+    });
+
+    select.classList.add("custom-select-native-hidden");
+    select.setAttribute("aria-hidden", "true");
+    select.tabIndex = -1;
+    select.dataset.customSelect = "1";
+
+    const parent = select.parentNode;
+    if (parent) {
+      parent.insertBefore(wrapper, select);
+      wrapper.appendChild(btn);
+      wrapper.appendChild(menu);
+      wrapper.appendChild(select);
+    }
+
+    select.addEventListener("change", sync);
+
+    render();
+    sync();
+    _customSelectSync.set(select, () => {
+      render();
+      sync();
+    });
+
+    return {
+      wrapper,
+      sync: _customSelectSync.get(select),
+    };
+  }
+
+  async function postJSONWithTimeout(url, body, timeoutMs = 8000) {
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (e) {
+      if (controller.signal.aborted) {
+        throw new Error("request timed out");
+      }
+      throw e;
+    } finally {
+      window.clearTimeout(timer);
+    }
   }
 
   function _captureMameInput() {
@@ -218,17 +406,16 @@
       if (buttonName) _sendMameButton("release_button", buttonName);
     }
     _kbHeldButtons.clear();
-    if (_trackballRaf) {
-      cancelAnimationFrame(_trackballRaf);
-      _trackballRaf = 0;
+    if (_trackballTimer) {
+      window.clearInterval(_trackballTimer);
+      _trackballTimer = 0;
     }
     _updateKbHeldDisplay();
   }
 
   function _scheduleTrackballPump() {
-    if (_trackballRaf) return;
+    if (_trackballTimer) return;
     const pump = () => {
-      _trackballRaf = 0;
       if (_kbHeldMove.size === 0) return;
       let dx = 0;
       let dy = 0;
@@ -240,9 +427,10 @@
         }
       }
       _sendTrackballDelta(dx, dy);
-      _trackballRaf = window.requestAnimationFrame(pump);
     };
-    _trackballRaf = window.requestAnimationFrame(pump);
+    // Start movement immediately, then keep a steady cadence while held.
+    pump();
+    _trackballTimer = window.setInterval(pump, 16);
   }
 
   function initKeyboardControls() {
@@ -276,8 +464,10 @@
 
       const moveDelta = KEY_TRACKBALL_CODE_MAP[ev.code];
       if (moveDelta) {
-        if (_kbHeldMove.has(ev.code)) return;
         ev.preventDefault();
+        ev.stopPropagation();
+        if (_kbHeldMove.has(ev.code)) return;
+        _captureMameInput();
         _kbHeldMove.add(ev.code);
         _scheduleTrackballPump();
         _updateKbHeldDisplay();
@@ -288,8 +478,14 @@
       if (buttonName) {
         ev.preventDefault();
         ev.stopPropagation();
+        if (_kbHeldButtons.has(ev.code)) return;
         _kbHeldButtons.add(ev.code);
         _sendMameButton("press_button", buttonName);
+        if (KEY_PULSE_BUTTONS.has(buttonName)) {
+          window.setTimeout(() => {
+            _sendMameButton("release_button", buttonName);
+          }, 50);
+        }
         _updateKbHeldDisplay();
       }
     }, true);
@@ -302,9 +498,9 @@
       if (moveDelta && _kbHeldMove.has(ev.code)) {
         _kbHeldMove.delete(ev.code);
         _updateKbHeldDisplay();
-        if (_kbHeldMove.size === 0 && _trackballRaf) {
-          cancelAnimationFrame(_trackballRaf);
-          _trackballRaf = 0;
+        if (_kbHeldMove.size === 0 && _trackballTimer) {
+          window.clearInterval(_trackballTimer);
+          _trackballTimer = 0;
         }
         return;
       }
@@ -312,13 +508,20 @@
       const buttonName = KEY_BUTTON_MAP[ev.code];
       if (buttonName && _kbHeldButtons.has(ev.code)) {
         _kbHeldButtons.delete(ev.code);
-        _sendMameButton("release_button", buttonName);
+        if (!KEY_PULSE_BUTTONS.has(buttonName)) {
+          _sendMameButton("release_button", buttonName);
+        }
         _updateKbHeldDisplay();
       }
     }, true);
 
     window.addEventListener("blur", () => {
       _releaseMameInput();
+    });
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) {
+        _releaseMameInput();
+      }
     });
   }
 
@@ -336,6 +539,7 @@
 
     els.mameVideoCol.addEventListener("pointerdown", (ev) => {
       if (els.mamePane?.hidden) return;
+      void fetch("/api/mame/xcenter", { method: "POST" }).catch(() => {});
       dragging = true;
       activePointerId = ev.pointerId;
       lastX = ev.clientX;
@@ -352,8 +556,8 @@
       if (activePointerId !== null && ev.pointerId !== activePointerId) return;
       const rawDx = Number.isFinite(ev.movementX) ? ev.movementX : (ev.clientX - lastX);
       const rawDy = Number.isFinite(ev.movementY) ? ev.movementY : (ev.clientY - lastY);
-      const dx = Math.round(rawDx);
-      const dy = Math.round(rawDy);
+      const dx = Math.round(rawDx * MOUSE_TRACKBALL_GAIN * MOUSE_TRACKBALL_INVERT_X);
+      const dy = Math.round(rawDy * MOUSE_TRACKBALL_GAIN * MOUSE_TRACKBALL_INVERT_Y);
       lastX = ev.clientX;
       lastY = ev.clientY;
       if (dx !== 0 || dy !== 0) {
@@ -511,6 +715,7 @@
     els.popoverTitle.textContent = fault_device;
     els.popoverMeta.textContent = `${c.dataset.refdes}.${c.dataset.pin}`;
     els.popoverMode.value = String(faults[fault_device] ?? 0);
+    _customSelectSync.get(els.popoverMode)?.();
 
     // Position next to the SVG circle.
     const rect = c.getBoundingClientRect();
@@ -522,6 +727,7 @@
   function closePopover() {
     popoverFault = null;
     els.popover.hidden = true;
+    _closeCustomPicker(_openCustomPicker);
   }
 
   els.popoverMode?.addEventListener("change", async (e) => {
@@ -742,7 +948,12 @@
           console.error("peripheral fault update failed", err);
         }
       });
-      wrap.appendChild(sel);
+      const picker = createCustomSelect(sel);
+      if (picker?.wrapper) {
+        wrap.appendChild(picker.wrapper);
+      } else {
+        wrap.appendChild(sel);
+      }
       card.appendChild(wrap);
     }
 
@@ -947,6 +1158,8 @@
   }
 
   function _closeDipDialog() {
+    _dipRequestSeq += 1;
+    _dipLoading = false;
     if (_dipFetchAbort) {
       _dipFetchAbort.abort();
       _dipFetchAbort = null;
@@ -969,8 +1182,14 @@
     const controller = new AbortController();
     _dipFetchAbort = controller;
     const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+    const timeoutPromise = new Promise((_, reject) => {
+      window.setTimeout(() => reject(new Error("request timed out")), timeoutMs + 100);
+    });
     try {
-      const res = await fetch("/api/mame/dip_switches", { signal: controller.signal });
+      const res = await Promise.race([
+        fetch("/api/mame/dip_switches", { signal: controller.signal }),
+        timeoutPromise,
+      ]);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return await res.json();
     } catch (e) {
@@ -1010,10 +1229,14 @@
 
   els.mameDipBtn?.addEventListener("click", async () => {
     if (!els.dipDialog || !els.dipDialogBody) return;
+    if (_dipLoading && els.dipDialog.hasAttribute("open")) return;
+    const reqSeq = ++_dipRequestSeq;
+    _dipLoading = true;
     _openDipDialog();
     els.dipDialogBody.innerHTML = '<p class="dip-loading">Loading…</p>';
     try {
       const data = await _fetchDipSwitchesWithTimeout();
+      if (reqSeq !== _dipRequestSeq || !els.dipDialog.hasAttribute("open")) return;
       const switches = (data && data.dip_switches) || [];
       if (!switches.length) {
         els.dipDialogBody.innerHTML = '<p class="dip-unavail">No DIP switches available (MAME may be offline or no named settings found).</p>';
@@ -1037,6 +1260,7 @@
         sel.addEventListener("change", async () => {
           const previous = String(sw.value);
           sel.disabled = true;
+          _customSelectSync.get(sel)?.();
           try {
             await _setDipSwitchWithTimeout({
               port: sw.port,
@@ -1047,17 +1271,29 @@
           } catch (e) {
             console.warn("DIP set failed:", e);
             sel.value = previous;
+            _customSelectSync.get(sel)?.();
           } finally {
             sel.disabled = false;
+            _customSelectSync.get(sel)?.();
           }
         });
         row.appendChild(label);
-        row.appendChild(sel);
+        const picker = createCustomSelect(sel);
+        if (picker?.wrapper) {
+          row.appendChild(picker.wrapper);
+        } else {
+          row.appendChild(sel);
+        }
         frag.appendChild(row);
       }
       els.dipDialogBody.replaceChildren(frag);
     } catch (e) {
+      if (reqSeq !== _dipRequestSeq || !els.dipDialog.hasAttribute("open")) return;
       els.dipDialogBody.innerHTML = `<p class="dip-unavail">Failed to load DIP switches: ${e.message}</p>`;
+    } finally {
+      if (reqSeq === _dipRequestSeq) {
+        _dipLoading = false;
+      }
     }
   });
 
@@ -1075,6 +1311,8 @@
     if (e.target === els.dipDialog) _closeDipDialog();
   });
   els.dipDialog?.addEventListener("close", () => {
+    _dipRequestSeq += 1;
+    _dipLoading = false;
     if (_dipFetchAbort) {
       _dipFetchAbort.abort();
       _dipFetchAbort = null;
@@ -1319,14 +1557,26 @@ void main() {
 
     // Apply effect approximations.
     if (effect === "crt_vertical_collapse") {
+      const src = ctx.getImageData(0, 0, w, h);
+      const tmp = document.createElement("canvas");
+      tmp.width = w;
+      tmp.height = h;
+      const tctx = tmp.getContext("2d");
+      if (tctx) tctx.putImageData(src, 0, 0);
       ctx.globalAlpha = 0.9;
-      ctx.drawImage(canvas, 0, Math.floor(h * 0.48), w, 4, 0, Math.floor(h * 0.44), w, 16);
+      ctx.drawImage(tmp, 0, Math.floor(h * 0.48), w, 4, 0, Math.floor(h * 0.44), w, 16);
       ctx.globalAlpha = 1;
       ctx.fillStyle = "rgba(255,255,255,0.15)";
       ctx.fillRect(0, Math.floor(h * 0.49), w, 2);
     } else if (effect === "crt_horizontal_collapse") {
+      const src = ctx.getImageData(0, 0, w, h);
+      const tmp = document.createElement("canvas");
+      tmp.width = w;
+      tmp.height = h;
+      const tctx = tmp.getContext("2d");
+      if (tctx) tctx.putImageData(src, 0, 0);
       ctx.globalAlpha = 0.9;
-      ctx.drawImage(canvas, Math.floor(w * 0.48), 0, 4, h, Math.floor(w * 0.44), 0, 16, h);
+      ctx.drawImage(tmp, Math.floor(w * 0.48), 0, 4, h, Math.floor(w * 0.44), 0, 16, h);
       ctx.globalAlpha = 1;
       ctx.fillStyle = "rgba(255,255,255,0.15)";
       ctx.fillRect(Math.floor(w * 0.49), 0, 2, h);
@@ -1485,6 +1735,90 @@ void main() {
   let scenarios = [];
   let activeScenarioId = null;
 
+  function _closeScenarioPicker() {
+    if (!els.scenarioPicker) return;
+    els.scenarioPicker.classList.remove("open");
+    els.scenarioPickerBtn?.setAttribute("aria-expanded", "false");
+  }
+
+  function _setScenarioPickerLabel() {
+    if (!els.scenarioPickerBtn) return;
+    const s = getSelectedScenario();
+    els.scenarioPickerBtn.textContent = s
+      ? (`${"★".repeat(s.difficulty || 1)}  ${s.title}`)
+      : "— choose a scenario —";
+  }
+
+  function _renderScenarioPickerItems() {
+    if (!els.scenarioPickerMenu) return;
+    els.scenarioPickerMenu.innerHTML = "";
+
+    const emptyBtn = document.createElement("button");
+    emptyBtn.type = "button";
+    emptyBtn.className = "scenario-picker-item";
+    emptyBtn.dataset.value = "";
+    emptyBtn.textContent = "— choose a scenario —";
+    els.scenarioPickerMenu.appendChild(emptyBtn);
+
+    for (const s of scenarios) {
+      const item = document.createElement("button");
+      item.type = "button";
+      item.className = "scenario-picker-item";
+      item.dataset.value = s.id;
+      item.textContent = `${"★".repeat(s.difficulty || 1)}  ${s.title}`;
+      els.scenarioPickerMenu.appendChild(item);
+    }
+  }
+
+  function _syncScenarioPickerSelection() {
+    if (!els.scenarioPickerMenu) return;
+    const value = els.scenarioSelect?.value || "";
+    for (const item of els.scenarioPickerMenu.querySelectorAll(".scenario-picker-item")) {
+      item.classList.toggle("selected", item.dataset.value === value);
+    }
+    _setScenarioPickerLabel();
+  }
+
+  function initScenarioPicker() {
+    if (!els.scenarioPicker || !els.scenarioPickerBtn || !els.scenarioPickerMenu || !els.scenarioSelect) return;
+
+    els.scenarioPickerBtn.addEventListener("click", (ev) => {
+      ev.preventDefault();
+      if (els.scenarioPickerBtn.disabled) return;
+      const nextOpen = !els.scenarioPicker.classList.contains("open");
+      els.scenarioPicker.classList.toggle("open", nextOpen);
+      els.scenarioPickerBtn.setAttribute("aria-expanded", nextOpen ? "true" : "false");
+      if (nextOpen) {
+        _syncScenarioPickerSelection();
+      }
+    });
+
+    els.scenarioPickerMenu.addEventListener("click", (ev) => {
+      const target = ev.target;
+      if (!(target instanceof HTMLElement)) return;
+      const item = target.closest(".scenario-picker-item");
+      if (!item) return;
+      const value = item.dataset.value || "";
+      els.scenarioSelect.value = value;
+      els.scenarioSelect.dispatchEvent(new Event("change", { bubbles: true }));
+      _syncScenarioPickerSelection();
+      _closeScenarioPicker();
+    });
+
+    document.addEventListener("pointerdown", (ev) => {
+      const target = ev.target;
+      if (!target || !(target instanceof Node)) return;
+      if (els.scenarioPicker.contains(target)) return;
+      _closeScenarioPicker();
+    }, true);
+
+    document.addEventListener("keydown", (ev) => {
+      if (ev.key === "Escape") {
+        _closeScenarioPicker();
+      }
+    }, true);
+  }
+
   async function loadScenarios() {
     try {
       const data = await fetchJSON("/api/scenarios");
@@ -1498,6 +1832,8 @@ void main() {
         opt.textContent = `${stars}  ${s.title}`;
         els.scenarioSelect.appendChild(opt);
       }
+      _renderScenarioPickerItems();
+      _syncScenarioPickerSelection();
     } catch (err) {
       console.error("scenarios load failed", err);
     }
@@ -1534,21 +1870,23 @@ void main() {
   if (els.scenarioSelect) {
     els.scenarioSelect.addEventListener("change", () => {
       const s = getSelectedScenario();
+      _syncScenarioPickerSelection();
       renderScenarioInfo(s);
-      els.scenarioApply.disabled = !s;
-      els.scenarioClear.disabled = !s;
+      if (!_scenarioBusy) {
+        els.scenarioApply.disabled = !s;
+        els.scenarioClear.disabled = !s;
+      }
     });
   }
 
   if (els.scenarioApply) {
     els.scenarioApply.addEventListener("click", async () => {
       const s = getSelectedScenario();
-      if (!s) return;
-      els.scenarioApply.disabled = true;
-      els.scenarioClear.disabled = true;
+      if (!s || _scenarioBusy) return;
+      _setScenarioBusy(true);
       els.scenarioApply.textContent = "Applying…";
       try {
-        const result = await postJSON(`/api/scenarios/${encodeURIComponent(s.id)}/apply`, {});
+        const result = await postJSONWithTimeout(`/api/scenarios/${encodeURIComponent(s.id)}/apply`, {}, 12000);
         activeScenarioId = s.id;
         renderScenarioBanner(s);
         refreshMameVideoStream();
@@ -1571,9 +1909,7 @@ void main() {
         console.error("apply scenario failed", err);
         setStatus("scenario apply failed: " + err.message, true);
       } finally {
-        els.scenarioApply.disabled = false;
-        els.scenarioApply.textContent = "Apply";
-        els.scenarioClear.disabled = !getSelectedScenario();
+        _setScenarioBusy(false);
       }
     });
   }
@@ -1581,12 +1917,11 @@ void main() {
   if (els.scenarioClear) {
     els.scenarioClear.addEventListener("click", async () => {
       const s = getSelectedScenario();
-      if (!s) return;
-      els.scenarioClear.disabled = true;
-      els.scenarioApply.disabled = true;
+      if (!s || _scenarioBusy) return;
+      _setScenarioBusy(true);
       els.scenarioClear.textContent = "Clearing…";
       try {
-        await postJSON(`/api/scenarios/${encodeURIComponent(s.id)}/clear`, {});
+        await postJSONWithTimeout(`/api/scenarios/${encodeURIComponent(s.id)}/clear`, {}, 12000);
         activeScenarioId = null;
         renderScenarioBanner(null);
         refreshMameVideoStream();
@@ -1595,9 +1930,7 @@ void main() {
         console.error("clear scenario failed", err);
         setStatus("scenario clear failed: " + err.message, true);
       } finally {
-        els.scenarioClear.disabled = false;
-        els.scenarioClear.textContent = "Clear";
-        els.scenarioApply.disabled = !getSelectedScenario();
+        _setScenarioBusy(false);
       }
     });
   }
@@ -1832,10 +2165,6 @@ void main() {
       ? `<span class="probe-fault-badge ${badgeClass[currentMode]}">${modeNames[currentMode]}</span>`
       : "";
 
-    const modeOptions = modeNames.map((name, i) =>
-      `<option value="${i}" ${currentMode === i ? "selected" : ""}>${i} — ${name}</option>`
-    ).join("");
-
     row.innerHTML =
       `<div class="probe-pin-head">` +
         `<span class="probe-pin-name">.${_esc(pin)}</span>` +
@@ -1845,14 +2174,30 @@ void main() {
       `</div>` +
       (description ? `<div class="probe-pin-desc">${_esc(description)}</div>` : "") +
       `<div class="probe-pin-controls">` +
-        `<select class="probe-mode-select" aria-label="Fault mode for ${_esc(fault_device)}">` +
-          modeOptions +
-        `</select>` +
         `<button class="probe-apply-btn" type="button">Apply</button>` +
         `<button class="probe-clear-btn" type="button">Clear</button>` +
       `</div>`;
 
-    const select = row.querySelector(".probe-mode-select");
+    const controls = row.querySelector(".probe-pin-controls");
+    const select = document.createElement("select");
+    select.className = "probe-mode-select";
+    select.setAttribute("aria-label", `Fault mode for ${fault_device}`);
+    for (let i = 0; i < modeNames.length; i++) {
+      const opt = document.createElement("option");
+      opt.value = String(i);
+      opt.textContent = `${i} — ${modeNames[i]}`;
+      if (currentMode === i) opt.selected = true;
+      select.appendChild(opt);
+    }
+    const picker = createCustomSelect(select);
+    if (controls) {
+      if (picker?.wrapper) {
+        controls.prepend(picker.wrapper);
+      } else {
+        controls.prepend(select);
+      }
+    }
+
     const applyBtn = row.querySelector(".probe-apply-btn");
     const clearBtn = row.querySelector(".probe-clear-btn");
 
@@ -1976,6 +2321,10 @@ void main() {
       els.dipDialogBody.innerHTML = "";
     }
 
+    initScenarioPicker();
+    if (els.popoverMode) {
+      createCustomSelect(els.popoverMode);
+    }
     setStatus("fetching manifest…");
     try {
       manifest = await fetchJSON("/api/manifest");

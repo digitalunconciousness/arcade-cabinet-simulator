@@ -329,7 +329,7 @@ section h2 { margin: 0 0 0.75rem 0; font-size: 0.9rem; font-weight: 600; color: 
 .periph-stat-value.warn { color: var(--warn-2); }
 .periph-stat-value.bad  { color: var(--warn); }
 .periph-card label { color: var(--fg-dim); font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; }
-.periph-card select, .periph-card input[type=range] {
+.periph-card input[type=range] {
   background: var(--bg-2); color: var(--fg);
   border: 1px solid var(--grid); border-radius: 3px;
   padding: 3px; font: inherit; font-size: 11px;
@@ -455,16 +455,7 @@ section h2 { margin: 0 0 0.75rem 0; font-size: 0.9rem; font-weight: 600; color: 
 .popover-title { font-weight: 600; color: var(--accent); }
 .popover-meta  { color: var(--fg-dim); font-size: 11px; }
 .popover label { color: var(--fg-dim); font-size: 10px; text-transform: uppercase; }
-.popover select {
-  background: var(--bg-3);
-  border: 1px solid var(--grid);
-  color: var(--fg);
-  border-radius: 3px;
-  padding: 4px;
-  font-family: inherit;
-  font-size: 12px;
-}
-.popover button {
+#popover-close {
   background: var(--bg-3);
   color: var(--fg);
   border: 1px solid var(--grid);
@@ -555,9 +546,109 @@ section h2 { margin: 0 0 0.75rem 0; font-size: 0.9rem; font-weight: 600; color: 
   white-space: nowrap;
   font-weight: 600;
 }
-#scenario-select {
+.scenario-select-hidden,
+.custom-select-native-hidden {
+  position: absolute !important;
+  left: -9999px !important;
+  width: 1px !important;
+  height: 1px !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.custom-select-picker {
+  position: relative;
+  min-width: 0;
+  width: 100%;
+}
+
+.custom-select-btn {
+  width: 100%;
+  background: var(--bg-3);
+  color: var(--fg);
+  border: 1px solid var(--grid);
+  border-radius: 4px;
+  padding: 6px 8px;
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.custom-select-btn::after {
+  content: "▼";
+  float: right;
+  color: var(--fg-dim);
+  font-size: 10px;
+  margin-top: 2px;
+}
+
+.custom-select-picker.disabled .custom-select-btn,
+.custom-select-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.custom-select-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 260px;
+  overflow-y: auto;
+  background: var(--bg-2);
+  border: 1px solid var(--grid);
+  border-radius: 4px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  z-index: 1100;
+  display: none;
+}
+
+.custom-select-picker.open .custom-select-menu {
+  display: block;
+}
+
+.custom-select-item {
+  width: 100%;
+  background: transparent;
+  color: var(--fg);
+  border: none;
+  text-align: left;
+  padding: 7px 10px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.custom-select-item:hover,
+.custom-select-item.selected {
+  background: color-mix(in srgb, var(--accent) 30%, var(--bg-2));
+}
+
+.custom-select-item:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.popover .custom-select-btn {
+  font-size: 12px;
+  padding: 4px 6px;
+}
+
+.periph-card .custom-select-btn,
+.dip-row .custom-select-btn {
+  font-size: 11px;
+  padding: 4px 6px;
+}
+
+.scenario-picker {
+  position: relative;
   flex: 1 1 260px;
   min-width: 0;
+}
+
+.scenario-picker-btn {
+  width: 100%;
   background: var(--bg-3);
   color: var(--fg);
   border: 1px solid var(--grid);
@@ -565,6 +656,57 @@ section h2 { margin: 0 0 0.75rem 0; font-size: 0.9rem; font-weight: 600; color: 
   padding: 6px 8px;
   font: inherit;
   font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.scenario-picker-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.scenario-picker-btn::after {
+  content: "▼";
+  float: right;
+  color: var(--fg-dim);
+  font-size: 10px;
+  margin-top: 3px;
+}
+
+.scenario-picker-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 300px;
+  overflow-y: auto;
+  background: var(--bg-2);
+  border: 1px solid var(--grid);
+  border-radius: 4px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  z-index: 1100;
+  display: none;
+}
+
+.scenario-picker.open .scenario-picker-menu {
+  display: block;
+}
+
+.scenario-picker-item {
+  width: 100%;
+  background: transparent;
+  color: var(--fg);
+  border: none;
+  text-align: left;
+  padding: 7px 10px;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.scenario-picker-item:hover,
+.scenario-picker-item.selected {
+  background: color-mix(in srgb, var(--accent) 30%, var(--bg-2));
 }
 #scenario-apply, #scenario-clear {
   background: var(--bg-3);
@@ -946,17 +1088,15 @@ section h2 { margin: 0 0 0.75rem 0; font-size: 0.9rem; font-weight: 600; color: 
   gap: 6px;
   flex-wrap: wrap;
 }
-.probe-mode-select {
-  background: var(--bg-3);
-  color: var(--fg);
-  border: 1px solid var(--grid);
-  border-radius: 3px;
-  padding: 3px 6px;
-  font: inherit;
-  font-size: 10px;
-  cursor: pointer;
+.probe-pin-controls .custom-select-picker {
+  min-width: 150px;
+  flex: 1 1 170px;
 }
-.probe-mode-select:focus { outline: none; border-color: var(--accent); }
+
+.probe-pin-controls .custom-select-btn {
+  font-size: 10px;
+  padding: 3px 6px;
+}
 .probe-apply-btn, .probe-clear-btn {
   background: var(--bg-3);
   color: var(--fg);
@@ -1037,11 +1177,6 @@ section h2 { margin: 0 0 0.75rem 0; font-size: 0.9rem; font-weight: 600; color: 
 }
 .dip-name { font-size: 12px; color: var(--fg); }
 .dip-port { font-size: 10px; color: var(--fg-dim); font-family: ui-monospace,monospace; }
-.dip-select {
-  background: var(--bg-3); color: var(--fg); border: 1px solid var(--grid);
-  border-radius: 4px; padding: 3px 6px; font-size: 12px; cursor: pointer;
-}
-.dip-select:focus { outline: 1px solid var(--accent); }
 .dip-unavail { color: var(--fg-dim); font-size: 12px; text-align: center; padding: 16px 0; }
 /* Stuck-bytes fault indicator: red when non-zero */
 #mame-stuck-count.active { color: var(--warn); }

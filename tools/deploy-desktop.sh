@@ -59,7 +59,8 @@ cat > "$DESKTOP_DIR/arcade-fault-simulator.desktop" <<EOF
 [Desktop Entry]
 Name=Arcade Fault Simulator
 Comment=Arcade cabinet fault simulation and diagnosis
-Exec=env WEBKIT_DISABLE_COMPOSITING_MODE=1 LIBGL_ALWAYS_SOFTWARE=1 WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS=1 $APP_DST
+Exec=$APP_DST
+TryExec=$APP_DST
 Path=$ROOT_DIR
 Icon=applications-games
 Terminal=false

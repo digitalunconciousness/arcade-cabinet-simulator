@@ -2,8 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Arcade Cabinet Fault Simulator — Sync Generator</title>
-  <link rel="stylesheet" href="/static/style.css?v=3">
+  <link rel="stylesheet" href="/static/style.css?v=4">
 </head>
 <body>
   <header>
@@ -16,7 +17,13 @@
   <section class="scenario-bar" id="scenario-bar">
     <div class="scenario-bar-row">
       <label for="scenario-select" class="scenario-label">Fault scenario</label>
-      <select id="scenario-select">
+      <div class="scenario-picker" id="scenario-picker">
+        <button id="scenario-picker-btn" class="scenario-picker-btn" type="button" aria-haspopup="listbox" aria-expanded="false">
+          — choose a scenario —
+        </button>
+        <div id="scenario-picker-menu" class="scenario-picker-menu" role="listbox" aria-label="Fault scenario options"></div>
+      </div>
+      <select id="scenario-select" class="scenario-select-hidden" aria-hidden="true" tabindex="-1">
         <option value="">— choose a scenario —</option>
       </select>
       <button id="scenario-apply"  type="button" disabled>Apply</button>
@@ -82,6 +89,7 @@
           <div class="mame-kb-grid">
             <div class="mame-kb-row"><kbd>W A S D</kbd><span>Move trackball</span></div>
             <div class="mame-kb-row"><kbd>Mouse</kbd><span>Click and drag on video to move</span></div>
+            <div class="mame-kb-row"><kbd>L/R Ctrl</kbd><span>Fire</span></div>
             <div class="mame-kb-row"><kbd>Space</kbd><span>Fire</span></div>
             <div class="mame-kb-row"><kbd>1</kbd><span>1P Start</span></div>
             <div class="mame-kb-row"><kbd>2</kbd><span>2P Start</span></div>
@@ -318,6 +326,6 @@
     <div id="dip-dialog-body" class="dip-dialog-body"></div>
   </dialog>
 
-  <script src="/static/app.js?v=3"></script>
+  <script src="/static/app.js?v=4"></script>
 </body>
 </html>

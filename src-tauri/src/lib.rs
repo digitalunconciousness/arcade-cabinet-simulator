@@ -164,6 +164,11 @@ pub fn run() {
             mame_trackball_delta,
         ])
         .setup(|app| {
+            if let Some(w) = app.get_webview_window("main") {
+                let _ = w.set_always_on_top(false);
+                let _ = w.set_always_on_bottom(false);
+                let _ = w.set_visible_on_all_workspaces(false);
+            }
             // In release builds, navigate to the splash screen immediately
             // so the window shows something while the sidecar starts.
             // In dev mode, about:blank stays until the sidecar port is ready.
@@ -360,6 +365,13 @@ async fn start_xvfb(app: &AppHandle, display: &str) -> Result<CommandChild, Stri
     let _ = std::process::Command::new("pkill")
         .args(["-f", &format!("Xvfb {}", display)])
         .output();
+
+    // Stale X11 lock/socket files can survive hard kills and block Xvfb.
+    // Clean them for our fixed display :99 before spawn.
+    if display == ":99" {
+        let _ = std::fs::remove_file("/tmp/.X99-lock");
+        let _ = std::fs::remove_file("/tmp/.X11-unix/X99");
+    }
     
     tokio::time::sleep(Duration::from_millis(200)).await;
 
@@ -666,6 +678,10 @@ fn kill_stale_processes() {
     let _ = std::process::Command::new("pkill")
         .args(["-f", "Xvfb :99"])
         .output();
+
+    // Also remove stale X11 artifacts left after abnormal termination.
+    let _ = std::fs::remove_file("/tmp/.X99-lock");
+    let _ = std::fs::remove_file("/tmp/.X11-unix/X99");
 }
 
 /// Append a timestamped line to /tmp/arcade-sim-boot.log AND stderr.

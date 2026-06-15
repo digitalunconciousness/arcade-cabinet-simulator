@@ -1141,9 +1141,17 @@ def create_app(
         if effect == "no_hv":
             filters.append("eq=brightness=-1:saturation=0")
         elif effect == "vertical_collapse":
-            filters.append("scale=iw:ih*0.08:flags=neighbor,pad=iw:ih:(ow-iw)/2:(oh-ih)/2:black")
+            filters.append(
+                "crop=iw:ih*0.05:0:ih*0.475,"
+                "scale=iw:ih*0.08:flags=neighbor,"
+                "pad=iw:ih:(ow-iw)/2:(oh-ih)/2:black"
+            )
         elif effect == "horizontal_collapse":
-            filters.append("scale=iw*0.08:ih:flags=neighbor,pad=iw:ih:(ow-iw)/2:(oh-ih)/2:black")
+            filters.append(
+                "crop=iw*0.05:ih:iw*0.475:0,"
+                "scale=iw*0.08:ih:flags=neighbor,"
+                "pad=iw:ih:(ow-iw)/2:(oh-ih)/2:black"
+            )
         elif effect == "dim_picture":
             filters.append("eq=brightness=-0.35")
         elif effect == "weak_focus":
