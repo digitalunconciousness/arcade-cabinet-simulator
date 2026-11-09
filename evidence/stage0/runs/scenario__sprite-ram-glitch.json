@@ -1,0 +1,562 @@
+{
+ "record": {
+  "id": "scenario/sprite-ram-glitch",
+  "kind": "scenario",
+  "source": "tests/scenarios/05-sprite-ram-glitch.json",
+  "evidence": "runs/scenario__sprite-ram-glitch.json",
+  "verdict": "changes-game-output",
+  "diff": {
+   "frames_compared": 600,
+   "frames_differing": 1,
+   "first_differing_frame": 850,
+   "frames_missing": 0,
+   "ram_bytes_differing": {
+    "660": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 3,
+     "sprite_ram_07c0_07ff": 0
+    },
+    "900": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 3,
+     "sprite_ram_07c0_07ff": 0
+    },
+    "1200": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 3,
+     "sprite_ram_07c0_07ff": 0
+    }
+   },
+   "consequence_ram_bytes": {
+    "660": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    },
+    "900": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    },
+    "1200": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    }
+   },
+   "injected_cells": [
+    1344,
+    1376,
+    1408
+   ],
+   "resets_baseline": [],
+   "resets_run": []
+  },
+  "plugin_commands": [
+   {
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 1344,
+     "cpu": "maincpu",
+     "value": 255
+    },
+    "reply": {
+     "addr": 1344,
+     "ok": true,
+     "action": "armed",
+     "cpu": "maincpu",
+     "value": 255
+    },
+    "error": null
+   },
+   {
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 1376,
+     "cpu": "maincpu",
+     "value": 255
+    },
+    "reply": {
+     "addr": 1376,
+     "ok": true,
+     "action": "armed",
+     "cpu": "maincpu",
+     "value": 255
+    },
+    "error": null
+   },
+   {
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 1408,
+     "cpu": "maincpu",
+     "value": 170
+    },
+    "reply": {
+     "addr": 1408,
+     "ok": true,
+     "action": "armed",
+     "cpu": "maincpu",
+     "value": 170
+    },
+    "error": null
+   }
+  ],
+  "http_apply": {
+   "method": "POST",
+   "path": "/api/scenarios/sprite-ram-glitch/apply",
+   "body": {},
+   "status": 200,
+   "response": {
+    "applied": true,
+    "faults": [
+     {
+      "addr": "0x0540",
+      "ok": true,
+      "type": "mame_stuck_byte"
+     },
+     {
+      "addr": "0x0560",
+      "ok": true,
+      "type": "mame_stuck_byte"
+     },
+     {
+      "addr": "0x0580",
+      "ok": true,
+      "type": "mame_stuck_byte"
+     }
+    ],
+    "id": "sprite-ram-glitch",
+    "mame": {
+     "available": true,
+     "resume_attempted": true,
+     "resumed": true,
+     "was_paused": true
+    }
+   }
+  }
+ },
+ "worker": {
+  "entry": {
+   "id": "scenario/sprite-ram-glitch",
+   "kind": "scenario",
+   "source": "tests/scenarios/05-sprite-ram-glitch.json",
+   "title": "Tile corruption mid-screen",
+   "apply": {
+    "method": "POST",
+    "path": "/api/scenarios/sprite-ram-glitch/apply",
+    "body": {}
+   }
+  },
+  "apply": {
+   "method": "POST",
+   "path": "/api/scenarios/sprite-ram-glitch/apply",
+   "body": {},
+   "status": 200,
+   "response": {
+    "applied": true,
+    "faults": [
+     {
+      "addr": "0x0540",
+      "ok": true,
+      "type": "mame_stuck_byte"
+     },
+     {
+      "addr": "0x0560",
+      "ok": true,
+      "type": "mame_stuck_byte"
+     },
+     {
+      "addr": "0x0580",
+      "ok": true,
+      "type": "mame_stuck_byte"
+     }
+    ],
+    "id": "sprite-ram-glitch",
+    "mame": {
+     "available": true,
+     "resume_attempted": true,
+     "resumed": true,
+     "was_paused": true
+    }
+   }
+  },
+  "schematic_summary": null,
+  "http": [
+   {
+    "method": "POST",
+    "path": "/api/scenarios/sprite-ram-glitch/apply",
+    "body": {},
+    "status": 200,
+    "response": {
+     "applied": true,
+     "faults": [
+      {
+       "addr": "0x0540",
+       "ok": true,
+       "type": "mame_stuck_byte"
+      },
+      {
+       "addr": "0x0560",
+       "ok": true,
+       "type": "mame_stuck_byte"
+      },
+      {
+       "addr": "0x0580",
+       "ok": true,
+       "type": "mame_stuck_byte"
+      }
+     ],
+     "id": "sprite-ram-glitch",
+     "mame": {
+      "available": true,
+      "resume_attempted": true,
+      "resumed": true,
+      "was_paused": true
+     }
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/trackball/motion",
+    "body": {
+     "dx": 8,
+     "dy": 0
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "mame": {
+      "error": "unknown command: trackball_delta",
+      "ok": false
+     },
+     "packet": {
+      "dx": 8,
+      "dy": 0,
+      "fault": "NORMAL",
+      "quad_dx": 8,
+      "quad_dy": 0
+     }
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/trackball/motion",
+    "body": {
+     "dx": 8,
+     "dy": 0
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "mame": {
+      "error": "unknown command: trackball_delta",
+      "ok": false
+     },
+     "packet": {
+      "dx": 8,
+      "dy": 0,
+      "fault": "NORMAL",
+      "quad_dx": 8,
+      "quad_dy": 0
+     }
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/trackball/motion",
+    "body": {
+     "dx": 0,
+     "dy": 8
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "mame": {
+      "error": "unknown command: trackball_delta",
+      "ok": false
+     },
+     "packet": {
+      "dx": 0,
+      "dy": 8,
+      "fault": "NORMAL",
+      "quad_dx": 0,
+      "quad_dy": 8
+     }
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/mame/press_button",
+    "body": {
+     "name": "P1 Button 1"
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "error": "unknown command: press_button",
+     "ok": false
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/mame/release_button",
+    "body": {
+     "name": "P1 Button 1"
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "error": "unknown command: release_button",
+     "ok": false
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/peripherals/coin",
+    "body": {},
+    "status": 200,
+    "response": {
+     "credits": 1,
+     "fault": "NORMAL",
+     "id": "COIN1",
+     "last_event": "accepted",
+     "supported_faults": [
+      "stuck_switch",
+      "dirty_contact",
+      "jammed_mech",
+      "miscalibrated"
+     ],
+     "supported_params": {},
+     "type": "coin_mech"
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/mame/press_button",
+    "body": {
+     "name": "Coin 1"
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "error": "unknown command: press_button",
+     "ok": false
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/mame/release_button",
+    "body": {
+     "name": "Coin 1"
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "error": "unknown command: release_button",
+     "ok": false
+    }
+   }
+  ],
+  "plugin": [
+   {
+    "t": 2741.537,
+    "cmd": {
+     "cmd": "get_state"
+    },
+    "reply": {
+     "version": "0.287",
+     "frame": 610,
+     "ok": true,
+     "paused": true,
+     "rom": "centiped3",
+     "app": "mame"
+    }
+   },
+   {
+    "t": 2741.591,
+    "cmd": {
+     "cmd": "resume"
+    },
+    "held_by_audit": true
+   },
+   {
+    "t": 2741.591,
+    "cmd": {
+     "cmd": "clear_stuck"
+    },
+    "reply": {
+     "cleared": 0,
+     "ok": true
+    }
+   },
+   {
+    "t": 2741.625,
+    "cmd": {
+     "cmd": "set_crt_fault",
+     "effect": "normal",
+     "brightness": 1.0
+    },
+    "reply": {
+     "error": "unknown command: set_crt_fault",
+     "ok": false
+    }
+   },
+   {
+    "t": 2741.659,
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 1344,
+     "cpu": "maincpu",
+     "value": 255
+    },
+    "reply": {
+     "addr": 1344,
+     "ok": true,
+     "action": "armed",
+     "cpu": "maincpu",
+     "value": 255
+    }
+   },
+   {
+    "t": 2741.692,
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 1376,
+     "cpu": "maincpu",
+     "value": 255
+    },
+    "reply": {
+     "addr": 1376,
+     "ok": true,
+     "action": "armed",
+     "cpu": "maincpu",
+     "value": 255
+    }
+   },
+   {
+    "t": 2741.725,
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 1408,
+     "cpu": "maincpu",
+     "value": 170
+    },
+    "reply": {
+     "addr": 1408,
+     "ok": true,
+     "action": "armed",
+     "cpu": "maincpu",
+     "value": 170
+    }
+   },
+   {
+    "t": 2741.76,
+    "cmd": {
+     "cmd": "trackball_delta",
+     "dx": 8,
+     "dy": 0
+    },
+    "reply": {
+     "error": "unknown command: trackball_delta",
+     "ok": false
+    }
+   },
+   {
+    "t": 2741.793,
+    "cmd": {
+     "cmd": "trackball_delta",
+     "dx": 8,
+     "dy": 0
+    },
+    "reply": {
+     "error": "unknown command: trackball_delta",
+     "ok": false
+    }
+   },
+   {
+    "t": 2741.827,
+    "cmd": {
+     "cmd": "trackball_delta",
+     "dx": 0,
+     "dy": 8
+    },
+    "reply": {
+     "error": "unknown command: trackball_delta",
+     "ok": false
+    }
+   },
+   {
+    "t": 2741.86,
+    "cmd": {
+     "cmd": "press_button",
+     "name": "P1 Button 1"
+    },
+    "reply": {
+     "error": "unknown command: press_button",
+     "ok": false
+    }
+   },
+   {
+    "t": 2741.893,
+    "cmd": {
+     "cmd": "release_button",
+     "name": "P1 Button 1"
+    },
+    "reply": {
+     "error": "unknown command: release_button",
+     "ok": false
+    }
+   },
+   {
+    "t": 2741.927,
+    "cmd": {
+     "cmd": "press_button",
+     "name": "Coin 1"
+    },
+    "reply": {
+     "error": "unknown command: press_button",
+     "ok": false
+    }
+   },
+   {
+    "t": 2741.96,
+    "cmd": {
+     "cmd": "release_button",
+     "name": "Coin 1"
+    },
+    "reply": {
+     "error": "unknown command: release_button",
+     "ok": false
+    }
+   },
+   {
+    "t": 2742.531,
+    "cmd": {
+     "cmd": "set_crt_fault",
+     "effect": "normal",
+     "brightness": 1.0
+    },
+    "reply": {
+     "error": "unknown command: set_crt_fault",
+     "ok": false
+    }
+   },
+   {
+    "t": 2743.494,
+    "cmd": {
+     "cmd": "resume"
+    },
+    "reply": {
+     "version": "0.287",
+     "frame": 667,
+     "ok": true,
+     "paused": false,
+     "rom": "centiped3",
+     "app": "mame"
+    }
+   }
+  ],
+  "resume_error": null
+ }
+}

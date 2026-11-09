@@ -1,0 +1,390 @@
+{
+ "record": {
+  "id": "peripheral/COIN1/stuck_switch",
+  "kind": "peripheral",
+  "source": "tools/peripherals (coin_mech)",
+  "evidence": "runs/peripheral__COIN1__stuck_switch.json",
+  "verdict": "not-sent",
+  "diff": {
+   "frames_compared": 600,
+   "frames_differing": 0,
+   "first_differing_frame": null,
+   "frames_missing": 0,
+   "ram_bytes_differing": {
+    "660": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    },
+    "900": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    },
+    "1200": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    }
+   },
+   "consequence_ram_bytes": {
+    "660": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    },
+    "900": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    },
+    "1200": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    }
+   },
+   "injected_cells": [],
+   "resets_baseline": [],
+   "resets_run": []
+  },
+  "plugin_commands": [],
+  "http_apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "COIN1",
+    "fault": "stuck_switch"
+   },
+   "status": 200,
+   "response": {
+    "credits": 1,
+    "fault": "stuck_switch",
+    "id": "COIN1",
+    "last_event": "accepted",
+    "supported_faults": [
+     "stuck_switch",
+     "dirty_contact",
+     "jammed_mech",
+     "miscalibrated"
+    ],
+    "supported_params": {},
+    "type": "coin_mech"
+   }
+  }
+ },
+ "worker": {
+  "entry": {
+   "id": "peripheral/COIN1/stuck_switch",
+   "kind": "peripheral",
+   "source": "tools/peripherals (coin_mech)",
+   "apply": {
+    "method": "POST",
+    "path": "/api/peripherals/fault",
+    "body": {
+     "id": "COIN1",
+     "fault": "stuck_switch"
+    }
+   }
+  },
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "COIN1",
+    "fault": "stuck_switch"
+   },
+   "status": 200,
+   "response": {
+    "credits": 1,
+    "fault": "stuck_switch",
+    "id": "COIN1",
+    "last_event": "accepted",
+    "supported_faults": [
+     "stuck_switch",
+     "dirty_contact",
+     "jammed_mech",
+     "miscalibrated"
+    ],
+    "supported_params": {},
+    "type": "coin_mech"
+   }
+  },
+  "schematic_summary": null,
+  "http": [
+   {
+    "method": "POST",
+    "path": "/api/peripherals/fault",
+    "body": {
+     "id": "COIN1",
+     "fault": "stuck_switch"
+    },
+    "status": 200,
+    "response": {
+     "credits": 1,
+     "fault": "stuck_switch",
+     "id": "COIN1",
+     "last_event": "accepted",
+     "supported_faults": [
+      "stuck_switch",
+      "dirty_contact",
+      "jammed_mech",
+      "miscalibrated"
+     ],
+     "supported_params": {},
+     "type": "coin_mech"
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/trackball/motion",
+    "body": {
+     "dx": 8,
+     "dy": 0
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "mame": {
+      "error": "unknown command: trackball_delta",
+      "ok": false
+     },
+     "packet": {
+      "dx": 8,
+      "dy": 0,
+      "fault": "NORMAL",
+      "quad_dx": 8,
+      "quad_dy": 0
+     }
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/trackball/motion",
+    "body": {
+     "dx": 8,
+     "dy": 0
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "mame": {
+      "error": "unknown command: trackball_delta",
+      "ok": false
+     },
+     "packet": {
+      "dx": 8,
+      "dy": 0,
+      "fault": "NORMAL",
+      "quad_dx": 8,
+      "quad_dy": 0
+     }
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/trackball/motion",
+    "body": {
+     "dx": 0,
+     "dy": 8
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "mame": {
+      "error": "unknown command: trackball_delta",
+      "ok": false
+     },
+     "packet": {
+      "dx": 0,
+      "dy": 8,
+      "fault": "NORMAL",
+      "quad_dx": 0,
+      "quad_dy": 8
+     }
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/mame/press_button",
+    "body": {
+     "name": "P1 Button 1"
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "error": "unknown command: press_button",
+     "ok": false
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/mame/release_button",
+    "body": {
+     "name": "P1 Button 1"
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "error": "unknown command: release_button",
+     "ok": false
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/peripherals/coin",
+    "body": {},
+    "status": 200,
+    "response": {
+     "credits": 3,
+     "fault": "stuck_switch",
+     "id": "COIN1",
+     "last_event": "accepted",
+     "supported_faults": [
+      "stuck_switch",
+      "dirty_contact",
+      "jammed_mech",
+      "miscalibrated"
+     ],
+     "supported_params": {},
+     "type": "coin_mech"
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/mame/press_button",
+    "body": {
+     "name": "Coin 1"
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "error": "unknown command: press_button",
+     "ok": false
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/mame/release_button",
+    "body": {
+     "name": "Coin 1"
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "error": "unknown command: release_button",
+     "ok": false
+    }
+   }
+  ],
+  "plugin": [
+   {
+    "t": 2068.029,
+    "cmd": {
+     "cmd": "trackball_delta",
+     "dx": 8,
+     "dy": 0
+    },
+    "reply": {
+     "error": "unknown command: trackball_delta",
+     "ok": false
+    }
+   },
+   {
+    "t": 2068.076,
+    "cmd": {
+     "cmd": "trackball_delta",
+     "dx": 8,
+     "dy": 0
+    },
+    "reply": {
+     "error": "unknown command: trackball_delta",
+     "ok": false
+    }
+   },
+   {
+    "t": 2068.11,
+    "cmd": {
+     "cmd": "trackball_delta",
+     "dx": 0,
+     "dy": 8
+    },
+    "reply": {
+     "error": "unknown command: trackball_delta",
+     "ok": false
+    }
+   },
+   {
+    "t": 2068.143,
+    "cmd": {
+     "cmd": "press_button",
+     "name": "P1 Button 1"
+    },
+    "reply": {
+     "error": "unknown command: press_button",
+     "ok": false
+    }
+   },
+   {
+    "t": 2068.177,
+    "cmd": {
+     "cmd": "release_button",
+     "name": "P1 Button 1"
+    },
+    "reply": {
+     "error": "unknown command: release_button",
+     "ok": false
+    }
+   },
+   {
+    "t": 2068.211,
+    "cmd": {
+     "cmd": "press_button",
+     "name": "Coin 1"
+    },
+    "reply": {
+     "error": "unknown command: press_button",
+     "ok": false
+    }
+   },
+   {
+    "t": 2068.244,
+    "cmd": {
+     "cmd": "release_button",
+     "name": "Coin 1"
+    },
+    "reply": {
+     "error": "unknown command: release_button",
+     "ok": false
+    }
+   },
+   {
+    "t": 2069.023,
+    "cmd": {
+     "cmd": "set_crt_fault",
+     "effect": "normal",
+     "brightness": 1.0
+    },
+    "reply": {
+     "error": "unknown command: set_crt_fault",
+     "ok": false
+    }
+   },
+   {
+    "t": 2069.777,
+    "cmd": {
+     "cmd": "resume"
+    },
+    "reply": {
+     "app": "mame",
+     "rom": "centiped3",
+     "ok": true,
+     "frame": 660,
+     "version": "0.287",
+     "paused": false
+    }
+   }
+  ],
+  "resume_error": null
+ }
+}

@@ -1,0 +1,496 @@
+{
+ "record": {
+  "id": "peripheral/CRT1/sync_lock_failure",
+  "kind": "peripheral",
+  "source": "tools/peripherals (crt)",
+  "evidence": "runs/peripheral__CRT1__sync_lock_failure.json",
+  "verdict": "rejected-by-plugin",
+  "diff": {
+   "frames_compared": 600,
+   "frames_differing": 0,
+   "first_differing_frame": null,
+   "frames_missing": 0,
+   "ram_bytes_differing": {
+    "660": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    },
+    "900": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    },
+    "1200": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    }
+   },
+   "consequence_ram_bytes": {
+    "660": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    },
+    "900": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    },
+    "1200": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    }
+   },
+   "injected_cells": [],
+   "resets_baseline": [],
+   "resets_run": []
+  },
+  "plugin_commands": [
+   {
+    "cmd": {
+     "cmd": "set_crt_fault",
+     "effect": "sync_lock_failure",
+     "brightness": 1.0
+    },
+    "reply": {
+     "error": "unknown command: set_crt_fault",
+     "ok": false
+    },
+    "error": null
+   },
+   {
+    "cmd": {
+     "cmd": "set_crt_fault",
+     "effect": "sync_lock_failure",
+     "brightness": 1.0
+    },
+    "reply": {
+     "error": "unknown command: set_crt_fault",
+     "ok": false
+    },
+    "error": null
+   }
+  ],
+  "http_apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "CRT1",
+    "fault": "sync_lock_failure"
+   },
+   "status": 200,
+   "response": {
+    "brightness": 1.0,
+    "drift_phase": 0.04,
+    "effective_brightness": 1.0,
+    "fault": "sync_lock_failure",
+    "focus": 1.0,
+    "id": "CRT1",
+    "mame_available": true,
+    "shader_effect": "crt_sync_lock_failure",
+    "supported_faults": [
+     "no_hv",
+     "vertical_collapse",
+     "horizontal_collapse",
+     "weak_focus",
+     "brightness_drift",
+     "bad_deflection_caps",
+     "dim_picture",
+     "sync_lock_failure",
+     "ringing_ghosting"
+    ],
+    "supported_params": {
+     "brightness": {
+      "default": 1.0,
+      "max": 1.8,
+      "min": 0.2,
+      "step": 0.01
+     },
+     "focus": {
+      "default": 1.0,
+      "max": 1.0,
+      "min": 0.0,
+      "step": 0.01
+     }
+    },
+    "sync_ok": false,
+    "type": "crt"
+   }
+  }
+ },
+ "worker": {
+  "entry": {
+   "id": "peripheral/CRT1/sync_lock_failure",
+   "kind": "peripheral",
+   "source": "tools/peripherals (crt)",
+   "apply": {
+    "method": "POST",
+    "path": "/api/peripherals/fault",
+    "body": {
+     "id": "CRT1",
+     "fault": "sync_lock_failure"
+    }
+   }
+  },
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "CRT1",
+    "fault": "sync_lock_failure"
+   },
+   "status": 200,
+   "response": {
+    "brightness": 1.0,
+    "drift_phase": 0.04,
+    "effective_brightness": 1.0,
+    "fault": "sync_lock_failure",
+    "focus": 1.0,
+    "id": "CRT1",
+    "mame_available": true,
+    "shader_effect": "crt_sync_lock_failure",
+    "supported_faults": [
+     "no_hv",
+     "vertical_collapse",
+     "horizontal_collapse",
+     "weak_focus",
+     "brightness_drift",
+     "bad_deflection_caps",
+     "dim_picture",
+     "sync_lock_failure",
+     "ringing_ghosting"
+    ],
+    "supported_params": {
+     "brightness": {
+      "default": 1.0,
+      "max": 1.8,
+      "min": 0.2,
+      "step": 0.01
+     },
+     "focus": {
+      "default": 1.0,
+      "max": 1.0,
+      "min": 0.0,
+      "step": 0.01
+     }
+    },
+    "sync_ok": false,
+    "type": "crt"
+   }
+  },
+  "schematic_summary": null,
+  "http": [
+   {
+    "method": "POST",
+    "path": "/api/peripherals/fault",
+    "body": {
+     "id": "CRT1",
+     "fault": "sync_lock_failure"
+    },
+    "status": 200,
+    "response": {
+     "brightness": 1.0,
+     "drift_phase": 0.04,
+     "effective_brightness": 1.0,
+     "fault": "sync_lock_failure",
+     "focus": 1.0,
+     "id": "CRT1",
+     "mame_available": true,
+     "shader_effect": "crt_sync_lock_failure",
+     "supported_faults": [
+      "no_hv",
+      "vertical_collapse",
+      "horizontal_collapse",
+      "weak_focus",
+      "brightness_drift",
+      "bad_deflection_caps",
+      "dim_picture",
+      "sync_lock_failure",
+      "ringing_ghosting"
+     ],
+     "supported_params": {
+      "brightness": {
+       "default": 1.0,
+       "max": 1.8,
+       "min": 0.2,
+       "step": 0.01
+      },
+      "focus": {
+       "default": 1.0,
+       "max": 1.0,
+       "min": 0.0,
+       "step": 0.01
+      }
+     },
+     "sync_ok": false,
+     "type": "crt"
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/trackball/motion",
+    "body": {
+     "dx": 8,
+     "dy": 0
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "mame": {
+      "error": "unknown command: trackball_delta",
+      "ok": false
+     },
+     "packet": {
+      "dx": 8,
+      "dy": 0,
+      "fault": "NORMAL",
+      "quad_dx": 8,
+      "quad_dy": 0
+     }
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/trackball/motion",
+    "body": {
+     "dx": 8,
+     "dy": 0
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "mame": {
+      "error": "unknown command: trackball_delta",
+      "ok": false
+     },
+     "packet": {
+      "dx": 8,
+      "dy": 0,
+      "fault": "NORMAL",
+      "quad_dx": 8,
+      "quad_dy": 0
+     }
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/trackball/motion",
+    "body": {
+     "dx": 0,
+     "dy": 8
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "mame": {
+      "error": "unknown command: trackball_delta",
+      "ok": false
+     },
+     "packet": {
+      "dx": 0,
+      "dy": 8,
+      "fault": "NORMAL",
+      "quad_dx": 0,
+      "quad_dy": 8
+     }
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/mame/press_button",
+    "body": {
+     "name": "P1 Button 1"
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "error": "unknown command: press_button",
+     "ok": false
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/mame/release_button",
+    "body": {
+     "name": "P1 Button 1"
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "error": "unknown command: release_button",
+     "ok": false
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/peripherals/coin",
+    "body": {},
+    "status": 200,
+    "response": {
+     "credits": 1,
+     "fault": "NORMAL",
+     "id": "COIN1",
+     "last_event": "accepted",
+     "supported_faults": [
+      "stuck_switch",
+      "dirty_contact",
+      "jammed_mech",
+      "miscalibrated"
+     ],
+     "supported_params": {},
+     "type": "coin_mech"
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/mame/press_button",
+    "body": {
+     "name": "Coin 1"
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "error": "unknown command: press_button",
+     "ok": false
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/mame/release_button",
+    "body": {
+     "name": "Coin 1"
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "error": "unknown command: release_button",
+     "ok": false
+    }
+   }
+  ],
+  "plugin": [
+   {
+    "t": 2145.918,
+    "cmd": {
+     "cmd": "set_crt_fault",
+     "effect": "sync_lock_failure",
+     "brightness": 1.0
+    },
+    "reply": {
+     "error": "unknown command: set_crt_fault",
+     "ok": false
+    }
+   },
+   {
+    "t": 2145.983,
+    "cmd": {
+     "cmd": "trackball_delta",
+     "dx": 8,
+     "dy": 0
+    },
+    "reply": {
+     "error": "unknown command: trackball_delta",
+     "ok": false
+    }
+   },
+   {
+    "t": 2146.016,
+    "cmd": {
+     "cmd": "trackball_delta",
+     "dx": 8,
+     "dy": 0
+    },
+    "reply": {
+     "error": "unknown command: trackball_delta",
+     "ok": false
+    }
+   },
+   {
+    "t": 2146.049,
+    "cmd": {
+     "cmd": "trackball_delta",
+     "dx": 0,
+     "dy": 8
+    },
+    "reply": {
+     "error": "unknown command: trackball_delta",
+     "ok": false
+    }
+   },
+   {
+    "t": 2146.083,
+    "cmd": {
+     "cmd": "press_button",
+     "name": "P1 Button 1"
+    },
+    "reply": {
+     "error": "unknown command: press_button",
+     "ok": false
+    }
+   },
+   {
+    "t": 2146.116,
+    "cmd": {
+     "cmd": "release_button",
+     "name": "P1 Button 1"
+    },
+    "reply": {
+     "error": "unknown command: release_button",
+     "ok": false
+    }
+   },
+   {
+    "t": 2146.15,
+    "cmd": {
+     "cmd": "press_button",
+     "name": "Coin 1"
+    },
+    "reply": {
+     "error": "unknown command: press_button",
+     "ok": false
+    }
+   },
+   {
+    "t": 2146.183,
+    "cmd": {
+     "cmd": "release_button",
+     "name": "Coin 1"
+    },
+    "reply": {
+     "error": "unknown command: release_button",
+     "ok": false
+    }
+   },
+   {
+    "t": 2146.911,
+    "cmd": {
+     "cmd": "set_crt_fault",
+     "effect": "sync_lock_failure",
+     "brightness": 1.0
+    },
+    "reply": {
+     "error": "unknown command: set_crt_fault",
+     "ok": false
+    }
+   },
+   {
+    "t": 2147.717,
+    "cmd": {
+     "cmd": "resume"
+    },
+    "reply": {
+     "ok": true,
+     "rom": "centiped3",
+     "frame": 662,
+     "paused": false,
+     "app": "mame",
+     "version": "0.287"
+    }
+   }
+  ],
+  "resume_error": null
+ }
+}

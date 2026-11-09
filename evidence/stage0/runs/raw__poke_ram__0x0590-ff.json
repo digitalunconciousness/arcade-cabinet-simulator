@@ -1,0 +1,402 @@
+{
+ "record": {
+  "id": "raw/poke_ram/0x0590-ff",
+  "kind": "raw",
+  "source": "/api/mame/poke_ram",
+  "evidence": "runs/raw__poke_ram__0x0590-ff.json",
+  "verdict": "no-change",
+  "diff": {
+   "frames_compared": 600,
+   "frames_differing": 0,
+   "first_differing_frame": null,
+   "frames_missing": 0,
+   "ram_bytes_differing": {
+    "660": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    },
+    "900": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    },
+    "1200": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    }
+   },
+   "consequence_ram_bytes": {
+    "660": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    },
+    "900": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    },
+    "1200": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    }
+   },
+   "injected_cells": [
+    1424
+   ],
+   "resets_baseline": [],
+   "resets_run": []
+  },
+  "plugin_commands": [
+   {
+    "cmd": {
+     "cmd": "poke_ram",
+     "addr": 1424,
+     "value": 255,
+     "cpu": "maincpu"
+    },
+    "reply": {
+     "ok": true,
+     "value": 255,
+     "addr": 1424,
+     "cpu": "maincpu"
+    },
+    "error": null
+   }
+  ],
+  "http_apply": {
+   "method": "POST",
+   "path": "/api/mame/poke_ram",
+   "body": {
+    "addr": "0x0590",
+    "value": 255
+   },
+   "status": 200,
+   "response": {
+    "addr": 1424,
+    "available": true,
+    "cpu": "maincpu",
+    "ok": true,
+    "value": 255
+   }
+  }
+ },
+ "worker": {
+  "entry": {
+   "id": "raw/poke_ram/0x0590-ff",
+   "kind": "raw",
+   "source": "/api/mame/poke_ram",
+   "apply": {
+    "method": "POST",
+    "path": "/api/mame/poke_ram",
+    "body": {
+     "addr": "0x0590",
+     "value": 255
+    }
+   }
+  },
+  "apply": {
+   "method": "POST",
+   "path": "/api/mame/poke_ram",
+   "body": {
+    "addr": "0x0590",
+    "value": 255
+   },
+   "status": 200,
+   "response": {
+    "addr": 1424,
+    "available": true,
+    "cpu": "maincpu",
+    "ok": true,
+    "value": 255
+   }
+  },
+  "schematic_summary": null,
+  "http": [
+   {
+    "method": "POST",
+    "path": "/api/mame/poke_ram",
+    "body": {
+     "addr": "0x0590",
+     "value": 255
+    },
+    "status": 200,
+    "response": {
+     "addr": 1424,
+     "available": true,
+     "cpu": "maincpu",
+     "ok": true,
+     "value": 255
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/trackball/motion",
+    "body": {
+     "dx": 8,
+     "dy": 0
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "mame": {
+      "error": "unknown command: trackball_delta",
+      "ok": false
+     },
+     "packet": {
+      "dx": 8,
+      "dy": 0,
+      "fault": "NORMAL",
+      "quad_dx": 8,
+      "quad_dy": 0
+     }
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/trackball/motion",
+    "body": {
+     "dx": 8,
+     "dy": 0
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "mame": {
+      "error": "unknown command: trackball_delta",
+      "ok": false
+     },
+     "packet": {
+      "dx": 8,
+      "dy": 0,
+      "fault": "NORMAL",
+      "quad_dx": 8,
+      "quad_dy": 0
+     }
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/trackball/motion",
+    "body": {
+     "dx": 0,
+     "dy": 8
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "mame": {
+      "error": "unknown command: trackball_delta",
+      "ok": false
+     },
+     "packet": {
+      "dx": 0,
+      "dy": 8,
+      "fault": "NORMAL",
+      "quad_dx": 0,
+      "quad_dy": 8
+     }
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/mame/press_button",
+    "body": {
+     "name": "P1 Button 1"
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "error": "unknown command: press_button",
+     "ok": false
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/mame/release_button",
+    "body": {
+     "name": "P1 Button 1"
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "error": "unknown command: release_button",
+     "ok": false
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/peripherals/coin",
+    "body": {},
+    "status": 200,
+    "response": {
+     "credits": 1,
+     "fault": "NORMAL",
+     "id": "COIN1",
+     "last_event": "accepted",
+     "supported_faults": [
+      "stuck_switch",
+      "dirty_contact",
+      "jammed_mech",
+      "miscalibrated"
+     ],
+     "supported_params": {},
+     "type": "coin_mech"
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/mame/press_button",
+    "body": {
+     "name": "Coin 1"
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "error": "unknown command: press_button",
+     "ok": false
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/mame/release_button",
+    "body": {
+     "name": "Coin 1"
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "error": "unknown command: release_button",
+     "ok": false
+    }
+   }
+  ],
+  "plugin": [
+   {
+    "t": 2786.633,
+    "cmd": {
+     "cmd": "poke_ram",
+     "addr": 1424,
+     "value": 255,
+     "cpu": "maincpu"
+    },
+    "reply": {
+     "ok": true,
+     "value": 255,
+     "addr": 1424,
+     "cpu": "maincpu"
+    }
+   },
+   {
+    "t": 2786.697,
+    "cmd": {
+     "cmd": "trackball_delta",
+     "dx": 8,
+     "dy": 0
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: trackball_delta"
+    }
+   },
+   {
+    "t": 2786.73,
+    "cmd": {
+     "cmd": "trackball_delta",
+     "dx": 8,
+     "dy": 0
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: trackball_delta"
+    }
+   },
+   {
+    "t": 2786.764,
+    "cmd": {
+     "cmd": "trackball_delta",
+     "dx": 0,
+     "dy": 8
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: trackball_delta"
+    }
+   },
+   {
+    "t": 2786.797,
+    "cmd": {
+     "cmd": "press_button",
+     "name": "P1 Button 1"
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: press_button"
+    }
+   },
+   {
+    "t": 2786.831,
+    "cmd": {
+     "cmd": "release_button",
+     "name": "P1 Button 1"
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: release_button"
+    }
+   },
+   {
+    "t": 2786.865,
+    "cmd": {
+     "cmd": "press_button",
+     "name": "Coin 1"
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: press_button"
+    }
+   },
+   {
+    "t": 2786.898,
+    "cmd": {
+     "cmd": "release_button",
+     "name": "Coin 1"
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: release_button"
+    }
+   },
+   {
+    "t": 2787.626,
+    "cmd": {
+     "cmd": "set_crt_fault",
+     "effect": "normal",
+     "brightness": 1.0
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: set_crt_fault"
+    }
+   },
+   {
+    "t": 2788.431,
+    "cmd": {
+     "cmd": "resume"
+    },
+    "reply": {
+     "ok": true,
+     "rom": "centiped3",
+     "frame": 662,
+     "version": "0.287",
+     "app": "mame",
+     "paused": false
+    }
+   }
+  ],
+  "resume_error": null
+ }
+}

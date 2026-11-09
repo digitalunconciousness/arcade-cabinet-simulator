@@ -1,0 +1,600 @@
+[
+ {
+  "id": "netlist/sync_generator/normal",
+  "faults": {},
+  "status": 200,
+  "error": null,
+  "waveforms": {
+   "HSYNC_n": {
+    "samples": 98,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 47,
+    "rising_edges": 48
+   },
+   "VSYNC_n": {
+    "samples": 9,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 3,
+    "rising_edges": 3
+   }
+  }
+ },
+ {
+  "id": "netlist/sync_generator/CLK.Q/stuck_hi",
+  "faults": {
+   "FB_CLK_Q": 1
+  },
+  "status": 200,
+  "error": null,
+  "waveforms": {
+   "HSYNC_n": {
+    "samples": 4,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 0,
+    "rising_edges": 1
+   },
+   "VSYNC_n": {
+    "samples": 4,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 0,
+    "rising_edges": 1
+   }
+  }
+ },
+ {
+  "id": "netlist/sync_generator/CLK.Q/stuck_lo",
+  "faults": {
+   "FB_CLK_Q": 2
+  },
+  "status": 200,
+  "error": null,
+  "waveforms": {
+   "HSYNC_n": {
+    "samples": 4,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 0,
+    "rising_edges": 1
+   },
+   "VSYNC_n": {
+    "samples": 4,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 0,
+    "rising_edges": 1
+   }
+  }
+ },
+ {
+  "id": "netlist/sync_generator/CLK.Q/open",
+  "faults": {
+   "FB_CLK_Q": 3
+  },
+  "status": 200,
+  "error": null,
+  "waveforms": {
+   "HSYNC_n": {
+    "samples": 4,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 0,
+    "rising_edges": 1
+   },
+   "VSYNC_n": {
+    "samples": 4,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 0,
+    "rising_edges": 1
+   }
+  }
+ },
+ {
+  "id": "netlist/sync_generator/H_LO.RC/stuck_hi",
+  "faults": {
+   "FB_H_LO_RC": 1
+  },
+  "status": 200,
+  "error": null,
+  "waveforms": {
+   "HSYNC_n": {
+    "samples": 1516,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 756,
+    "rising_edges": 757
+   },
+   "VSYNC_n": {
+    "samples": 98,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 47,
+    "rising_edges": 48
+   }
+  }
+ },
+ {
+  "id": "netlist/sync_generator/H_LO.RC/stuck_lo",
+  "faults": {
+   "FB_H_LO_RC": 2
+  },
+  "status": 200,
+  "error": null,
+  "waveforms": {
+   "HSYNC_n": {
+    "samples": 4,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 0,
+    "rising_edges": 1
+   },
+   "VSYNC_n": {
+    "samples": 4,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 0,
+    "rising_edges": 1
+   }
+  }
+ },
+ {
+  "id": "netlist/sync_generator/H_LO.RC/open",
+  "faults": {
+   "FB_H_LO_RC": 3
+  },
+  "status": 200,
+  "error": null,
+  "waveforms": {
+   "HSYNC_n": {
+    "samples": 4,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 0,
+    "rising_edges": 1
+   },
+   "VSYNC_n": {
+    "samples": 4,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 0,
+    "rising_edges": 1
+   }
+  }
+ },
+ {
+  "id": "netlist/sync_generator/H_HI.RC/stuck_hi",
+  "faults": {
+   "FB_H_HI_RC": 1
+  },
+  "status": 200,
+  "error": null,
+  "waveforms": {
+   "HSYNC_n": {
+    "samples": 98,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 47,
+    "rising_edges": 48
+   },
+   "VSYNC_n": {
+    "samples": 98,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 47,
+    "rising_edges": 48
+   }
+  }
+ },
+ {
+  "id": "netlist/sync_generator/H_HI.RC/stuck_lo",
+  "faults": {
+   "FB_H_HI_RC": 2
+  },
+  "status": 200,
+  "error": null,
+  "waveforms": {
+   "HSYNC_n": {
+    "samples": 98,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 47,
+    "rising_edges": 48
+   },
+   "VSYNC_n": {
+    "samples": 4,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 0,
+    "rising_edges": 1
+   }
+  }
+ },
+ {
+  "id": "netlist/sync_generator/H_HI.RC/open",
+  "faults": {
+   "FB_H_HI_RC": 3
+  },
+  "status": 200,
+  "error": null,
+  "waveforms": {
+   "HSYNC_n": {
+    "samples": 98,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 47,
+    "rising_edges": 48
+   },
+   "VSYNC_n": {
+    "samples": 4,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 0,
+    "rising_edges": 1
+   }
+  }
+ },
+ {
+  "id": "netlist/sync_generator/H_HI.QD/stuck_hi",
+  "faults": {
+   "FB_H_HI_QD": 1
+  },
+  "status": 200,
+  "error": null,
+  "waveforms": {
+   "HSYNC_n": {
+    "samples": 192,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 94,
+    "rising_edges": 95
+   },
+   "VSYNC_n": {
+    "samples": 9,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 3,
+    "rising_edges": 3
+   }
+  }
+ },
+ {
+  "id": "netlist/sync_generator/H_HI.QD/stuck_lo",
+  "faults": {
+   "FB_H_HI_QD": 2
+  },
+  "status": 200,
+  "error": null,
+  "waveforms": {
+   "HSYNC_n": {
+    "samples": 4,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 0,
+    "rising_edges": 1
+   },
+   "VSYNC_n": {
+    "samples": 9,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 3,
+    "rising_edges": 3
+   }
+  }
+ },
+ {
+  "id": "netlist/sync_generator/H_HI.QD/open",
+  "faults": {
+   "FB_H_HI_QD": 3
+  },
+  "status": 200,
+  "error": null,
+  "waveforms": {
+   "HSYNC_n": {
+    "samples": 4,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 0,
+    "rising_edges": 1
+   },
+   "VSYNC_n": {
+    "samples": 9,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 3,
+    "rising_edges": 3
+   }
+  }
+ },
+ {
+  "id": "netlist/sync_generator/H_HI.QC/stuck_hi",
+  "faults": {
+   "FB_H_HI_QC": 1
+  },
+  "status": 200,
+  "error": null,
+  "waveforms": {
+   "HSYNC_n": {
+    "samples": 192,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 94,
+    "rising_edges": 95
+   },
+   "VSYNC_n": {
+    "samples": 9,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 3,
+    "rising_edges": 3
+   }
+  }
+ },
+ {
+  "id": "netlist/sync_generator/H_HI.QC/stuck_lo",
+  "faults": {
+   "FB_H_HI_QC": 2
+  },
+  "status": 200,
+  "error": null,
+  "waveforms": {
+   "HSYNC_n": {
+    "samples": 4,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 0,
+    "rising_edges": 1
+   },
+   "VSYNC_n": {
+    "samples": 9,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 3,
+    "rising_edges": 3
+   }
+  }
+ },
+ {
+  "id": "netlist/sync_generator/H_HI.QC/open",
+  "faults": {
+   "FB_H_HI_QC": 3
+  },
+  "status": 200,
+  "error": null,
+  "waveforms": {
+   "HSYNC_n": {
+    "samples": 4,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 0,
+    "rising_edges": 1
+   },
+   "VSYNC_n": {
+    "samples": 9,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 3,
+    "rising_edges": 3
+   }
+  }
+ },
+ {
+  "id": "netlist/sync_generator/H_HI.QB/stuck_hi",
+  "faults": {
+   "FB_H_HI_QB": 1
+  },
+  "status": 200,
+  "error": null,
+  "waveforms": {
+   "HSYNC_n": {
+    "samples": 98,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 47,
+    "rising_edges": 48
+   },
+   "VSYNC_n": {
+    "samples": 9,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 3,
+    "rising_edges": 3
+   }
+  }
+ },
+ {
+  "id": "netlist/sync_generator/H_HI.QB/stuck_lo",
+  "faults": {
+   "FB_H_HI_QB": 2
+  },
+  "status": 200,
+  "error": null,
+  "waveforms": {
+   "HSYNC_n": {
+    "samples": 4,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 0,
+    "rising_edges": 1
+   },
+   "VSYNC_n": {
+    "samples": 9,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 3,
+    "rising_edges": 3
+   }
+  }
+ },
+ {
+  "id": "netlist/sync_generator/H_HI.QB/open",
+  "faults": {
+   "FB_H_HI_QB": 3
+  },
+  "status": 200,
+  "error": null,
+  "waveforms": {
+   "HSYNC_n": {
+    "samples": 4,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 0,
+    "rising_edges": 1
+   },
+   "VSYNC_n": {
+    "samples": 9,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 3,
+    "rising_edges": 3
+   }
+  }
+ },
+ {
+  "id": "netlist/sync_generator/V_LO.QD/stuck_hi",
+  "faults": {
+   "FB_V_LO_QD": 1
+  },
+  "status": 200,
+  "error": null,
+  "waveforms": {
+   "HSYNC_n": {
+    "samples": 98,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 47,
+    "rising_edges": 48
+   },
+   "VSYNC_n": {
+    "samples": 15,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 6,
+    "rising_edges": 6
+   }
+  }
+ },
+ {
+  "id": "netlist/sync_generator/V_LO.QD/stuck_lo",
+  "faults": {
+   "FB_V_LO_QD": 2
+  },
+  "status": 200,
+  "error": null,
+  "waveforms": {
+   "HSYNC_n": {
+    "samples": 98,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 47,
+    "rising_edges": 48
+   },
+   "VSYNC_n": {
+    "samples": 4,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 0,
+    "rising_edges": 1
+   }
+  }
+ },
+ {
+  "id": "netlist/sync_generator/V_LO.QD/open",
+  "faults": {
+   "FB_V_LO_QD": 3
+  },
+  "status": 200,
+  "error": null,
+  "waveforms": {
+   "HSYNC_n": {
+    "samples": 98,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 47,
+    "rising_edges": 48
+   },
+   "VSYNC_n": {
+    "samples": 4,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 0,
+    "rising_edges": 1
+   }
+  }
+ },
+ {
+  "id": "netlist/sync_generator/V_LO.QC/stuck_hi",
+  "faults": {
+   "FB_V_LO_QC": 1
+  },
+  "status": 200,
+  "error": null,
+  "waveforms": {
+   "HSYNC_n": {
+    "samples": 98,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 47,
+    "rising_edges": 48
+   },
+   "VSYNC_n": {
+    "samples": 9,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 3,
+    "rising_edges": 3
+   }
+  }
+ },
+ {
+  "id": "netlist/sync_generator/V_LO.QC/stuck_lo",
+  "faults": {
+   "FB_V_LO_QC": 2
+  },
+  "status": 200,
+  "error": null,
+  "waveforms": {
+   "HSYNC_n": {
+    "samples": 98,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 47,
+    "rising_edges": 48
+   },
+   "VSYNC_n": {
+    "samples": 4,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 0,
+    "rising_edges": 1
+   }
+  }
+ },
+ {
+  "id": "netlist/sync_generator/V_LO.QC/open",
+  "faults": {
+   "FB_V_LO_QC": 3
+  },
+  "status": 200,
+  "error": null,
+  "waveforms": {
+   "HSYNC_n": {
+    "samples": 98,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 47,
+    "rising_edges": 48
+   },
+   "VSYNC_n": {
+    "samples": 4,
+    "min_v": 0.0,
+    "max_v": 3.999999,
+    "falling_edges": 0,
+    "rising_edges": 1
+   }
+  }
+ }
+]

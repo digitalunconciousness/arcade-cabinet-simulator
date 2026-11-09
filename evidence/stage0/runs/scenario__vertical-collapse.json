@@ -1,0 +1,471 @@
+{
+ "record": {
+  "id": "scenario/vertical-collapse",
+  "kind": "scenario",
+  "source": "tests/scenarios/02-vertical-collapse.json",
+  "evidence": "runs/scenario__vertical-collapse.json",
+  "verdict": "rejected-by-plugin",
+  "diff": {
+   "frames_compared": 600,
+   "frames_differing": 0,
+   "first_differing_frame": null,
+   "frames_missing": 0,
+   "ram_bytes_differing": {
+    "660": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    },
+    "900": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    },
+    "1200": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    }
+   },
+   "consequence_ram_bytes": {
+    "660": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    },
+    "900": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    },
+    "1200": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    }
+   },
+   "injected_cells": [],
+   "resets_baseline": [],
+   "resets_run": []
+  },
+  "plugin_commands": [
+   {
+    "cmd": {
+     "cmd": "set_crt_fault",
+     "effect": "vertical_collapse",
+     "brightness": 1.0
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: set_crt_fault"
+    },
+    "error": null
+   },
+   {
+    "cmd": {
+     "cmd": "set_crt_fault",
+     "effect": "vertical_collapse",
+     "brightness": 1.0
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: set_crt_fault"
+    },
+    "error": null
+   }
+  ],
+  "http_apply": {
+   "method": "POST",
+   "path": "/api/scenarios/vertical-collapse/apply",
+   "body": {},
+   "status": 200,
+   "response": {
+    "applied": true,
+    "faults": [
+     {
+      "mame_available": true,
+      "ok": true,
+      "target": "CRT1",
+      "type": "peripheral"
+     }
+    ],
+    "id": "vertical-collapse",
+    "mame": {
+     "available": true,
+     "resume_attempted": true,
+     "resumed": true,
+     "was_paused": true
+    }
+   }
+  }
+ },
+ "worker": {
+  "entry": {
+   "id": "scenario/vertical-collapse",
+   "kind": "scenario",
+   "source": "tests/scenarios/02-vertical-collapse.json",
+   "title": "Screen collapses to a horizontal bar",
+   "apply": {
+    "method": "POST",
+    "path": "/api/scenarios/vertical-collapse/apply",
+    "body": {}
+   }
+  },
+  "apply": {
+   "method": "POST",
+   "path": "/api/scenarios/vertical-collapse/apply",
+   "body": {},
+   "status": 200,
+   "response": {
+    "applied": true,
+    "faults": [
+     {
+      "mame_available": true,
+      "ok": true,
+      "target": "CRT1",
+      "type": "peripheral"
+     }
+    ],
+    "id": "vertical-collapse",
+    "mame": {
+     "available": true,
+     "resume_attempted": true,
+     "resumed": true,
+     "was_paused": true
+    }
+   }
+  },
+  "schematic_summary": null,
+  "http": [
+   {
+    "method": "POST",
+    "path": "/api/scenarios/vertical-collapse/apply",
+    "body": {},
+    "status": 200,
+    "response": {
+     "applied": true,
+     "faults": [
+      {
+       "mame_available": true,
+       "ok": true,
+       "target": "CRT1",
+       "type": "peripheral"
+      }
+     ],
+     "id": "vertical-collapse",
+     "mame": {
+      "available": true,
+      "resume_attempted": true,
+      "resumed": true,
+      "was_paused": true
+     }
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/trackball/motion",
+    "body": {
+     "dx": 8,
+     "dy": 0
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "mame": {
+      "error": "unknown command: trackball_delta",
+      "ok": false
+     },
+     "packet": {
+      "dx": 8,
+      "dy": 0,
+      "fault": "NORMAL",
+      "quad_dx": 8,
+      "quad_dy": 0
+     }
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/trackball/motion",
+    "body": {
+     "dx": 8,
+     "dy": 0
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "mame": {
+      "error": "unknown command: trackball_delta",
+      "ok": false
+     },
+     "packet": {
+      "dx": 8,
+      "dy": 0,
+      "fault": "NORMAL",
+      "quad_dx": 8,
+      "quad_dy": 0
+     }
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/trackball/motion",
+    "body": {
+     "dx": 0,
+     "dy": 8
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "mame": {
+      "error": "unknown command: trackball_delta",
+      "ok": false
+     },
+     "packet": {
+      "dx": 0,
+      "dy": 8,
+      "fault": "NORMAL",
+      "quad_dx": 0,
+      "quad_dy": 8
+     }
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/mame/press_button",
+    "body": {
+     "name": "P1 Button 1"
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "error": "unknown command: press_button",
+     "ok": false
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/mame/release_button",
+    "body": {
+     "name": "P1 Button 1"
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "error": "unknown command: release_button",
+     "ok": false
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/peripherals/coin",
+    "body": {},
+    "status": 200,
+    "response": {
+     "credits": 1,
+     "fault": "NORMAL",
+     "id": "COIN1",
+     "last_event": "accepted",
+     "supported_faults": [
+      "stuck_switch",
+      "dirty_contact",
+      "jammed_mech",
+      "miscalibrated"
+     ],
+     "supported_params": {},
+     "type": "coin_mech"
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/mame/press_button",
+    "body": {
+     "name": "Coin 1"
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "error": "unknown command: press_button",
+     "ok": false
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/mame/release_button",
+    "body": {
+     "name": "Coin 1"
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "error": "unknown command: release_button",
+     "ok": false
+    }
+   }
+  ],
+  "plugin": [
+   {
+    "t": 2726.404,
+    "cmd": {
+     "cmd": "get_state"
+    },
+    "reply": {
+     "rom": "centiped3",
+     "version": "0.287",
+     "ok": true,
+     "app": "mame",
+     "frame": 610,
+     "paused": true
+    }
+   },
+   {
+    "t": 2726.449,
+    "cmd": {
+     "cmd": "resume"
+    },
+    "held_by_audit": true
+   },
+   {
+    "t": 2726.449,
+    "cmd": {
+     "cmd": "clear_stuck"
+    },
+    "reply": {
+     "ok": true,
+     "cleared": 0
+    }
+   },
+   {
+    "t": 2726.482,
+    "cmd": {
+     "cmd": "set_crt_fault",
+     "effect": "normal",
+     "brightness": 1.0
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: set_crt_fault"
+    }
+   },
+   {
+    "t": 2726.516,
+    "cmd": {
+     "cmd": "set_crt_fault",
+     "effect": "vertical_collapse",
+     "brightness": 1.0
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: set_crt_fault"
+    }
+   },
+   {
+    "t": 2726.55,
+    "cmd": {
+     "cmd": "trackball_delta",
+     "dx": 8,
+     "dy": 0
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: trackball_delta"
+    }
+   },
+   {
+    "t": 2726.583,
+    "cmd": {
+     "cmd": "trackball_delta",
+     "dx": 8,
+     "dy": 0
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: trackball_delta"
+    }
+   },
+   {
+    "t": 2726.617,
+    "cmd": {
+     "cmd": "trackball_delta",
+     "dx": 0,
+     "dy": 8
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: trackball_delta"
+    }
+   },
+   {
+    "t": 2726.65,
+    "cmd": {
+     "cmd": "press_button",
+     "name": "P1 Button 1"
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: press_button"
+    }
+   },
+   {
+    "t": 2726.684,
+    "cmd": {
+     "cmd": "release_button",
+     "name": "P1 Button 1"
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: release_button"
+    }
+   },
+   {
+    "t": 2726.718,
+    "cmd": {
+     "cmd": "press_button",
+     "name": "Coin 1"
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: press_button"
+    }
+   },
+   {
+    "t": 2726.751,
+    "cmd": {
+     "cmd": "release_button",
+     "name": "Coin 1"
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: release_button"
+    }
+   },
+   {
+    "t": 2727.396,
+    "cmd": {
+     "cmd": "set_crt_fault",
+     "effect": "vertical_collapse",
+     "brightness": 1.0
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: set_crt_fault"
+    }
+   },
+   {
+    "t": 2728.284,
+    "cmd": {
+     "cmd": "resume"
+    },
+    "reply": {
+     "rom": "centiped3",
+     "version": "0.287",
+     "ok": true,
+     "app": "mame",
+     "frame": 665,
+     "paused": false
+    }
+   }
+  ],
+  "resume_error": null
+ }
+}

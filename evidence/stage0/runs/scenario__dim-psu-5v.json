@@ -1,0 +1,602 @@
+{
+ "record": {
+  "id": "scenario/dim-psu-5v",
+  "kind": "scenario",
+  "source": "tests/scenarios/01-dim-psu-5v.json",
+  "evidence": "runs/scenario__dim-psu-5v.json",
+  "verdict": "changes-game-output",
+  "diff": {
+   "frames_compared": 600,
+   "frames_differing": 599,
+   "first_differing_frame": 602,
+   "frames_missing": 0,
+   "ram_bytes_differing": {
+    "660": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 1,
+     "sprite_ram_07c0_07ff": 0
+    },
+    "900": {
+     "work_ram_0000_03ff": 1,
+     "playfield_0400_07bf": 1,
+     "sprite_ram_07c0_07ff": 1
+    },
+    "1200": {
+     "work_ram_0000_03ff": 10,
+     "playfield_0400_07bf": 2,
+     "sprite_ram_07c0_07ff": 5
+    }
+   },
+   "consequence_ram_bytes": {
+    "660": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    },
+    "900": {
+     "work_ram_0000_03ff": 1,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 1
+    },
+    "1200": {
+     "work_ram_0000_03ff": 10,
+     "playfield_0400_07bf": 1,
+     "sprite_ram_07c0_07ff": 5
+    }
+   },
+   "injected_cells": [
+    1792
+   ],
+   "resets_baseline": [],
+   "resets_run": []
+  },
+  "plugin_commands": [
+   {
+    "cmd": {
+     "cmd": "set_crt_fault",
+     "effect": "normal",
+     "brightness": 0.85
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: set_crt_fault"
+    },
+    "error": null
+   },
+   {
+    "cmd": {
+     "cmd": "set_crt_fault",
+     "effect": "dim_picture",
+     "brightness": 0.467
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: set_crt_fault"
+    },
+    "error": null
+   },
+   {
+    "cmd": {
+     "cmd": "trackball_delta",
+     "dx": 3,
+     "dy": 0
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: trackball_delta"
+    },
+    "error": null
+   },
+   {
+    "cmd": {
+     "cmd": "trackball_delta",
+     "dx": 3,
+     "dy": 0
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: trackball_delta"
+    },
+    "error": null
+   },
+   {
+    "cmd": {
+     "cmd": "trackball_delta",
+     "dx": 0,
+     "dy": 3
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: trackball_delta"
+    },
+    "error": null
+   },
+   {
+    "cmd": {
+     "cmd": "set_crt_fault",
+     "effect": "dim_picture",
+     "brightness": 0.467
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: set_crt_fault"
+    },
+    "error": null
+   },
+   {
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 1792,
+     "cpu": "maincpu",
+     "value": 255
+    },
+    "reply": {
+     "ok": true,
+     "action": "armed",
+     "cpu": "maincpu",
+     "value": 255,
+     "addr": 1792
+    },
+    "error": null
+   }
+  ],
+  "http_apply": {
+   "method": "POST",
+   "path": "/api/scenarios/dim-psu-5v/apply",
+   "body": {},
+   "status": 200,
+   "response": {
+    "applied": true,
+    "faults": [
+     {
+      "mame_available": true,
+      "ok": true,
+      "target": "PSU1",
+      "type": "peripheral"
+     },
+     {
+      "mame_available": true,
+      "ok": true,
+      "target": "CRT1",
+      "type": "peripheral"
+     },
+     {
+      "ok": true,
+      "target": "TRACK1",
+      "type": "peripheral"
+     }
+    ],
+    "id": "dim-psu-5v",
+    "mame": {
+     "available": true,
+     "resume_attempted": true,
+     "resumed": true,
+     "was_paused": true
+    }
+   }
+  },
+  "images": {
+   "baseline": "images/baseline_f660.png",
+   "faulted": "images/scenario__dim-psu-5v_f660.png"
+  }
+ },
+ "worker": {
+  "entry": {
+   "id": "scenario/dim-psu-5v",
+   "kind": "scenario",
+   "source": "tests/scenarios/01-dim-psu-5v.json",
+   "title": "Dim picture, sluggish controls",
+   "apply": {
+    "method": "POST",
+    "path": "/api/scenarios/dim-psu-5v/apply",
+    "body": {}
+   }
+  },
+  "apply": {
+   "method": "POST",
+   "path": "/api/scenarios/dim-psu-5v/apply",
+   "body": {},
+   "status": 200,
+   "response": {
+    "applied": true,
+    "faults": [
+     {
+      "mame_available": true,
+      "ok": true,
+      "target": "PSU1",
+      "type": "peripheral"
+     },
+     {
+      "mame_available": true,
+      "ok": true,
+      "target": "CRT1",
+      "type": "peripheral"
+     },
+     {
+      "ok": true,
+      "target": "TRACK1",
+      "type": "peripheral"
+     }
+    ],
+    "id": "dim-psu-5v",
+    "mame": {
+     "available": true,
+     "resume_attempted": true,
+     "resumed": true,
+     "was_paused": true
+    }
+   }
+  },
+  "schematic_summary": null,
+  "http": [
+   {
+    "method": "POST",
+    "path": "/api/scenarios/dim-psu-5v/apply",
+    "body": {},
+    "status": 200,
+    "response": {
+     "applied": true,
+     "faults": [
+      {
+       "mame_available": true,
+       "ok": true,
+       "target": "PSU1",
+       "type": "peripheral"
+      },
+      {
+       "mame_available": true,
+       "ok": true,
+       "target": "CRT1",
+       "type": "peripheral"
+      },
+      {
+       "ok": true,
+       "target": "TRACK1",
+       "type": "peripheral"
+      }
+     ],
+     "id": "dim-psu-5v",
+     "mame": {
+      "available": true,
+      "resume_attempted": true,
+      "resumed": true,
+      "was_paused": true
+     }
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/trackball/motion",
+    "body": {
+     "dx": 8,
+     "dy": 0
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "mame": {
+      "error": "unknown command: trackball_delta",
+      "ok": false
+     },
+     "packet": {
+      "dx": 8,
+      "dy": 0,
+      "fault": "dirty_roller",
+      "quad_dx": 3,
+      "quad_dy": 0
+     }
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/trackball/motion",
+    "body": {
+     "dx": 8,
+     "dy": 0
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "mame": {
+      "error": "unknown command: trackball_delta",
+      "ok": false
+     },
+     "packet": {
+      "dx": 8,
+      "dy": 0,
+      "fault": "dirty_roller",
+      "quad_dx": 3,
+      "quad_dy": 0
+     }
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/trackball/motion",
+    "body": {
+     "dx": 0,
+     "dy": 8
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "mame": {
+      "error": "unknown command: trackball_delta",
+      "ok": false
+     },
+     "packet": {
+      "dx": 0,
+      "dy": 8,
+      "fault": "dirty_roller",
+      "quad_dx": 0,
+      "quad_dy": 3
+     }
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/mame/press_button",
+    "body": {
+     "name": "P1 Button 1"
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "error": "unknown command: press_button",
+     "ok": false
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/mame/release_button",
+    "body": {
+     "name": "P1 Button 1"
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "error": "unknown command: release_button",
+     "ok": false
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/peripherals/coin",
+    "body": {},
+    "status": 200,
+    "response": {
+     "credits": 1,
+     "fault": "NORMAL",
+     "id": "COIN1",
+     "last_event": "accepted",
+     "supported_faults": [
+      "stuck_switch",
+      "dirty_contact",
+      "jammed_mech",
+      "miscalibrated"
+     ],
+     "supported_params": {},
+     "type": "coin_mech"
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/mame/press_button",
+    "body": {
+     "name": "Coin 1"
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "error": "unknown command: press_button",
+     "ok": false
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/mame/release_button",
+    "body": {
+     "name": "Coin 1"
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "error": "unknown command: release_button",
+     "ok": false
+    }
+   }
+  ],
+  "plugin": [
+   {
+    "t": 2721.35,
+    "cmd": {
+     "cmd": "get_state"
+    },
+    "reply": {
+     "ok": true,
+     "rom": "centiped3",
+     "frame": 609,
+     "version": "0.287",
+     "app": "mame",
+     "paused": true
+    }
+   },
+   {
+    "t": 2721.415,
+    "cmd": {
+     "cmd": "resume"
+    },
+    "held_by_audit": true
+   },
+   {
+    "t": 2721.415,
+    "cmd": {
+     "cmd": "clear_stuck"
+    },
+    "reply": {
+     "ok": true,
+     "cleared": 0
+    }
+   },
+   {
+    "t": 2721.448,
+    "cmd": {
+     "cmd": "set_crt_fault",
+     "effect": "normal",
+     "brightness": 1.0
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: set_crt_fault"
+    }
+   },
+   {
+    "t": 2721.481,
+    "cmd": {
+     "cmd": "set_crt_fault",
+     "effect": "normal",
+     "brightness": 0.85
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: set_crt_fault"
+    }
+   },
+   {
+    "t": 2721.515,
+    "cmd": {
+     "cmd": "set_crt_fault",
+     "effect": "dim_picture",
+     "brightness": 0.467
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: set_crt_fault"
+    }
+   },
+   {
+    "t": 2721.549,
+    "cmd": {
+     "cmd": "trackball_delta",
+     "dx": 3,
+     "dy": 0
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: trackball_delta"
+    }
+   },
+   {
+    "t": 2721.583,
+    "cmd": {
+     "cmd": "trackball_delta",
+     "dx": 3,
+     "dy": 0
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: trackball_delta"
+    }
+   },
+   {
+    "t": 2721.617,
+    "cmd": {
+     "cmd": "trackball_delta",
+     "dx": 0,
+     "dy": 3
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: trackball_delta"
+    }
+   },
+   {
+    "t": 2721.65,
+    "cmd": {
+     "cmd": "press_button",
+     "name": "P1 Button 1"
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: press_button"
+    }
+   },
+   {
+    "t": 2721.683,
+    "cmd": {
+     "cmd": "release_button",
+     "name": "P1 Button 1"
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: release_button"
+    }
+   },
+   {
+    "t": 2721.717,
+    "cmd": {
+     "cmd": "press_button",
+     "name": "Coin 1"
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: press_button"
+    }
+   },
+   {
+    "t": 2721.75,
+    "cmd": {
+     "cmd": "release_button",
+     "name": "Coin 1"
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: release_button"
+    }
+   },
+   {
+    "t": 2722.343,
+    "cmd": {
+     "cmd": "set_crt_fault",
+     "effect": "dim_picture",
+     "brightness": 0.467
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: set_crt_fault"
+    }
+   },
+   {
+    "t": 2722.352,
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 1792,
+     "cpu": "maincpu",
+     "value": 255
+    },
+    "reply": {
+     "ok": true,
+     "action": "armed",
+     "cpu": "maincpu",
+     "value": 255,
+     "addr": 1792
+    }
+   },
+   {
+    "t": 2723.284,
+    "cmd": {
+     "cmd": "resume"
+    },
+    "reply": {
+     "ok": true,
+     "rom": "centiped3",
+     "frame": 665,
+     "version": "0.287",
+     "app": "mame",
+     "paused": false
+    }
+   }
+  ],
+  "resume_error": null
+ }
+}

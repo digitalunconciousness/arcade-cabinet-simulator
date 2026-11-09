@@ -1,0 +1,562 @@
+{
+ "record": {
+  "id": "scenario/address-decoder-rom",
+  "kind": "scenario",
+  "source": "tests/scenarios/06-address-decoder-rom.json",
+  "evidence": "runs/scenario__address-decoder-rom.json",
+  "verdict": "no-change",
+  "diff": {
+   "frames_compared": 600,
+   "frames_differing": 0,
+   "first_differing_frame": null,
+   "frames_missing": 0,
+   "ram_bytes_differing": {
+    "660": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    },
+    "900": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    },
+    "1200": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    }
+   },
+   "consequence_ram_bytes": {
+    "660": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    },
+    "900": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    },
+    "1200": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    }
+   },
+   "injected_cells": [
+    8192,
+    8193,
+    8208
+   ],
+   "resets_baseline": [],
+   "resets_run": []
+  },
+  "plugin_commands": [
+   {
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 8192,
+     "cpu": "maincpu",
+     "value": 255
+    },
+    "reply": {
+     "action": "armed",
+     "value": 255,
+     "ok": true,
+     "addr": 8192,
+     "cpu": "maincpu"
+    },
+    "error": null
+   },
+   {
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 8193,
+     "cpu": "maincpu",
+     "value": 255
+    },
+    "reply": {
+     "action": "armed",
+     "value": 255,
+     "ok": true,
+     "addr": 8193,
+     "cpu": "maincpu"
+    },
+    "error": null
+   },
+   {
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 8208,
+     "cpu": "maincpu",
+     "value": 255
+    },
+    "reply": {
+     "action": "armed",
+     "value": 255,
+     "ok": true,
+     "addr": 8208,
+     "cpu": "maincpu"
+    },
+    "error": null
+   }
+  ],
+  "http_apply": {
+   "method": "POST",
+   "path": "/api/scenarios/address-decoder-rom/apply",
+   "body": {},
+   "status": 200,
+   "response": {
+    "applied": true,
+    "faults": [
+     {
+      "addr": "0x2000",
+      "ok": true,
+      "type": "mame_stuck_byte"
+     },
+     {
+      "addr": "0x2001",
+      "ok": true,
+      "type": "mame_stuck_byte"
+     },
+     {
+      "addr": "0x2010",
+      "ok": true,
+      "type": "mame_stuck_byte"
+     }
+    ],
+    "id": "address-decoder-rom",
+    "mame": {
+     "available": true,
+     "resume_attempted": true,
+     "resumed": true,
+     "was_paused": true
+    }
+   }
+  }
+ },
+ "worker": {
+  "entry": {
+   "id": "scenario/address-decoder-rom",
+   "kind": "scenario",
+   "source": "tests/scenarios/06-address-decoder-rom.json",
+   "title": "Game freezes on startup \u2014 ROM bank missing",
+   "apply": {
+    "method": "POST",
+    "path": "/api/scenarios/address-decoder-rom/apply",
+    "body": {}
+   }
+  },
+  "apply": {
+   "method": "POST",
+   "path": "/api/scenarios/address-decoder-rom/apply",
+   "body": {},
+   "status": 200,
+   "response": {
+    "applied": true,
+    "faults": [
+     {
+      "addr": "0x2000",
+      "ok": true,
+      "type": "mame_stuck_byte"
+     },
+     {
+      "addr": "0x2001",
+      "ok": true,
+      "type": "mame_stuck_byte"
+     },
+     {
+      "addr": "0x2010",
+      "ok": true,
+      "type": "mame_stuck_byte"
+     }
+    ],
+    "id": "address-decoder-rom",
+    "mame": {
+     "available": true,
+     "resume_attempted": true,
+     "resumed": true,
+     "was_paused": true
+    }
+   }
+  },
+  "schematic_summary": null,
+  "http": [
+   {
+    "method": "POST",
+    "path": "/api/scenarios/address-decoder-rom/apply",
+    "body": {},
+    "status": 200,
+    "response": {
+     "applied": true,
+     "faults": [
+      {
+       "addr": "0x2000",
+       "ok": true,
+       "type": "mame_stuck_byte"
+      },
+      {
+       "addr": "0x2001",
+       "ok": true,
+       "type": "mame_stuck_byte"
+      },
+      {
+       "addr": "0x2010",
+       "ok": true,
+       "type": "mame_stuck_byte"
+      }
+     ],
+     "id": "address-decoder-rom",
+     "mame": {
+      "available": true,
+      "resume_attempted": true,
+      "resumed": true,
+      "was_paused": true
+     }
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/trackball/motion",
+    "body": {
+     "dx": 8,
+     "dy": 0
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "mame": {
+      "error": "unknown command: trackball_delta",
+      "ok": false
+     },
+     "packet": {
+      "dx": 8,
+      "dy": 0,
+      "fault": "NORMAL",
+      "quad_dx": 8,
+      "quad_dy": 0
+     }
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/trackball/motion",
+    "body": {
+     "dx": 8,
+     "dy": 0
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "mame": {
+      "error": "unknown command: trackball_delta",
+      "ok": false
+     },
+     "packet": {
+      "dx": 8,
+      "dy": 0,
+      "fault": "NORMAL",
+      "quad_dx": 8,
+      "quad_dy": 0
+     }
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/trackball/motion",
+    "body": {
+     "dx": 0,
+     "dy": 8
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "mame": {
+      "error": "unknown command: trackball_delta",
+      "ok": false
+     },
+     "packet": {
+      "dx": 0,
+      "dy": 8,
+      "fault": "NORMAL",
+      "quad_dx": 0,
+      "quad_dy": 8
+     }
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/mame/press_button",
+    "body": {
+     "name": "P1 Button 1"
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "error": "unknown command: press_button",
+     "ok": false
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/mame/release_button",
+    "body": {
+     "name": "P1 Button 1"
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "error": "unknown command: release_button",
+     "ok": false
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/peripherals/coin",
+    "body": {},
+    "status": 200,
+    "response": {
+     "credits": 1,
+     "fault": "NORMAL",
+     "id": "COIN1",
+     "last_event": "accepted",
+     "supported_faults": [
+      "stuck_switch",
+      "dirty_contact",
+      "jammed_mech",
+      "miscalibrated"
+     ],
+     "supported_params": {},
+     "type": "coin_mech"
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/mame/press_button",
+    "body": {
+     "name": "Coin 1"
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "error": "unknown command: press_button",
+     "ok": false
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/mame/release_button",
+    "body": {
+     "name": "Coin 1"
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "error": "unknown command: release_button",
+     "ok": false
+    }
+   }
+  ],
+  "plugin": [
+   {
+    "t": 2746.633,
+    "cmd": {
+     "cmd": "get_state"
+    },
+    "reply": {
+     "version": "0.287",
+     "rom": "centiped3",
+     "ok": true,
+     "frame": 611,
+     "paused": true,
+     "app": "mame"
+    }
+   },
+   {
+    "t": 2746.676,
+    "cmd": {
+     "cmd": "resume"
+    },
+    "held_by_audit": true
+   },
+   {
+    "t": 2746.676,
+    "cmd": {
+     "cmd": "clear_stuck"
+    },
+    "reply": {
+     "ok": true,
+     "cleared": 0
+    }
+   },
+   {
+    "t": 2746.709,
+    "cmd": {
+     "cmd": "set_crt_fault",
+     "effect": "normal",
+     "brightness": 1.0
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: set_crt_fault"
+    }
+   },
+   {
+    "t": 2746.743,
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 8192,
+     "cpu": "maincpu",
+     "value": 255
+    },
+    "reply": {
+     "action": "armed",
+     "value": 255,
+     "ok": true,
+     "addr": 8192,
+     "cpu": "maincpu"
+    }
+   },
+   {
+    "t": 2746.777,
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 8193,
+     "cpu": "maincpu",
+     "value": 255
+    },
+    "reply": {
+     "action": "armed",
+     "value": 255,
+     "ok": true,
+     "addr": 8193,
+     "cpu": "maincpu"
+    }
+   },
+   {
+    "t": 2746.81,
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 8208,
+     "cpu": "maincpu",
+     "value": 255
+    },
+    "reply": {
+     "action": "armed",
+     "value": 255,
+     "ok": true,
+     "addr": 8208,
+     "cpu": "maincpu"
+    }
+   },
+   {
+    "t": 2746.845,
+    "cmd": {
+     "cmd": "trackball_delta",
+     "dx": 8,
+     "dy": 0
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: trackball_delta"
+    }
+   },
+   {
+    "t": 2746.878,
+    "cmd": {
+     "cmd": "trackball_delta",
+     "dx": 8,
+     "dy": 0
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: trackball_delta"
+    }
+   },
+   {
+    "t": 2746.911,
+    "cmd": {
+     "cmd": "trackball_delta",
+     "dx": 0,
+     "dy": 8
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: trackball_delta"
+    }
+   },
+   {
+    "t": 2746.945,
+    "cmd": {
+     "cmd": "press_button",
+     "name": "P1 Button 1"
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: press_button"
+    }
+   },
+   {
+    "t": 2746.978,
+    "cmd": {
+     "cmd": "release_button",
+     "name": "P1 Button 1"
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: release_button"
+    }
+   },
+   {
+    "t": 2747.012,
+    "cmd": {
+     "cmd": "press_button",
+     "name": "Coin 1"
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: press_button"
+    }
+   },
+   {
+    "t": 2747.045,
+    "cmd": {
+     "cmd": "release_button",
+     "name": "Coin 1"
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: release_button"
+    }
+   },
+   {
+    "t": 2747.624,
+    "cmd": {
+     "cmd": "set_crt_fault",
+     "effect": "normal",
+     "brightness": 1.0
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: set_crt_fault"
+    }
+   },
+   {
+    "t": 2748.579,
+    "cmd": {
+     "cmd": "resume"
+    },
+    "reply": {
+     "version": "0.287",
+     "rom": "centiped3",
+     "ok": true,
+     "frame": 668,
+     "paused": false,
+     "app": "mame"
+    }
+   }
+  ],
+  "resume_error": null
+ }
+}

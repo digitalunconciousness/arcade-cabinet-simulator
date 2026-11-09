@@ -1,0 +1,392 @@
+{
+ "record": {
+  "id": "schematic/shipped/ADDR_CTR.QB/open",
+  "kind": "schematic",
+  "source": "boards/centipede/fault_map.json",
+  "evidence": "runs/schematic__shipped__ADDR_CTR_QB__open.json",
+  "verdict": "not-sent",
+  "diff": {
+   "frames_compared": 600,
+   "frames_differing": 0,
+   "first_differing_frame": null,
+   "frames_missing": 0,
+   "ram_bytes_differing": {
+    "660": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    },
+    "900": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    },
+    "1200": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    }
+   },
+   "consequence_ram_bytes": {
+    "660": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    },
+    "900": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    },
+    "1200": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    }
+   },
+   "injected_cells": [],
+   "resets_baseline": [],
+   "resets_run": []
+  },
+  "plugin_commands": [],
+  "http_apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "ADDR_CTR",
+    "pin": "QB",
+    "mode": 3
+   },
+   "status": 404,
+   "response": {
+    "error": "no instrumented fault target for ADDR_CTR.QB",
+    "hint": "instrument the target net and map it in fault_map.json so it appears in the board package"
+   }
+  },
+  "schematic_source": {
+   "status": 404,
+   "available": false,
+   "error": "no schematic source loaded"
+  }
+ },
+ "worker": {
+  "entry": {
+   "id": "schematic/shipped/ADDR_CTR.QB/open",
+   "kind": "schematic",
+   "config": "shipped",
+   "source": "boards/centipede/fault_map.json",
+   "fault_device": "FB_ADDR_CTR_QB",
+   "apply": {
+    "method": "POST",
+    "path": "/api/schematic/fault/apply",
+    "body": {
+     "ref": "ADDR_CTR",
+     "pin": "QB",
+     "mode": 3
+    }
+   }
+  },
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "ADDR_CTR",
+    "pin": "QB",
+    "mode": 3
+   },
+   "status": 404,
+   "response": {
+    "error": "no instrumented fault target for ADDR_CTR.QB",
+    "hint": "instrument the target net and map it in fault_map.json so it appears in the board package"
+   }
+  },
+  "schematic_summary": {
+   "method": "GET",
+   "path": "/api/schematic/summary",
+   "body": {},
+   "status": 404,
+   "response": {
+    "available": false,
+    "error": "no schematic source loaded",
+    "hint": "set CABINET_BOARD_PATH to a board.json path or CABINET_KICAD_NETLIST to a KiCad XML netlist path"
+   }
+  },
+  "http": [
+   {
+    "method": "GET",
+    "path": "/api/schematic/summary",
+    "body": {},
+    "status": 404,
+    "response": {
+     "available": false,
+     "error": "no schematic source loaded",
+     "hint": "set CABINET_BOARD_PATH to a board.json path or CABINET_KICAD_NETLIST to a KiCad XML netlist path"
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/schematic/fault/apply",
+    "body": {
+     "ref": "ADDR_CTR",
+     "pin": "QB",
+     "mode": 3
+    },
+    "status": 404,
+    "response": {
+     "error": "no instrumented fault target for ADDR_CTR.QB",
+     "hint": "instrument the target net and map it in fault_map.json so it appears in the board package"
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/trackball/motion",
+    "body": {
+     "dx": 8,
+     "dy": 0
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "mame": {
+      "error": "unknown command: trackball_delta",
+      "ok": false
+     },
+     "packet": {
+      "dx": 8,
+      "dy": 0,
+      "fault": "NORMAL",
+      "quad_dx": 8,
+      "quad_dy": 0
+     }
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/trackball/motion",
+    "body": {
+     "dx": 8,
+     "dy": 0
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "mame": {
+      "error": "unknown command: trackball_delta",
+      "ok": false
+     },
+     "packet": {
+      "dx": 8,
+      "dy": 0,
+      "fault": "NORMAL",
+      "quad_dx": 8,
+      "quad_dy": 0
+     }
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/trackball/motion",
+    "body": {
+     "dx": 0,
+     "dy": 8
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "mame": {
+      "error": "unknown command: trackball_delta",
+      "ok": false
+     },
+     "packet": {
+      "dx": 0,
+      "dy": 8,
+      "fault": "NORMAL",
+      "quad_dx": 0,
+      "quad_dy": 8
+     }
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/mame/press_button",
+    "body": {
+     "name": "P1 Button 1"
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "error": "unknown command: press_button",
+     "ok": false
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/mame/release_button",
+    "body": {
+     "name": "P1 Button 1"
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "error": "unknown command: release_button",
+     "ok": false
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/peripherals/coin",
+    "body": {},
+    "status": 200,
+    "response": {
+     "credits": 1,
+     "fault": "NORMAL",
+     "id": "COIN1",
+     "last_event": "accepted",
+     "supported_faults": [
+      "stuck_switch",
+      "dirty_contact",
+      "jammed_mech",
+      "miscalibrated"
+     ],
+     "supported_params": {},
+     "type": "coin_mech"
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/mame/press_button",
+    "body": {
+     "name": "Coin 1"
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "error": "unknown command: press_button",
+     "ok": false
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/mame/release_button",
+    "body": {
+     "name": "Coin 1"
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "error": "unknown command: release_button",
+     "ok": false
+    }
+   }
+  ],
+  "plugin": [
+   {
+    "t": 2543.446,
+    "cmd": {
+     "cmd": "trackball_delta",
+     "dx": 8,
+     "dy": 0
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: trackball_delta"
+    }
+   },
+   {
+    "t": 2543.495,
+    "cmd": {
+     "cmd": "trackball_delta",
+     "dx": 8,
+     "dy": 0
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: trackball_delta"
+    }
+   },
+   {
+    "t": 2543.528,
+    "cmd": {
+     "cmd": "trackball_delta",
+     "dx": 0,
+     "dy": 8
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: trackball_delta"
+    }
+   },
+   {
+    "t": 2543.562,
+    "cmd": {
+     "cmd": "press_button",
+     "name": "P1 Button 1"
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: press_button"
+    }
+   },
+   {
+    "t": 2543.595,
+    "cmd": {
+     "cmd": "release_button",
+     "name": "P1 Button 1"
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: release_button"
+    }
+   },
+   {
+    "t": 2543.629,
+    "cmd": {
+     "cmd": "press_button",
+     "name": "Coin 1"
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: press_button"
+    }
+   },
+   {
+    "t": 2543.662,
+    "cmd": {
+     "cmd": "release_button",
+     "name": "Coin 1"
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: release_button"
+    }
+   },
+   {
+    "t": 2544.439,
+    "cmd": {
+     "cmd": "set_crt_fault",
+     "effect": "normal",
+     "brightness": 1.0
+    },
+    "reply": {
+     "ok": false,
+     "error": "unknown command: set_crt_fault"
+    }
+   },
+   {
+    "t": 2545.195,
+    "cmd": {
+     "cmd": "resume"
+    },
+    "reply": {
+     "ok": true,
+     "app": "mame",
+     "version": "0.287",
+     "paused": false,
+     "frame": 660,
+     "rom": "centiped3"
+    }
+   }
+  ],
+  "resume_error": null
+ }
+}

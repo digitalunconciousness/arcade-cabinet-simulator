@@ -1,0 +1,257 @@
+{
+ "entry": null,
+ "apply": null,
+ "schematic_summary": null,
+ "http": [
+  {
+   "method": "POST",
+   "path": "/api/trackball/motion",
+   "body": {
+    "dx": 8,
+    "dy": 0
+   },
+   "status": 200,
+   "response": {
+    "available": true,
+    "mame": {
+     "error": "unknown command: trackball_delta",
+     "ok": false
+    },
+    "packet": {
+     "dx": 8,
+     "dy": 0,
+     "fault": "NORMAL",
+     "quad_dx": 8,
+     "quad_dy": 0
+    }
+   }
+  },
+  {
+   "method": "POST",
+   "path": "/api/trackball/motion",
+   "body": {
+    "dx": 8,
+    "dy": 0
+   },
+   "status": 200,
+   "response": {
+    "available": true,
+    "mame": {
+     "error": "unknown command: trackball_delta",
+     "ok": false
+    },
+    "packet": {
+     "dx": 8,
+     "dy": 0,
+     "fault": "NORMAL",
+     "quad_dx": 8,
+     "quad_dy": 0
+    }
+   }
+  },
+  {
+   "method": "POST",
+   "path": "/api/trackball/motion",
+   "body": {
+    "dx": 0,
+    "dy": 8
+   },
+   "status": 200,
+   "response": {
+    "available": true,
+    "mame": {
+     "error": "unknown command: trackball_delta",
+     "ok": false
+    },
+    "packet": {
+     "dx": 0,
+     "dy": 8,
+     "fault": "NORMAL",
+     "quad_dx": 0,
+     "quad_dy": 8
+    }
+   }
+  },
+  {
+   "method": "POST",
+   "path": "/api/mame/press_button",
+   "body": {
+    "name": "P1 Button 1"
+   },
+   "status": 200,
+   "response": {
+    "available": true,
+    "error": "unknown command: press_button",
+    "ok": false
+   }
+  },
+  {
+   "method": "POST",
+   "path": "/api/mame/release_button",
+   "body": {
+    "name": "P1 Button 1"
+   },
+   "status": 200,
+   "response": {
+    "available": true,
+    "error": "unknown command: release_button",
+    "ok": false
+   }
+  },
+  {
+   "method": "POST",
+   "path": "/api/peripherals/coin",
+   "body": {},
+   "status": 200,
+   "response": {
+    "credits": 1,
+    "fault": "NORMAL",
+    "id": "COIN1",
+    "last_event": "accepted",
+    "supported_faults": [
+     "stuck_switch",
+     "dirty_contact",
+     "jammed_mech",
+     "miscalibrated"
+    ],
+    "supported_params": {},
+    "type": "coin_mech"
+   }
+  },
+  {
+   "method": "POST",
+   "path": "/api/mame/press_button",
+   "body": {
+    "name": "Coin 1"
+   },
+   "status": 200,
+   "response": {
+    "available": true,
+    "error": "unknown command: press_button",
+    "ok": false
+   }
+  },
+  {
+   "method": "POST",
+   "path": "/api/mame/release_button",
+   "body": {
+    "name": "Coin 1"
+   },
+   "status": 200,
+   "response": {
+    "available": true,
+    "error": "unknown command: release_button",
+    "ok": false
+   }
+  }
+ ],
+ "plugin": [
+  {
+   "t": 2033.456,
+   "cmd": {
+    "cmd": "trackball_delta",
+    "dx": 8,
+    "dy": 0
+   },
+   "reply": {
+    "ok": false,
+    "error": "unknown command: trackball_delta"
+   }
+  },
+  {
+   "t": 2033.497,
+   "cmd": {
+    "cmd": "trackball_delta",
+    "dx": 8,
+    "dy": 0
+   },
+   "reply": {
+    "ok": false,
+    "error": "unknown command: trackball_delta"
+   }
+  },
+  {
+   "t": 2033.531,
+   "cmd": {
+    "cmd": "trackball_delta",
+    "dx": 0,
+    "dy": 8
+   },
+   "reply": {
+    "ok": false,
+    "error": "unknown command: trackball_delta"
+   }
+  },
+  {
+   "t": 2033.564,
+   "cmd": {
+    "cmd": "press_button",
+    "name": "P1 Button 1"
+   },
+   "reply": {
+    "ok": false,
+    "error": "unknown command: press_button"
+   }
+  },
+  {
+   "t": 2033.598,
+   "cmd": {
+    "cmd": "release_button",
+    "name": "P1 Button 1"
+   },
+   "reply": {
+    "ok": false,
+    "error": "unknown command: release_button"
+   }
+  },
+  {
+   "t": 2033.634,
+   "cmd": {
+    "cmd": "press_button",
+    "name": "Coin 1"
+   },
+   "reply": {
+    "ok": false,
+    "error": "unknown command: press_button"
+   }
+  },
+  {
+   "t": 2033.667,
+   "cmd": {
+    "cmd": "release_button",
+    "name": "Coin 1"
+   },
+   "reply": {
+    "ok": false,
+    "error": "unknown command: release_button"
+   }
+  },
+  {
+   "t": 2034.45,
+   "cmd": {
+    "cmd": "set_crt_fault",
+    "effect": "normal",
+    "brightness": 1.0
+   },
+   "reply": {
+    "ok": false,
+    "error": "unknown command: set_crt_fault"
+   }
+  },
+  {
+   "t": 2035.201,
+   "cmd": {
+    "cmd": "resume"
+   },
+   "reply": {
+    "ok": true,
+    "app": "mame",
+    "rom": "centiped3",
+    "frame": 660,
+    "version": "0.287",
+    "paused": false
+   }
+  }
+ ],
+ "resume_error": null
+}

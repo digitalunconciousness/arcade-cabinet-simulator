@@ -1,0 +1,2203 @@
+[
+ {
+  "id": "peripheral/PSU1/bad_rectifier",
+  "kind": "peripheral",
+  "source": "tools/peripherals (psu)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "PSU1",
+    "fault": "bad_rectifier"
+   }
+  }
+ },
+ {
+  "id": "peripheral/PSU1/dried_filter_cap",
+  "kind": "peripheral",
+  "source": "tools/peripherals (psu)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "PSU1",
+    "fault": "dried_filter_cap"
+   }
+  }
+ },
+ {
+  "id": "peripheral/PSU1/failed_regulator",
+  "kind": "peripheral",
+  "source": "tools/peripherals (psu)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "PSU1",
+    "fault": "failed_regulator"
+   }
+  }
+ },
+ {
+  "id": "peripheral/PSU1/sagging_mains",
+  "kind": "peripheral",
+  "source": "tools/peripherals (psu)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "PSU1",
+    "fault": "sagging_mains"
+   }
+  }
+ },
+ {
+  "id": "peripheral/PSU1/overload_trip",
+  "kind": "peripheral",
+  "source": "tools/peripherals (psu)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "PSU1",
+    "fault": "overload_trip"
+   }
+  }
+ },
+ {
+  "id": "peripheral/COIN1/stuck_switch",
+  "kind": "peripheral",
+  "source": "tools/peripherals (coin_mech)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "COIN1",
+    "fault": "stuck_switch"
+   }
+  }
+ },
+ {
+  "id": "peripheral/COIN1/dirty_contact",
+  "kind": "peripheral",
+  "source": "tools/peripherals (coin_mech)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "COIN1",
+    "fault": "dirty_contact"
+   }
+  }
+ },
+ {
+  "id": "peripheral/COIN1/jammed_mech",
+  "kind": "peripheral",
+  "source": "tools/peripherals (coin_mech)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "COIN1",
+    "fault": "jammed_mech"
+   }
+  }
+ },
+ {
+  "id": "peripheral/COIN1/miscalibrated",
+  "kind": "peripheral",
+  "source": "tools/peripherals (coin_mech)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "COIN1",
+    "fault": "miscalibrated"
+   }
+  }
+ },
+ {
+  "id": "peripheral/MARQ1/dead_tube",
+  "kind": "peripheral",
+  "source": "tools/peripherals (marquee)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "MARQ1",
+    "fault": "dead_tube"
+   }
+  }
+ },
+ {
+  "id": "peripheral/MARQ1/ballast_slow_start",
+  "kind": "peripheral",
+  "source": "tools/peripherals (marquee)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "MARQ1",
+    "fault": "ballast_slow_start"
+   }
+  }
+ },
+ {
+  "id": "peripheral/MARQ1/ballast_flicker",
+  "kind": "peripheral",
+  "source": "tools/peripherals (marquee)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "MARQ1",
+    "fault": "ballast_flicker"
+   }
+  }
+ },
+ {
+  "id": "peripheral/MARQ1/ballast_hum",
+  "kind": "peripheral",
+  "source": "tools/peripherals (marquee)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "MARQ1",
+    "fault": "ballast_hum"
+   }
+  }
+ },
+ {
+  "id": "peripheral/MARQ1/aging_tube",
+  "kind": "peripheral",
+  "source": "tools/peripherals (marquee)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "MARQ1",
+    "fault": "aging_tube"
+   }
+  }
+ },
+ {
+  "id": "peripheral/CRT1/no_hv",
+  "kind": "peripheral",
+  "source": "tools/peripherals (crt)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "CRT1",
+    "fault": "no_hv"
+   }
+  }
+ },
+ {
+  "id": "peripheral/CRT1/vertical_collapse",
+  "kind": "peripheral",
+  "source": "tools/peripherals (crt)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "CRT1",
+    "fault": "vertical_collapse"
+   }
+  }
+ },
+ {
+  "id": "peripheral/CRT1/horizontal_collapse",
+  "kind": "peripheral",
+  "source": "tools/peripherals (crt)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "CRT1",
+    "fault": "horizontal_collapse"
+   }
+  }
+ },
+ {
+  "id": "peripheral/CRT1/weak_focus",
+  "kind": "peripheral",
+  "source": "tools/peripherals (crt)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "CRT1",
+    "fault": "weak_focus"
+   }
+  }
+ },
+ {
+  "id": "peripheral/CRT1/brightness_drift",
+  "kind": "peripheral",
+  "source": "tools/peripherals (crt)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "CRT1",
+    "fault": "brightness_drift"
+   }
+  }
+ },
+ {
+  "id": "peripheral/CRT1/bad_deflection_caps",
+  "kind": "peripheral",
+  "source": "tools/peripherals (crt)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "CRT1",
+    "fault": "bad_deflection_caps"
+   }
+  }
+ },
+ {
+  "id": "peripheral/CRT1/dim_picture",
+  "kind": "peripheral",
+  "source": "tools/peripherals (crt)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "CRT1",
+    "fault": "dim_picture"
+   }
+  }
+ },
+ {
+  "id": "peripheral/CRT1/sync_lock_failure",
+  "kind": "peripheral",
+  "source": "tools/peripherals (crt)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "CRT1",
+    "fault": "sync_lock_failure"
+   }
+  }
+ },
+ {
+  "id": "peripheral/CRT1/ringing_ghosting",
+  "kind": "peripheral",
+  "source": "tools/peripherals (crt)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "CRT1",
+    "fault": "ringing_ghosting"
+   }
+  }
+ },
+ {
+  "id": "peripheral/TRACK1/dead_opto_x",
+  "kind": "peripheral",
+  "source": "tools/peripherals (trackball)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "TRACK1",
+    "fault": "dead_opto_x"
+   }
+  }
+ },
+ {
+  "id": "peripheral/TRACK1/dead_opto_y",
+  "kind": "peripheral",
+  "source": "tools/peripherals (trackball)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "TRACK1",
+    "fault": "dead_opto_y"
+   }
+  }
+ },
+ {
+  "id": "peripheral/TRACK1/dirty_roller",
+  "kind": "peripheral",
+  "source": "tools/peripherals (trackball)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "TRACK1",
+    "fault": "dirty_roller"
+   }
+  }
+ },
+ {
+  "id": "peripheral/TRACK1/seized_bearing",
+  "kind": "peripheral",
+  "source": "tools/peripherals (trackball)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "TRACK1",
+    "fault": "seized_bearing"
+   }
+  }
+ },
+ {
+  "id": "peripheral/TRACK1/failed_quadrature_phase",
+  "kind": "peripheral",
+  "source": "tools/peripherals (trackball)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "TRACK1",
+    "fault": "failed_quadrature_phase"
+   }
+  }
+ },
+ {
+  "id": "peripheral/TRACK1/encoder_cap_failure",
+  "kind": "peripheral",
+  "source": "tools/peripherals (trackball)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "TRACK1",
+    "fault": "encoder_cap_failure"
+   }
+  }
+ },
+ {
+  "id": "peripheral/AUDIO1/dead_amp",
+  "kind": "peripheral",
+  "source": "tools/peripherals (audio_chain)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "AUDIO1",
+    "fault": "dead_amp"
+   }
+  }
+ },
+ {
+  "id": "peripheral/AUDIO1/hum",
+  "kind": "peripheral",
+  "source": "tools/peripherals (audio_chain)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "AUDIO1",
+    "fault": "hum"
+   }
+  }
+ },
+ {
+  "id": "peripheral/AUDIO1/distortion",
+  "kind": "peripheral",
+  "source": "tools/peripherals (audio_chain)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "AUDIO1",
+    "fault": "distortion"
+   }
+  }
+ },
+ {
+  "id": "peripheral/AUDIO1/blown_speaker",
+  "kind": "peripheral",
+  "source": "tools/peripherals (audio_chain)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "AUDIO1",
+    "fault": "blown_speaker"
+   }
+  }
+ },
+ {
+  "id": "peripheral/BTN_START1/stuck_closed",
+  "kind": "peripheral",
+  "source": "tools/peripherals (button)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "BTN_START1",
+    "fault": "stuck_closed"
+   }
+  }
+ },
+ {
+  "id": "peripheral/BTN_START1/stuck_open",
+  "kind": "peripheral",
+  "source": "tools/peripherals (button)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "BTN_START1",
+    "fault": "stuck_open"
+   }
+  }
+ },
+ {
+  "id": "peripheral/BTN_START1/intermittent",
+  "kind": "peripheral",
+  "source": "tools/peripherals (button)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "BTN_START1",
+    "fault": "intermittent"
+   }
+  }
+ },
+ {
+  "id": "peripheral/BTN_START1/bouncy",
+  "kind": "peripheral",
+  "source": "tools/peripherals (button)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "BTN_START1",
+    "fault": "bouncy"
+   }
+  }
+ },
+ {
+  "id": "peripheral/BTN_START1/slow_release",
+  "kind": "peripheral",
+  "source": "tools/peripherals (button)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "BTN_START1",
+    "fault": "slow_release"
+   }
+  }
+ },
+ {
+  "id": "peripheral/BTN_START2/stuck_closed",
+  "kind": "peripheral",
+  "source": "tools/peripherals (button)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "BTN_START2",
+    "fault": "stuck_closed"
+   }
+  }
+ },
+ {
+  "id": "peripheral/BTN_START2/stuck_open",
+  "kind": "peripheral",
+  "source": "tools/peripherals (button)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "BTN_START2",
+    "fault": "stuck_open"
+   }
+  }
+ },
+ {
+  "id": "peripheral/BTN_START2/intermittent",
+  "kind": "peripheral",
+  "source": "tools/peripherals (button)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "BTN_START2",
+    "fault": "intermittent"
+   }
+  }
+ },
+ {
+  "id": "peripheral/BTN_START2/bouncy",
+  "kind": "peripheral",
+  "source": "tools/peripherals (button)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "BTN_START2",
+    "fault": "bouncy"
+   }
+  }
+ },
+ {
+  "id": "peripheral/BTN_START2/slow_release",
+  "kind": "peripheral",
+  "source": "tools/peripherals (button)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "BTN_START2",
+    "fault": "slow_release"
+   }
+  }
+ },
+ {
+  "id": "peripheral/BTN_FIRE/stuck_closed",
+  "kind": "peripheral",
+  "source": "tools/peripherals (button)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "BTN_FIRE",
+    "fault": "stuck_closed"
+   }
+  }
+ },
+ {
+  "id": "peripheral/BTN_FIRE/stuck_open",
+  "kind": "peripheral",
+  "source": "tools/peripherals (button)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "BTN_FIRE",
+    "fault": "stuck_open"
+   }
+  }
+ },
+ {
+  "id": "peripheral/BTN_FIRE/intermittent",
+  "kind": "peripheral",
+  "source": "tools/peripherals (button)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "BTN_FIRE",
+    "fault": "intermittent"
+   }
+  }
+ },
+ {
+  "id": "peripheral/BTN_FIRE/bouncy",
+  "kind": "peripheral",
+  "source": "tools/peripherals (button)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "BTN_FIRE",
+    "fault": "bouncy"
+   }
+  }
+ },
+ {
+  "id": "peripheral/BTN_FIRE/slow_release",
+  "kind": "peripheral",
+  "source": "tools/peripherals (button)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "BTN_FIRE",
+    "fault": "slow_release"
+   }
+  }
+ },
+ {
+  "id": "peripheral/HARN_PSU_PCB/open",
+  "kind": "peripheral",
+  "source": "tools/peripherals (harness)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "HARN_PSU_PCB",
+    "fault": "open"
+   }
+  }
+ },
+ {
+  "id": "peripheral/HARN_PSU_PCB/short_to_gnd",
+  "kind": "peripheral",
+  "source": "tools/peripherals (harness)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "HARN_PSU_PCB",
+    "fault": "short_to_gnd"
+   }
+  }
+ },
+ {
+  "id": "peripheral/HARN_PSU_PCB/short_to_5v",
+  "kind": "peripheral",
+  "source": "tools/peripherals (harness)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "HARN_PSU_PCB",
+    "fault": "short_to_5v"
+   }
+  }
+ },
+ {
+  "id": "peripheral/HARN_PSU_PCB/high_resistance",
+  "kind": "peripheral",
+  "source": "tools/peripherals (harness)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "HARN_PSU_PCB",
+    "fault": "high_resistance"
+   }
+  }
+ },
+ {
+  "id": "peripheral/HARN_PSU_PCB/chafed",
+  "kind": "peripheral",
+  "source": "tools/peripherals (harness)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "HARN_PSU_PCB",
+    "fault": "chafed"
+   }
+  }
+ },
+ {
+  "id": "peripheral/HARN_PSU_MONITOR/open",
+  "kind": "peripheral",
+  "source": "tools/peripherals (harness)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "HARN_PSU_MONITOR",
+    "fault": "open"
+   }
+  }
+ },
+ {
+  "id": "peripheral/HARN_PSU_MONITOR/short_to_gnd",
+  "kind": "peripheral",
+  "source": "tools/peripherals (harness)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "HARN_PSU_MONITOR",
+    "fault": "short_to_gnd"
+   }
+  }
+ },
+ {
+  "id": "peripheral/HARN_PSU_MONITOR/short_to_5v",
+  "kind": "peripheral",
+  "source": "tools/peripherals (harness)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "HARN_PSU_MONITOR",
+    "fault": "short_to_5v"
+   }
+  }
+ },
+ {
+  "id": "peripheral/HARN_PSU_MONITOR/high_resistance",
+  "kind": "peripheral",
+  "source": "tools/peripherals (harness)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "HARN_PSU_MONITOR",
+    "fault": "high_resistance"
+   }
+  }
+ },
+ {
+  "id": "peripheral/HARN_PSU_MONITOR/chafed",
+  "kind": "peripheral",
+  "source": "tools/peripherals (harness)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "HARN_PSU_MONITOR",
+    "fault": "chafed"
+   }
+  }
+ },
+ {
+  "id": "peripheral/HARN_PSU_MARQUEE/open",
+  "kind": "peripheral",
+  "source": "tools/peripherals (harness)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "HARN_PSU_MARQUEE",
+    "fault": "open"
+   }
+  }
+ },
+ {
+  "id": "peripheral/HARN_PSU_MARQUEE/short_to_gnd",
+  "kind": "peripheral",
+  "source": "tools/peripherals (harness)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "HARN_PSU_MARQUEE",
+    "fault": "short_to_gnd"
+   }
+  }
+ },
+ {
+  "id": "peripheral/HARN_PSU_MARQUEE/short_to_5v",
+  "kind": "peripheral",
+  "source": "tools/peripherals (harness)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "HARN_PSU_MARQUEE",
+    "fault": "short_to_5v"
+   }
+  }
+ },
+ {
+  "id": "peripheral/HARN_PSU_MARQUEE/high_resistance",
+  "kind": "peripheral",
+  "source": "tools/peripherals (harness)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "HARN_PSU_MARQUEE",
+    "fault": "high_resistance"
+   }
+  }
+ },
+ {
+  "id": "peripheral/HARN_PSU_MARQUEE/chafed",
+  "kind": "peripheral",
+  "source": "tools/peripherals (harness)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "HARN_PSU_MARQUEE",
+    "fault": "chafed"
+   }
+  }
+ },
+ {
+  "id": "peripheral/HARN_PCB_PANEL/open",
+  "kind": "peripheral",
+  "source": "tools/peripherals (harness)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "HARN_PCB_PANEL",
+    "fault": "open"
+   }
+  }
+ },
+ {
+  "id": "peripheral/HARN_PCB_PANEL/short_to_gnd",
+  "kind": "peripheral",
+  "source": "tools/peripherals (harness)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "HARN_PCB_PANEL",
+    "fault": "short_to_gnd"
+   }
+  }
+ },
+ {
+  "id": "peripheral/HARN_PCB_PANEL/short_to_5v",
+  "kind": "peripheral",
+  "source": "tools/peripherals (harness)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "HARN_PCB_PANEL",
+    "fault": "short_to_5v"
+   }
+  }
+ },
+ {
+  "id": "peripheral/HARN_PCB_PANEL/high_resistance",
+  "kind": "peripheral",
+  "source": "tools/peripherals (harness)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "HARN_PCB_PANEL",
+    "fault": "high_resistance"
+   }
+  }
+ },
+ {
+  "id": "peripheral/HARN_PCB_PANEL/chafed",
+  "kind": "peripheral",
+  "source": "tools/peripherals (harness)",
+  "apply": {
+   "method": "POST",
+   "path": "/api/peripherals/fault",
+   "body": {
+    "id": "HARN_PCB_PANEL",
+    "fault": "chafed"
+   }
+  }
+ },
+ {
+  "id": "schematic/shipped/CLK.Q/stuck_hi",
+  "kind": "schematic",
+  "config": "shipped",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_CLK_Q",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "CLK",
+    "pin": "Q",
+    "mode": 1
+   }
+  }
+ },
+ {
+  "id": "schematic/shipped/CLK.Q/stuck_lo",
+  "kind": "schematic",
+  "config": "shipped",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_CLK_Q",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "CLK",
+    "pin": "Q",
+    "mode": 2
+   }
+  }
+ },
+ {
+  "id": "schematic/shipped/CLK.Q/open",
+  "kind": "schematic",
+  "config": "shipped",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_CLK_Q",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "CLK",
+    "pin": "Q",
+    "mode": 3
+   }
+  }
+ },
+ {
+  "id": "schematic/shipped/H_LO.RC/stuck_hi",
+  "kind": "schematic",
+  "config": "shipped",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_H_LO_RC",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "H_LO",
+    "pin": "RC",
+    "mode": 1
+   }
+  }
+ },
+ {
+  "id": "schematic/shipped/H_LO.RC/stuck_lo",
+  "kind": "schematic",
+  "config": "shipped",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_H_LO_RC",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "H_LO",
+    "pin": "RC",
+    "mode": 2
+   }
+  }
+ },
+ {
+  "id": "schematic/shipped/H_LO.RC/open",
+  "kind": "schematic",
+  "config": "shipped",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_H_LO_RC",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "H_LO",
+    "pin": "RC",
+    "mode": 3
+   }
+  }
+ },
+ {
+  "id": "schematic/shipped/H_HI.RC/stuck_hi",
+  "kind": "schematic",
+  "config": "shipped",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_H_HI_RC",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "H_HI",
+    "pin": "RC",
+    "mode": 1
+   }
+  }
+ },
+ {
+  "id": "schematic/shipped/H_HI.RC/stuck_lo",
+  "kind": "schematic",
+  "config": "shipped",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_H_HI_RC",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "H_HI",
+    "pin": "RC",
+    "mode": 2
+   }
+  }
+ },
+ {
+  "id": "schematic/shipped/H_HI.RC/open",
+  "kind": "schematic",
+  "config": "shipped",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_H_HI_RC",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "H_HI",
+    "pin": "RC",
+    "mode": 3
+   }
+  }
+ },
+ {
+  "id": "schematic/shipped/H_HI.QD/stuck_hi",
+  "kind": "schematic",
+  "config": "shipped",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_H_HI_QD",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "H_HI",
+    "pin": "QD",
+    "mode": 1
+   }
+  }
+ },
+ {
+  "id": "schematic/shipped/H_HI.QD/stuck_lo",
+  "kind": "schematic",
+  "config": "shipped",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_H_HI_QD",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "H_HI",
+    "pin": "QD",
+    "mode": 2
+   }
+  }
+ },
+ {
+  "id": "schematic/shipped/H_HI.QD/open",
+  "kind": "schematic",
+  "config": "shipped",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_H_HI_QD",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "H_HI",
+    "pin": "QD",
+    "mode": 3
+   }
+  }
+ },
+ {
+  "id": "schematic/shipped/H_HI.QC/stuck_hi",
+  "kind": "schematic",
+  "config": "shipped",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_H_HI_QC",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "H_HI",
+    "pin": "QC",
+    "mode": 1
+   }
+  }
+ },
+ {
+  "id": "schematic/shipped/H_HI.QC/stuck_lo",
+  "kind": "schematic",
+  "config": "shipped",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_H_HI_QC",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "H_HI",
+    "pin": "QC",
+    "mode": 2
+   }
+  }
+ },
+ {
+  "id": "schematic/shipped/H_HI.QC/open",
+  "kind": "schematic",
+  "config": "shipped",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_H_HI_QC",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "H_HI",
+    "pin": "QC",
+    "mode": 3
+   }
+  }
+ },
+ {
+  "id": "schematic/shipped/H_HI.QB/stuck_hi",
+  "kind": "schematic",
+  "config": "shipped",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_H_HI_QB",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "H_HI",
+    "pin": "QB",
+    "mode": 1
+   }
+  }
+ },
+ {
+  "id": "schematic/shipped/H_HI.QB/stuck_lo",
+  "kind": "schematic",
+  "config": "shipped",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_H_HI_QB",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "H_HI",
+    "pin": "QB",
+    "mode": 2
+   }
+  }
+ },
+ {
+  "id": "schematic/shipped/H_HI.QB/open",
+  "kind": "schematic",
+  "config": "shipped",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_H_HI_QB",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "H_HI",
+    "pin": "QB",
+    "mode": 3
+   }
+  }
+ },
+ {
+  "id": "schematic/shipped/V_LO.QD/stuck_hi",
+  "kind": "schematic",
+  "config": "shipped",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_V_LO_QD",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "V_LO",
+    "pin": "QD",
+    "mode": 1
+   }
+  }
+ },
+ {
+  "id": "schematic/shipped/V_LO.QD/stuck_lo",
+  "kind": "schematic",
+  "config": "shipped",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_V_LO_QD",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "V_LO",
+    "pin": "QD",
+    "mode": 2
+   }
+  }
+ },
+ {
+  "id": "schematic/shipped/V_LO.QD/open",
+  "kind": "schematic",
+  "config": "shipped",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_V_LO_QD",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "V_LO",
+    "pin": "QD",
+    "mode": 3
+   }
+  }
+ },
+ {
+  "id": "schematic/shipped/V_LO.QC/stuck_hi",
+  "kind": "schematic",
+  "config": "shipped",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_V_LO_QC",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "V_LO",
+    "pin": "QC",
+    "mode": 1
+   }
+  }
+ },
+ {
+  "id": "schematic/shipped/V_LO.QC/stuck_lo",
+  "kind": "schematic",
+  "config": "shipped",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_V_LO_QC",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "V_LO",
+    "pin": "QC",
+    "mode": 2
+   }
+  }
+ },
+ {
+  "id": "schematic/shipped/V_LO.QC/open",
+  "kind": "schematic",
+  "config": "shipped",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_V_LO_QC",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "V_LO",
+    "pin": "QC",
+    "mode": 3
+   }
+  }
+ },
+ {
+  "id": "schematic/shipped/ADDR_CTR.QA/stuck_hi",
+  "kind": "schematic",
+  "config": "shipped",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_ADDR_CTR_QA",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "ADDR_CTR",
+    "pin": "QA",
+    "mode": 1
+   }
+  }
+ },
+ {
+  "id": "schematic/shipped/ADDR_CTR.QA/stuck_lo",
+  "kind": "schematic",
+  "config": "shipped",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_ADDR_CTR_QA",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "ADDR_CTR",
+    "pin": "QA",
+    "mode": 2
+   }
+  }
+ },
+ {
+  "id": "schematic/shipped/ADDR_CTR.QA/open",
+  "kind": "schematic",
+  "config": "shipped",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_ADDR_CTR_QA",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "ADDR_CTR",
+    "pin": "QA",
+    "mode": 3
+   }
+  }
+ },
+ {
+  "id": "schematic/shipped/ADDR_CTR.QB/stuck_hi",
+  "kind": "schematic",
+  "config": "shipped",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_ADDR_CTR_QB",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "ADDR_CTR",
+    "pin": "QB",
+    "mode": 1
+   }
+  }
+ },
+ {
+  "id": "schematic/shipped/ADDR_CTR.QB/stuck_lo",
+  "kind": "schematic",
+  "config": "shipped",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_ADDR_CTR_QB",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "ADDR_CTR",
+    "pin": "QB",
+    "mode": 2
+   }
+  }
+ },
+ {
+  "id": "schematic/shipped/ADDR_CTR.QB/open",
+  "kind": "schematic",
+  "config": "shipped",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_ADDR_CTR_QB",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "ADDR_CTR",
+    "pin": "QB",
+    "mode": 3
+   }
+  }
+ },
+ {
+  "id": "schematic/board_package/CLK.Q/stuck_hi",
+  "kind": "schematic",
+  "config": "board_package",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_CLK_Q",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "CLK",
+    "pin": "Q",
+    "mode": 1
+   }
+  }
+ },
+ {
+  "id": "schematic/board_package/CLK.Q/stuck_lo",
+  "kind": "schematic",
+  "config": "board_package",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_CLK_Q",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "CLK",
+    "pin": "Q",
+    "mode": 2
+   }
+  }
+ },
+ {
+  "id": "schematic/board_package/CLK.Q/open",
+  "kind": "schematic",
+  "config": "board_package",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_CLK_Q",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "CLK",
+    "pin": "Q",
+    "mode": 3
+   }
+  }
+ },
+ {
+  "id": "schematic/board_package/H_LO.RC/stuck_hi",
+  "kind": "schematic",
+  "config": "board_package",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_H_LO_RC",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "H_LO",
+    "pin": "RC",
+    "mode": 1
+   }
+  }
+ },
+ {
+  "id": "schematic/board_package/H_LO.RC/stuck_lo",
+  "kind": "schematic",
+  "config": "board_package",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_H_LO_RC",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "H_LO",
+    "pin": "RC",
+    "mode": 2
+   }
+  }
+ },
+ {
+  "id": "schematic/board_package/H_LO.RC/open",
+  "kind": "schematic",
+  "config": "board_package",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_H_LO_RC",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "H_LO",
+    "pin": "RC",
+    "mode": 3
+   }
+  }
+ },
+ {
+  "id": "schematic/board_package/H_HI.RC/stuck_hi",
+  "kind": "schematic",
+  "config": "board_package",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_H_HI_RC",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "H_HI",
+    "pin": "RC",
+    "mode": 1
+   }
+  }
+ },
+ {
+  "id": "schematic/board_package/H_HI.RC/stuck_lo",
+  "kind": "schematic",
+  "config": "board_package",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_H_HI_RC",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "H_HI",
+    "pin": "RC",
+    "mode": 2
+   }
+  }
+ },
+ {
+  "id": "schematic/board_package/H_HI.RC/open",
+  "kind": "schematic",
+  "config": "board_package",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_H_HI_RC",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "H_HI",
+    "pin": "RC",
+    "mode": 3
+   }
+  }
+ },
+ {
+  "id": "schematic/board_package/H_HI.QD/stuck_hi",
+  "kind": "schematic",
+  "config": "board_package",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_H_HI_QD",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "H_HI",
+    "pin": "QD",
+    "mode": 1
+   }
+  }
+ },
+ {
+  "id": "schematic/board_package/H_HI.QD/stuck_lo",
+  "kind": "schematic",
+  "config": "board_package",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_H_HI_QD",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "H_HI",
+    "pin": "QD",
+    "mode": 2
+   }
+  }
+ },
+ {
+  "id": "schematic/board_package/H_HI.QD/open",
+  "kind": "schematic",
+  "config": "board_package",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_H_HI_QD",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "H_HI",
+    "pin": "QD",
+    "mode": 3
+   }
+  }
+ },
+ {
+  "id": "schematic/board_package/H_HI.QC/stuck_hi",
+  "kind": "schematic",
+  "config": "board_package",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_H_HI_QC",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "H_HI",
+    "pin": "QC",
+    "mode": 1
+   }
+  }
+ },
+ {
+  "id": "schematic/board_package/H_HI.QC/stuck_lo",
+  "kind": "schematic",
+  "config": "board_package",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_H_HI_QC",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "H_HI",
+    "pin": "QC",
+    "mode": 2
+   }
+  }
+ },
+ {
+  "id": "schematic/board_package/H_HI.QC/open",
+  "kind": "schematic",
+  "config": "board_package",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_H_HI_QC",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "H_HI",
+    "pin": "QC",
+    "mode": 3
+   }
+  }
+ },
+ {
+  "id": "schematic/board_package/H_HI.QB/stuck_hi",
+  "kind": "schematic",
+  "config": "board_package",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_H_HI_QB",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "H_HI",
+    "pin": "QB",
+    "mode": 1
+   }
+  }
+ },
+ {
+  "id": "schematic/board_package/H_HI.QB/stuck_lo",
+  "kind": "schematic",
+  "config": "board_package",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_H_HI_QB",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "H_HI",
+    "pin": "QB",
+    "mode": 2
+   }
+  }
+ },
+ {
+  "id": "schematic/board_package/H_HI.QB/open",
+  "kind": "schematic",
+  "config": "board_package",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_H_HI_QB",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "H_HI",
+    "pin": "QB",
+    "mode": 3
+   }
+  }
+ },
+ {
+  "id": "schematic/board_package/V_LO.QD/stuck_hi",
+  "kind": "schematic",
+  "config": "board_package",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_V_LO_QD",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "V_LO",
+    "pin": "QD",
+    "mode": 1
+   }
+  }
+ },
+ {
+  "id": "schematic/board_package/V_LO.QD/stuck_lo",
+  "kind": "schematic",
+  "config": "board_package",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_V_LO_QD",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "V_LO",
+    "pin": "QD",
+    "mode": 2
+   }
+  }
+ },
+ {
+  "id": "schematic/board_package/V_LO.QD/open",
+  "kind": "schematic",
+  "config": "board_package",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_V_LO_QD",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "V_LO",
+    "pin": "QD",
+    "mode": 3
+   }
+  }
+ },
+ {
+  "id": "schematic/board_package/V_LO.QC/stuck_hi",
+  "kind": "schematic",
+  "config": "board_package",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_V_LO_QC",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "V_LO",
+    "pin": "QC",
+    "mode": 1
+   }
+  }
+ },
+ {
+  "id": "schematic/board_package/V_LO.QC/stuck_lo",
+  "kind": "schematic",
+  "config": "board_package",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_V_LO_QC",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "V_LO",
+    "pin": "QC",
+    "mode": 2
+   }
+  }
+ },
+ {
+  "id": "schematic/board_package/V_LO.QC/open",
+  "kind": "schematic",
+  "config": "board_package",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_V_LO_QC",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "V_LO",
+    "pin": "QC",
+    "mode": 3
+   }
+  }
+ },
+ {
+  "id": "schematic/board_package/ADDR_CTR.QA/stuck_hi",
+  "kind": "schematic",
+  "config": "board_package",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_ADDR_CTR_QA",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "ADDR_CTR",
+    "pin": "QA",
+    "mode": 1
+   }
+  }
+ },
+ {
+  "id": "schematic/board_package/ADDR_CTR.QA/stuck_lo",
+  "kind": "schematic",
+  "config": "board_package",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_ADDR_CTR_QA",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "ADDR_CTR",
+    "pin": "QA",
+    "mode": 2
+   }
+  }
+ },
+ {
+  "id": "schematic/board_package/ADDR_CTR.QA/open",
+  "kind": "schematic",
+  "config": "board_package",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_ADDR_CTR_QA",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "ADDR_CTR",
+    "pin": "QA",
+    "mode": 3
+   }
+  }
+ },
+ {
+  "id": "schematic/board_package/ADDR_CTR.QB/stuck_hi",
+  "kind": "schematic",
+  "config": "board_package",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_ADDR_CTR_QB",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "ADDR_CTR",
+    "pin": "QB",
+    "mode": 1
+   }
+  }
+ },
+ {
+  "id": "schematic/board_package/ADDR_CTR.QB/stuck_lo",
+  "kind": "schematic",
+  "config": "board_package",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_ADDR_CTR_QB",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "ADDR_CTR",
+    "pin": "QB",
+    "mode": 2
+   }
+  }
+ },
+ {
+  "id": "schematic/board_package/ADDR_CTR.QB/open",
+  "kind": "schematic",
+  "config": "board_package",
+  "source": "boards/centipede/fault_map.json",
+  "fault_device": "FB_ADDR_CTR_QB",
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "ADDR_CTR",
+    "pin": "QB",
+    "mode": 3
+   }
+  }
+ },
+ {
+  "id": "scenario/dim-psu-5v",
+  "kind": "scenario",
+  "source": "tests/scenarios/01-dim-psu-5v.json",
+  "title": "Dim picture, sluggish controls",
+  "apply": {
+   "method": "POST",
+   "path": "/api/scenarios/dim-psu-5v/apply",
+   "body": {}
+  }
+ },
+ {
+  "id": "scenario/vertical-collapse",
+  "kind": "scenario",
+  "source": "tests/scenarios/02-vertical-collapse.json",
+  "title": "Screen collapses to a horizontal bar",
+  "apply": {
+   "method": "POST",
+   "path": "/api/scenarios/vertical-collapse/apply",
+   "body": {}
+  }
+ },
+ {
+  "id": "scenario/dead-trackball-x",
+  "kind": "scenario",
+  "source": "tests/scenarios/03-dead-trackball-x.json",
+  "title": "Can't steer left or right",
+  "apply": {
+   "method": "POST",
+   "path": "/api/scenarios/dead-trackball-x/apply",
+   "body": {}
+  }
+ },
+ {
+  "id": "scenario/reversed-trackball",
+  "kind": "scenario",
+  "source": "tests/scenarios/04-reversed-trackball.json",
+  "title": "Controls move the wrong way",
+  "apply": {
+   "method": "POST",
+   "path": "/api/scenarios/reversed-trackball/apply",
+   "body": {}
+  }
+ },
+ {
+  "id": "scenario/sprite-ram-glitch",
+  "kind": "scenario",
+  "source": "tests/scenarios/05-sprite-ram-glitch.json",
+  "title": "Tile corruption mid-screen",
+  "apply": {
+   "method": "POST",
+   "path": "/api/scenarios/sprite-ram-glitch/apply",
+   "body": {}
+  }
+ },
+ {
+  "id": "scenario/address-decoder-rom",
+  "kind": "scenario",
+  "source": "tests/scenarios/06-address-decoder-rom.json",
+  "title": "Game freezes on startup \u2014 ROM bank missing",
+  "apply": {
+   "method": "POST",
+   "path": "/api/scenarios/address-decoder-rom/apply",
+   "body": {}
+  }
+ },
+ {
+  "id": "scenario/hum-amp",
+  "kind": "scenario",
+  "source": "tests/scenarios/07-hum-amp.json",
+  "title": "Loud 60 Hz hum from the speaker",
+  "apply": {
+   "method": "POST",
+   "path": "/api/scenarios/hum-amp/apply",
+   "body": {}
+  }
+ },
+ {
+  "id": "scenario/dead-amp",
+  "kind": "scenario",
+  "source": "tests/scenarios/08-dead-amp.json",
+  "title": "Complete silence \u2014 no game audio",
+  "apply": {
+   "method": "POST",
+   "path": "/api/scenarios/dead-amp/apply",
+   "body": {}
+  }
+ },
+ {
+  "id": "scenario/sync-lock",
+  "kind": "scenario",
+  "source": "tests/scenarios/09-sync-lock.json",
+  "title": "Rolling picture / screen tears diagonally",
+  "apply": {
+   "method": "POST",
+   "path": "/api/scenarios/sync-lock/apply",
+   "body": {}
+  }
+ },
+ {
+  "id": "scenario/ringing-ghosting",
+  "kind": "scenario",
+  "source": "tests/scenarios/10-ringing-ghosting.json",
+  "title": "Fuzzy double-image on sprites",
+  "apply": {
+   "method": "POST",
+   "path": "/api/scenarios/ringing-ghosting/apply",
+   "body": {}
+  }
+ },
+ {
+  "id": "scenario/weak-focus",
+  "kind": "scenario",
+  "source": "tests/scenarios/11-weak-focus.json",
+  "title": "Everything looks blurry",
+  "apply": {
+   "method": "POST",
+   "path": "/api/scenarios/weak-focus/apply",
+   "body": {}
+  }
+ },
+ {
+  "id": "scenario/multi-fault",
+  "kind": "scenario",
+  "source": "tests/scenarios/12-multi-fault.json",
+  "title": "\"The whole thing's broken\" \u2014 cascading failure",
+  "apply": {
+   "method": "POST",
+   "path": "/api/scenarios/multi-fault/apply",
+   "body": {}
+  }
+ },
+ {
+  "id": "raw/stuck_byte/col16-row12-ff",
+  "kind": "raw",
+  "source": "tools/demo-stuck-pixel.sh, /api/mame/stuck_byte",
+  "apply": {
+   "method": "POST",
+   "path": "/api/mame/stuck_byte",
+   "body": {
+    "col": 16,
+    "row": 12,
+    "value": 255
+   }
+  }
+ },
+ {
+  "id": "raw/poke_ram/0x0590-ff",
+  "kind": "raw",
+  "source": "/api/mame/poke_ram",
+  "apply": {
+   "method": "POST",
+   "path": "/api/mame/poke_ram",
+   "body": {
+    "addr": "0x0590",
+    "value": 255
+   }
+  }
+ },
+ {
+  "id": "netlist/sync_generator/normal",
+  "kind": "netlist",
+  "source": "build/instrumented/sync_generator.cpp via /api/run",
+  "faults": {}
+ },
+ {
+  "id": "netlist/sync_generator/CLK.Q/stuck_hi",
+  "kind": "netlist",
+  "source": "build/instrumented/sync_generator.cpp via /api/run",
+  "faults": {
+   "FB_CLK_Q": 1
+  }
+ },
+ {
+  "id": "netlist/sync_generator/CLK.Q/stuck_lo",
+  "kind": "netlist",
+  "source": "build/instrumented/sync_generator.cpp via /api/run",
+  "faults": {
+   "FB_CLK_Q": 2
+  }
+ },
+ {
+  "id": "netlist/sync_generator/CLK.Q/open",
+  "kind": "netlist",
+  "source": "build/instrumented/sync_generator.cpp via /api/run",
+  "faults": {
+   "FB_CLK_Q": 3
+  }
+ },
+ {
+  "id": "netlist/sync_generator/H_LO.RC/stuck_hi",
+  "kind": "netlist",
+  "source": "build/instrumented/sync_generator.cpp via /api/run",
+  "faults": {
+   "FB_H_LO_RC": 1
+  }
+ },
+ {
+  "id": "netlist/sync_generator/H_LO.RC/stuck_lo",
+  "kind": "netlist",
+  "source": "build/instrumented/sync_generator.cpp via /api/run",
+  "faults": {
+   "FB_H_LO_RC": 2
+  }
+ },
+ {
+  "id": "netlist/sync_generator/H_LO.RC/open",
+  "kind": "netlist",
+  "source": "build/instrumented/sync_generator.cpp via /api/run",
+  "faults": {
+   "FB_H_LO_RC": 3
+  }
+ },
+ {
+  "id": "netlist/sync_generator/H_HI.RC/stuck_hi",
+  "kind": "netlist",
+  "source": "build/instrumented/sync_generator.cpp via /api/run",
+  "faults": {
+   "FB_H_HI_RC": 1
+  }
+ },
+ {
+  "id": "netlist/sync_generator/H_HI.RC/stuck_lo",
+  "kind": "netlist",
+  "source": "build/instrumented/sync_generator.cpp via /api/run",
+  "faults": {
+   "FB_H_HI_RC": 2
+  }
+ },
+ {
+  "id": "netlist/sync_generator/H_HI.RC/open",
+  "kind": "netlist",
+  "source": "build/instrumented/sync_generator.cpp via /api/run",
+  "faults": {
+   "FB_H_HI_RC": 3
+  }
+ },
+ {
+  "id": "netlist/sync_generator/H_HI.QD/stuck_hi",
+  "kind": "netlist",
+  "source": "build/instrumented/sync_generator.cpp via /api/run",
+  "faults": {
+   "FB_H_HI_QD": 1
+  }
+ },
+ {
+  "id": "netlist/sync_generator/H_HI.QD/stuck_lo",
+  "kind": "netlist",
+  "source": "build/instrumented/sync_generator.cpp via /api/run",
+  "faults": {
+   "FB_H_HI_QD": 2
+  }
+ },
+ {
+  "id": "netlist/sync_generator/H_HI.QD/open",
+  "kind": "netlist",
+  "source": "build/instrumented/sync_generator.cpp via /api/run",
+  "faults": {
+   "FB_H_HI_QD": 3
+  }
+ },
+ {
+  "id": "netlist/sync_generator/H_HI.QC/stuck_hi",
+  "kind": "netlist",
+  "source": "build/instrumented/sync_generator.cpp via /api/run",
+  "faults": {
+   "FB_H_HI_QC": 1
+  }
+ },
+ {
+  "id": "netlist/sync_generator/H_HI.QC/stuck_lo",
+  "kind": "netlist",
+  "source": "build/instrumented/sync_generator.cpp via /api/run",
+  "faults": {
+   "FB_H_HI_QC": 2
+  }
+ },
+ {
+  "id": "netlist/sync_generator/H_HI.QC/open",
+  "kind": "netlist",
+  "source": "build/instrumented/sync_generator.cpp via /api/run",
+  "faults": {
+   "FB_H_HI_QC": 3
+  }
+ },
+ {
+  "id": "netlist/sync_generator/H_HI.QB/stuck_hi",
+  "kind": "netlist",
+  "source": "build/instrumented/sync_generator.cpp via /api/run",
+  "faults": {
+   "FB_H_HI_QB": 1
+  }
+ },
+ {
+  "id": "netlist/sync_generator/H_HI.QB/stuck_lo",
+  "kind": "netlist",
+  "source": "build/instrumented/sync_generator.cpp via /api/run",
+  "faults": {
+   "FB_H_HI_QB": 2
+  }
+ },
+ {
+  "id": "netlist/sync_generator/H_HI.QB/open",
+  "kind": "netlist",
+  "source": "build/instrumented/sync_generator.cpp via /api/run",
+  "faults": {
+   "FB_H_HI_QB": 3
+  }
+ },
+ {
+  "id": "netlist/sync_generator/V_LO.QD/stuck_hi",
+  "kind": "netlist",
+  "source": "build/instrumented/sync_generator.cpp via /api/run",
+  "faults": {
+   "FB_V_LO_QD": 1
+  }
+ },
+ {
+  "id": "netlist/sync_generator/V_LO.QD/stuck_lo",
+  "kind": "netlist",
+  "source": "build/instrumented/sync_generator.cpp via /api/run",
+  "faults": {
+   "FB_V_LO_QD": 2
+  }
+ },
+ {
+  "id": "netlist/sync_generator/V_LO.QD/open",
+  "kind": "netlist",
+  "source": "build/instrumented/sync_generator.cpp via /api/run",
+  "faults": {
+   "FB_V_LO_QD": 3
+  }
+ },
+ {
+  "id": "netlist/sync_generator/V_LO.QC/stuck_hi",
+  "kind": "netlist",
+  "source": "build/instrumented/sync_generator.cpp via /api/run",
+  "faults": {
+   "FB_V_LO_QC": 1
+  }
+ },
+ {
+  "id": "netlist/sync_generator/V_LO.QC/stuck_lo",
+  "kind": "netlist",
+  "source": "build/instrumented/sync_generator.cpp via /api/run",
+  "faults": {
+   "FB_V_LO_QC": 2
+  }
+ },
+ {
+  "id": "netlist/sync_generator/V_LO.QC/open",
+  "kind": "netlist",
+  "source": "build/instrumented/sync_generator.cpp via /api/run",
+  "faults": {
+   "FB_V_LO_QC": 3
+  }
+ }
+]

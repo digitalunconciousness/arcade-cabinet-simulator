@@ -1,0 +1,924 @@
+{
+ "record": {
+  "id": "schematic/board_package/V_LO.QD/open",
+  "kind": "schematic",
+  "source": "boards/centipede/fault_map.json",
+  "evidence": "runs/schematic__board_package__V_LO_QD__open.json",
+  "verdict": "rejected-by-plugin",
+  "diff": {
+   "frames_compared": 600,
+   "frames_differing": 0,
+   "first_differing_frame": null,
+   "frames_missing": 0,
+   "ram_bytes_differing": {
+    "660": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    },
+    "900": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    },
+    "1200": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    }
+   },
+   "consequence_ram_bytes": {
+    "660": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    },
+    "900": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    },
+    "1200": {
+     "work_ram_0000_03ff": 0,
+     "playfield_0400_07bf": 0,
+     "sprite_ram_07c0_07ff": 0
+    }
+   },
+   "injected_cells": [],
+   "resets_baseline": [],
+   "resets_run": []
+  },
+  "plugin_commands": [
+   {
+    "cmd": {
+     "cmd": "set_crt_fault",
+     "effect": "vertical_collapse",
+     "brightness": 1.0
+    },
+    "reply": {
+     "error": "unknown command: set_crt_fault",
+     "ok": false
+    },
+    "error": null
+   }
+  ],
+  "http_apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "V_LO",
+    "pin": "QD",
+    "mode": 3
+   },
+   "status": 200,
+   "response": {
+    "active_faults": {
+     "FB_V_LO_QD": 3
+    },
+    "fault": null,
+    "fault_device": "FB_V_LO_QD",
+    "label": "OPEN",
+    "mode": 3,
+    "ok": true,
+    "pin": "QD",
+    "ref": "V_LO",
+    "refdes": "V_LO"
+   }
+  },
+  "schematic_source": {
+   "status": 404,
+   "available": false,
+   "error": "FaultMapEntry.__init__() got an unexpected keyword argument 'scenarios'"
+  }
+ },
+ "worker": {
+  "entry": {
+   "id": "schematic/board_package/V_LO.QD/open",
+   "kind": "schematic",
+   "config": "board_package",
+   "source": "boards/centipede/fault_map.json",
+   "fault_device": "FB_V_LO_QD",
+   "apply": {
+    "method": "POST",
+    "path": "/api/schematic/fault/apply",
+    "body": {
+     "ref": "V_LO",
+     "pin": "QD",
+     "mode": 3
+    }
+   }
+  },
+  "apply": {
+   "method": "POST",
+   "path": "/api/schematic/fault/apply",
+   "body": {
+    "ref": "V_LO",
+    "pin": "QD",
+    "mode": 3
+   },
+   "status": 200,
+   "response": {
+    "active_faults": {
+     "FB_V_LO_QD": 3
+    },
+    "fault": null,
+    "fault_device": "FB_V_LO_QD",
+    "label": "OPEN",
+    "mode": 3,
+    "ok": true,
+    "pin": "QD",
+    "ref": "V_LO",
+    "refdes": "V_LO"
+   }
+  },
+  "schematic_summary": {
+   "method": "GET",
+   "path": "/api/schematic/summary",
+   "body": {},
+   "status": 404,
+   "response": {
+    "available": false,
+    "error": "FaultMapEntry.__init__() got an unexpected keyword argument 'scenarios'",
+    "hint": "set CABINET_BOARD_PATH to a board.json path or CABINET_KICAD_NETLIST to a KiCad XML netlist path"
+   }
+  },
+  "http": [
+   {
+    "method": "GET",
+    "path": "/api/schematic/summary",
+    "body": {},
+    "status": 404,
+    "response": {
+     "available": false,
+     "error": "FaultMapEntry.__init__() got an unexpected keyword argument 'scenarios'",
+     "hint": "set CABINET_BOARD_PATH to a board.json path or CABINET_KICAD_NETLIST to a KiCad XML netlist path"
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/schematic/fault/apply",
+    "body": {
+     "ref": "V_LO",
+     "pin": "QD",
+     "mode": 3
+    },
+    "status": 200,
+    "response": {
+     "active_faults": {
+      "FB_V_LO_QD": 3
+     },
+     "fault": null,
+     "fault_device": "FB_V_LO_QD",
+     "label": "OPEN",
+     "mode": 3,
+     "ok": true,
+     "pin": "QD",
+     "ref": "V_LO",
+     "refdes": "V_LO"
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/trackball/motion",
+    "body": {
+     "dx": 8,
+     "dy": 0
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "mame": {
+      "error": "unknown command: trackball_delta",
+      "ok": false
+     },
+     "packet": {
+      "dx": 8,
+      "dy": 0,
+      "fault": "NORMAL",
+      "quad_dx": 8,
+      "quad_dy": 0
+     }
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/trackball/motion",
+    "body": {
+     "dx": 8,
+     "dy": 0
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "mame": {
+      "error": "unknown command: trackball_delta",
+      "ok": false
+     },
+     "packet": {
+      "dx": 8,
+      "dy": 0,
+      "fault": "NORMAL",
+      "quad_dx": 8,
+      "quad_dy": 0
+     }
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/trackball/motion",
+    "body": {
+     "dx": 0,
+     "dy": 8
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "mame": {
+      "error": "unknown command: trackball_delta",
+      "ok": false
+     },
+     "packet": {
+      "dx": 0,
+      "dy": 8,
+      "fault": "NORMAL",
+      "quad_dx": 0,
+      "quad_dy": 8
+     }
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/mame/press_button",
+    "body": {
+     "name": "P1 Button 1"
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "error": "unknown command: press_button",
+     "ok": false
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/mame/release_button",
+    "body": {
+     "name": "P1 Button 1"
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "error": "unknown command: release_button",
+     "ok": false
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/peripherals/coin",
+    "body": {},
+    "status": 200,
+    "response": {
+     "credits": 1,
+     "fault": "NORMAL",
+     "id": "COIN1",
+     "last_event": "accepted",
+     "supported_faults": [
+      "stuck_switch",
+      "dirty_contact",
+      "jammed_mech",
+      "miscalibrated"
+     ],
+     "supported_params": {},
+     "type": "coin_mech"
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/mame/press_button",
+    "body": {
+     "name": "Coin 1"
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "error": "unknown command: press_button",
+     "ok": false
+    }
+   },
+   {
+    "method": "POST",
+    "path": "/api/mame/release_button",
+    "body": {
+     "name": "Coin 1"
+    },
+    "status": 200,
+    "response": {
+     "available": true,
+     "error": "unknown command: release_button",
+     "ok": false
+    }
+   }
+  ],
+  "plugin": [
+   {
+    "t": 2667.437,
+    "cmd": {
+     "cmd": "set_crt_fault",
+     "effect": "vertical_collapse",
+     "brightness": 1.0
+    },
+    "reply": {
+     "error": "unknown command: set_crt_fault",
+     "ok": false
+    }
+   },
+   {
+    "t": 2667.504,
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 1024,
+     "cpu": "maincpu",
+     "value": null
+    },
+    "reply": {
+     "addr": 1024,
+     "cpu": "maincpu",
+     "action": "cleared",
+     "ok": true
+    }
+   },
+   {
+    "t": 2667.538,
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 1054,
+     "cpu": "maincpu",
+     "value": null
+    },
+    "reply": {
+     "addr": 1054,
+     "cpu": "maincpu",
+     "action": "cleared",
+     "ok": true
+    }
+   },
+   {
+    "t": 2667.571,
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 1084,
+     "cpu": "maincpu",
+     "value": null
+    },
+    "reply": {
+     "addr": 1084,
+     "cpu": "maincpu",
+     "action": "cleared",
+     "ok": true
+    }
+   },
+   {
+    "t": 2667.604,
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 1114,
+     "cpu": "maincpu",
+     "value": null
+    },
+    "reply": {
+     "addr": 1114,
+     "cpu": "maincpu",
+     "action": "cleared",
+     "ok": true
+    }
+   },
+   {
+    "t": 2667.638,
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 1144,
+     "cpu": "maincpu",
+     "value": null
+    },
+    "reply": {
+     "addr": 1144,
+     "cpu": "maincpu",
+     "action": "cleared",
+     "ok": true
+    }
+   },
+   {
+    "t": 2667.671,
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 1174,
+     "cpu": "maincpu",
+     "value": null
+    },
+    "reply": {
+     "addr": 1174,
+     "cpu": "maincpu",
+     "action": "cleared",
+     "ok": true
+    }
+   },
+   {
+    "t": 2667.705,
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 1204,
+     "cpu": "maincpu",
+     "value": null
+    },
+    "reply": {
+     "addr": 1204,
+     "cpu": "maincpu",
+     "action": "cleared",
+     "ok": true
+    }
+   },
+   {
+    "t": 2667.738,
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 1234,
+     "cpu": "maincpu",
+     "value": null
+    },
+    "reply": {
+     "addr": 1234,
+     "cpu": "maincpu",
+     "action": "cleared",
+     "ok": true
+    }
+   },
+   {
+    "t": 2667.772,
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 1264,
+     "cpu": "maincpu",
+     "value": null
+    },
+    "reply": {
+     "addr": 1264,
+     "cpu": "maincpu",
+     "action": "cleared",
+     "ok": true
+    }
+   },
+   {
+    "t": 2667.805,
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 1294,
+     "cpu": "maincpu",
+     "value": null
+    },
+    "reply": {
+     "addr": 1294,
+     "cpu": "maincpu",
+     "action": "cleared",
+     "ok": true
+    }
+   },
+   {
+    "t": 2667.839,
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 1324,
+     "cpu": "maincpu",
+     "value": null
+    },
+    "reply": {
+     "addr": 1324,
+     "cpu": "maincpu",
+     "action": "cleared",
+     "ok": true
+    }
+   },
+   {
+    "t": 2667.872,
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 1354,
+     "cpu": "maincpu",
+     "value": null
+    },
+    "reply": {
+     "addr": 1354,
+     "cpu": "maincpu",
+     "action": "cleared",
+     "ok": true
+    }
+   },
+   {
+    "t": 2667.906,
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 1384,
+     "cpu": "maincpu",
+     "value": null
+    },
+    "reply": {
+     "addr": 1384,
+     "cpu": "maincpu",
+     "action": "cleared",
+     "ok": true
+    }
+   },
+   {
+    "t": 2667.939,
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 1414,
+     "cpu": "maincpu",
+     "value": null
+    },
+    "reply": {
+     "addr": 1414,
+     "cpu": "maincpu",
+     "action": "cleared",
+     "ok": true
+    }
+   },
+   {
+    "t": 2667.973,
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 1444,
+     "cpu": "maincpu",
+     "value": null
+    },
+    "reply": {
+     "addr": 1444,
+     "cpu": "maincpu",
+     "action": "cleared",
+     "ok": true
+    }
+   },
+   {
+    "t": 2668.006,
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 1474,
+     "cpu": "maincpu",
+     "value": null
+    },
+    "reply": {
+     "addr": 1474,
+     "cpu": "maincpu",
+     "action": "cleared",
+     "ok": true
+    }
+   },
+   {
+    "t": 2668.04,
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 1504,
+     "cpu": "maincpu",
+     "value": null
+    },
+    "reply": {
+     "addr": 1504,
+     "cpu": "maincpu",
+     "action": "cleared",
+     "ok": true
+    }
+   },
+   {
+    "t": 2668.073,
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 1534,
+     "cpu": "maincpu",
+     "value": null
+    },
+    "reply": {
+     "addr": 1534,
+     "cpu": "maincpu",
+     "action": "cleared",
+     "ok": true
+    }
+   },
+   {
+    "t": 2668.108,
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 1564,
+     "cpu": "maincpu",
+     "value": null
+    },
+    "reply": {
+     "addr": 1564,
+     "cpu": "maincpu",
+     "action": "cleared",
+     "ok": true
+    }
+   },
+   {
+    "t": 2668.142,
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 1594,
+     "cpu": "maincpu",
+     "value": null
+    },
+    "reply": {
+     "addr": 1594,
+     "cpu": "maincpu",
+     "action": "cleared",
+     "ok": true
+    }
+   },
+   {
+    "t": 2668.175,
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 1624,
+     "cpu": "maincpu",
+     "value": null
+    },
+    "reply": {
+     "addr": 1624,
+     "cpu": "maincpu",
+     "action": "cleared",
+     "ok": true
+    }
+   },
+   {
+    "t": 2668.209,
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 1654,
+     "cpu": "maincpu",
+     "value": null
+    },
+    "reply": {
+     "addr": 1654,
+     "cpu": "maincpu",
+     "action": "cleared",
+     "ok": true
+    }
+   },
+   {
+    "t": 2668.242,
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 1684,
+     "cpu": "maincpu",
+     "value": null
+    },
+    "reply": {
+     "addr": 1684,
+     "cpu": "maincpu",
+     "action": "cleared",
+     "ok": true
+    }
+   },
+   {
+    "t": 2668.276,
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 1714,
+     "cpu": "maincpu",
+     "value": null
+    },
+    "reply": {
+     "addr": 1714,
+     "cpu": "maincpu",
+     "action": "cleared",
+     "ok": true
+    }
+   },
+   {
+    "t": 2668.309,
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 1744,
+     "cpu": "maincpu",
+     "value": null
+    },
+    "reply": {
+     "addr": 1744,
+     "cpu": "maincpu",
+     "action": "cleared",
+     "ok": true
+    }
+   },
+   {
+    "t": 2668.343,
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 1774,
+     "cpu": "maincpu",
+     "value": null
+    },
+    "reply": {
+     "addr": 1774,
+     "cpu": "maincpu",
+     "action": "cleared",
+     "ok": true
+    }
+   },
+   {
+    "t": 2668.376,
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 1804,
+     "cpu": "maincpu",
+     "value": null
+    },
+    "reply": {
+     "addr": 1804,
+     "cpu": "maincpu",
+     "action": "cleared",
+     "ok": true
+    }
+   },
+   {
+    "t": 2668.409,
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 1834,
+     "cpu": "maincpu",
+     "value": null
+    },
+    "reply": {
+     "addr": 1834,
+     "cpu": "maincpu",
+     "action": "cleared",
+     "ok": true
+    }
+   },
+   {
+    "t": 2668.429,
+    "cmd": {
+     "cmd": "set_crt_fault",
+     "effect": "normal",
+     "brightness": 1.0
+    },
+    "reply": {
+     "error": "unknown command: set_crt_fault",
+     "ok": false
+    }
+   },
+   {
+    "t": 2668.443,
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 1864,
+     "cpu": "maincpu",
+     "value": null
+    },
+    "reply": {
+     "addr": 1864,
+     "cpu": "maincpu",
+     "action": "cleared",
+     "ok": true
+    }
+   },
+   {
+    "t": 2668.51,
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 1894,
+     "cpu": "maincpu",
+     "value": null
+    },
+    "reply": {
+     "addr": 1894,
+     "cpu": "maincpu",
+     "action": "cleared",
+     "ok": true
+    }
+   },
+   {
+    "t": 2668.543,
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 1924,
+     "cpu": "maincpu",
+     "value": null
+    },
+    "reply": {
+     "addr": 1924,
+     "cpu": "maincpu",
+     "action": "cleared",
+     "ok": true
+    }
+   },
+   {
+    "t": 2668.577,
+    "cmd": {
+     "cmd": "stuck_byte",
+     "addr": 1954,
+     "cpu": "maincpu",
+     "value": null
+    },
+    "reply": {
+     "addr": 1954,
+     "cpu": "maincpu",
+     "action": "cleared",
+     "ok": true
+    }
+   },
+   {
+    "t": 2668.611,
+    "cmd": {
+     "cmd": "trackball_delta",
+     "dx": 8,
+     "dy": 0
+    },
+    "reply": {
+     "error": "unknown command: trackball_delta",
+     "ok": false
+    }
+   },
+   {
+    "t": 2668.645,
+    "cmd": {
+     "cmd": "trackball_delta",
+     "dx": 8,
+     "dy": 0
+    },
+    "reply": {
+     "error": "unknown command: trackball_delta",
+     "ok": false
+    }
+   },
+   {
+    "t": 2668.678,
+    "cmd": {
+     "cmd": "trackball_delta",
+     "dx": 0,
+     "dy": 8
+    },
+    "reply": {
+     "error": "unknown command: trackball_delta",
+     "ok": false
+    }
+   },
+   {
+    "t": 2668.711,
+    "cmd": {
+     "cmd": "press_button",
+     "name": "P1 Button 1"
+    },
+    "reply": {
+     "error": "unknown command: press_button",
+     "ok": false
+    }
+   },
+   {
+    "t": 2668.745,
+    "cmd": {
+     "cmd": "release_button",
+     "name": "P1 Button 1"
+    },
+    "reply": {
+     "error": "unknown command: release_button",
+     "ok": false
+    }
+   },
+   {
+    "t": 2668.779,
+    "cmd": {
+     "cmd": "press_button",
+     "name": "Coin 1"
+    },
+    "reply": {
+     "error": "unknown command: press_button",
+     "ok": false
+    }
+   },
+   {
+    "t": 2668.812,
+    "cmd": {
+     "cmd": "release_button",
+     "name": "Coin 1"
+    },
+    "reply": {
+     "error": "unknown command: release_button",
+     "ok": false
+    }
+   },
+   {
+    "t": 2670.345,
+    "cmd": {
+     "cmd": "resume"
+    },
+    "reply": {
+     "paused": false,
+     "ok": true,
+     "rom": "centiped3",
+     "frame": 694,
+     "app": "mame",
+     "version": "0.287"
+    }
+   }
+  ],
+  "resume_error": null
+ }
+}

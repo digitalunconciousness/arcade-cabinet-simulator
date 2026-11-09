@@ -29,3 +29,9 @@ is copied here.
 - **The newer cabinet_bus plugin.** The wiki and server use `press_button`, `trackball_delta`, `set_crt_fault` and DIP
   commands that no commit contains. If that `init.lua` still exists on the maintainer's machine, it's worth a look before
   Stage 2 for the input and DIP code. It is not needed for the audit, which tests what the repo reproduces.
+- **Stage 3: the board package doesn't load.** `boards/centipede/fault_map.json` carries a `scenarios` key that
+  `tools/schematic/board_package.py` rejects. Fix it as part of migrating the board package into the Centipede pack,
+  with a test that loads the real file, not a fixture.
+- **Stage 3/4: trace the netlists from the schematic.** The sync generator and address decoder netlists say they are
+  representative, not transcribed. PLAN v0.3 wants netlists as the net map and pin maps for lowering, which needs the
+  real board.
