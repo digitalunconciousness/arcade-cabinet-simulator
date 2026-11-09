@@ -1,4 +1,4 @@
-From 55fb05dfde2b424c15bdb31292f229a179d3a944 Mon Sep 17 00:00:00 2001
+From 200e4aa341897cd76e5df3d0618e3934de476108 Mon Sep 17 00:00:00 2001
 From: jackie grey <leftstick22@gmail.com>
 Date: Thu, 30 Apr 2026 00:28:11 -0500
 Subject: [PATCH 2/3] Add cabinet_bus plugin: socket bridge for the cabinet-bus
@@ -306,5 +306,5 @@ index 00000000..a7ec62b3
 +  }
 +}
 -- 
-2.54.0
+2.43.0
 

@@ -1,4 +1,4 @@
-From 02b75833cdbe691a627a9e42241510827c933203 Mon Sep 17 00:00:00 2001
+From 8c973df190622a59c66e7eaf9d2c5a0c877aaa1a Mon Sep 17 00:00:00 2001
 From: jackie grey <leftstick22@gmail.com>
 Date: Thu, 30 Apr 2026 01:45:28 -0500
 Subject: [PATCH 3/3] Add BAD_RAM_CELL netlist device for cell-level RAM fault
@@ -20,8 +20,8 @@ Co-Authored-By: Oz <oz-agent@warp.dev>
  scripts/src/netlist.lua                      |   1 +
  src/lib/netlist/devices/nld_bad_ram_cell.cpp | 121 +++++++++++++++++++
  src/lib/netlist/generated/lib_entries.hxx    |   1 +
- src/lib/netlist/generated/nld_devinc.h       |  10 ++
- 4 files changed, 133 insertions(+)
+ src/lib/netlist/generated/nld_devinc.h       |   9 ++
+ 4 files changed, 132 insertions(+)
  create mode 100644 src/lib/netlist/devices/nld_bad_ram_cell.cpp
 
 diff --git a/scripts/src/netlist.lua b/scripts/src/netlist.lua
@@ -176,12 +176,12 @@ index 1d09585a..4d26adac 100644
  LIB_ENTRY(CCCS)
  LIB_ENTRY(CCVS)
 diff --git a/src/lib/netlist/generated/nld_devinc.h b/src/lib/netlist/generated/nld_devinc.h
-index 36496d2b..990f3d7a 100644
+index de589034..4948e795 100644
 --- a/src/lib/netlist/generated/nld_devinc.h
 +++ b/src/lib/netlist/generated/nld_devinc.h
-@@ -655,6 +655,16 @@
- 	__VA_OPT__(NET_CHECK_PARAM_COUNT(TTL_AM2847, PNARGS(__VA_ARGS__), 9)) \
- 	NET_REGISTER_DEV(TTL_AM2847, name __VA_OPT__(,) __VA_ARGS__)
+@@ -591,6 +591,15 @@
+ #define TTL_AM2847(...)                                                   \
+ 	NET_REGISTER_DEVEXT(TTL_AM2847, __VA_ARGS__)
  
 +// ---------------------------------------------------------------------
 +// Source: ../devices/nld_bad_ram_cell.cpp
@@ -189,13 +189,12 @@ index 36496d2b..990f3d7a 100644
 +
 +// usage       : BAD_RAM_CELL(name, CEQ, A0, A1, A2, A3, RWQ, DI)
 +// auto connect: VCC, GND
-+#define BAD_RAM_CELL(name, ...) \
-+	__VA_OPT__(NET_CHECK_PARAM_COUNT(BAD_RAM_CELL, PNARGS(__VA_ARGS__), 7)) \
-+	NET_REGISTER_DEV(BAD_RAM_CELL, name __VA_OPT__(,) __VA_ARGS__)
++#define BAD_RAM_CELL(...)                                                   \
++	NET_REGISTER_DEVEXT(BAD_RAM_CELL, __VA_ARGS__)
 +
  // ---------------------------------------------------------------------
  // Source: ../devices/nld_fault_buffer.cpp
  // ---------------------------------------------------------------------
 -- 
-2.54.0
+2.43.0
 
