@@ -1,0 +1,26 @@
+id: centipede/playfield-ram-data-bit3-stuck-low
+title: Playfield RAM data line D3 stuck low
+romset: centiped3
+display: {rotate: 90}
+tier: A
+symptom: Garbled tiles and text across the playfield, mushrooms change shape, and the game keeps running.
+sources: [mame-centiped-map, cendef-memory-map]
+run:
+  end_frame: 1500
+  checkpoints: [600, 900, 1100, 1500]
+  ram:
+    - {name: playfield, space: ":maincpu", start: 0x0400, end: 0x07bf}
+inject:
+  at_frame: 600
+  primitive: data_bit_stuck
+  params: {space: ":maincpu", start: 0x0400, end: 0x07bf, bit: 3, level: 0}
+expect:
+  - frame_hash_differs: {from: 601, to: 1099, min_fraction: 0.9}
+  - region_bits: {ram: playfield, at: 900, bit: 3, level: 0}
+  - not_crashed: {}
+  - snapshot: {at: 900}
+repair:
+  at_frame: 1100
+  action: clear_and_hard_reset
+expect_after_repair:
+  - frame_hash_matches_baseline: {from: 1101, to: 1500}

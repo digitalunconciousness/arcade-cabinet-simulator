@@ -1,0 +1,83 @@
+{
+ "note": "Unthrottled, headless (-video none -sound none), no frame hashing, best of N. Wall time includes MAME start-up.",
+ "machine": {
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "cpus": 4,
+  "os": "Linux-6.18.44-fc-v310-x86_64-with-glibc2.39"
+ },
+ "romset": "centiped3",
+ "results": [
+  {
+   "case": "no fault",
+   "frames": 3600,
+   "wall_seconds_best": 2.509,
+   "wall_seconds_all": [
+    2.523,
+    2.512,
+    2.509
+   ],
+   "speed_x_realtime": 23.91,
+   "relative_to_no_fault": 1.0
+  },
+  {
+   "case": "data_bit_stuck on playfield RAM 0x0400-0x07BF",
+   "frames": 3600,
+   "wall_seconds_best": 2.465,
+   "wall_seconds_all": [
+    2.535,
+    2.465,
+    2.495
+   ],
+   "speed_x_realtime": 24.34,
+   "relative_to_no_fault": 1.018
+  },
+  {
+   "case": "data_bit_stuck on zero page and stack 0x0000-0x01FF (hot)",
+   "frames": 3600,
+   "wall_seconds_best": 3.381,
+   "wall_seconds_all": [
+    3.381,
+    3.385,
+    3.475
+   ],
+   "speed_x_realtime": 17.75,
+   "relative_to_no_fault": 0.742
+  },
+  {
+   "case": "data_bit_stuck on all RAM 0x0000-0x07FF",
+   "frames": 3600,
+   "wall_seconds_best": 3.339,
+   "wall_seconds_all": [
+    3.616,
+    3.518,
+    3.339
+   ],
+   "speed_x_realtime": 17.97,
+   "relative_to_no_fault": 0.751
+  },
+  {
+   "case": "addr_line_stuck on playfield RAM (write tap + partner writes)",
+   "frames": 3600,
+   "wall_seconds_best": 2.527,
+   "wall_seconds_all": [
+    2.527,
+    2.765,
+    2.735
+   ],
+   "speed_x_realtime": 23.74,
+   "relative_to_no_fault": 0.993
+  },
+  {
+   "case": "reg_read_override on POKEY RANDOM",
+   "frames": 3600,
+   "wall_seconds_best": 2.155,
+   "wall_seconds_all": [
+    2.442,
+    2.155,
+    2.473
+   ],
+   "speed_x_realtime": 27.85,
+   "relative_to_no_fault": 1.164
+  }
+ ]
+}

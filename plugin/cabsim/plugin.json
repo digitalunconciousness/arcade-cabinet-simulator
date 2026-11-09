@@ -1,0 +1,10 @@
+{
+  "plugin": {
+    "name": "cabsim",
+    "description": "Fault engine for arcade-cabinet-simulator",
+    "version": "0.1.0",
+    "author": "arcade-cabinet-simulator",
+    "type": "plugin",
+    "start": "false"
+  }
+}
