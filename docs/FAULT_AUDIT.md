@@ -16,6 +16,10 @@ twice: the two matched on every frame and every RAM byte, so any difference belo
 legacy fault sends anything to MAME's sound. The uncommitted plugin on the maintainer's machine couldn't be audited.
 The romset is rev 3, not the rev 4 that ADR-0012 targets.
 
+**Since Stage 1** the faults that reach the game come from the new fault engine (`plugin/cabsim/`), not from anything
+audited here. Each has an effect test with evidence in `evidence/stage1/`; the list is in `docs/STATUS.md`. This page
+stays as the record of what the legacy app did.
+
 ## Summary by mechanism
 
 142 legacy faults ran against the game: 7 changed its output, 70 sent only commands the plugin rejects, 63 sent

@@ -16,6 +16,11 @@ Godot spike in Stage 2 works ([ADR-0011](wiki/Decisions/ADR-0011-Native-Shell-Di
 ## Layout (tracked)
 - `patches/` — patch series we keep on top of MAME, applied to the tag in `patches/MAME_VERSION`. See
   `patches/README.md`.
+- `plugin/cabsim/` — the fault engine, a MAME Lua plugin (primitives, headless timeline mode, Sim Control Protocol v1).
+- `tools/cabsim/` — the effect-test runner (`python -m tools.cabsim effect run ...`), benchmark and protocol smoke test.
+- `tests/effect/` — one effect test per fault, for the real game (`centipede/`) and the original test ROM (`testrom/`).
+- `testrom/` — the original 6502 test program and assembler that CI runs the fault primitives on.
+- `evidence/` — committed test output and images (`stage0/` legacy audit, `stage1/` fault engine).
 - `tools/audit/` — the Stage 0 truth audit (headless runs of every legacy fault).
 - `tools/preprocessor/` — Python auto-instrumentation tool that walks a
   netlist `.cpp` and inserts `FAULT_BUFFER` on every fault-eligible pin,

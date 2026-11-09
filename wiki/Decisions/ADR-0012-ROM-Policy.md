@@ -1,6 +1,6 @@
 # ADR-0012: ROMs, romset and what CI runs against
 
-**Status:** accepted, with one open point (below)
+**Status:** accepted; amended 2026-11-09 (current test set: rev 3)
 **Date:** 2026-11-09
 **Deciders:** project owner
 
@@ -21,10 +21,13 @@ this repo or in a release. CI on GitHub's runners has nobody to supply a ROM.
   windows-latest and ubuntu-latest. Real-game effect tests run wherever a user's ROM exists, and their evidence (hashes,
   images, JSON) is committed. Built in Stage 1.
 
-## Open point
+## Amendment (2026-11-09): rev 3 now, rev 4 later
 
-The ROM set supplied for Stage 0 is revision 3 (`136001-307`..`310`, MAME's `centiped3`) under the file name
-`centiped.zip`; `mame -verifyroms` passes `centiped3` and fails `centiped`. The Stage 0 audit therefore ran on
-`centiped3`, which is also the set the legacy app targeted. Before Stage 1's golden tests, either a rev 4 set is
-supplied or this ADR is amended to rev 3 (the rev 3 source is in the same repository). A dump of the cabinet's own
-EPROMs settles which revision it runs.
+The ROM set supplied is revision 3 (`136001-307`..`310`, MAME's `centiped3`) under the file name `centiped.zip`;
+`mame -verifyroms` passes `centiped3` and fails `centiped`. The owner chose to run Stage 1's real-game tests on
+`centiped3` now. Every test names its romset, so a rev 4 set can be added later without changing the tests. The rev 3
+and rev 4 source place mushrooms with the same code (`CENTI3.MAC` ~l.1219, `CENTI4.MAC` ~l.1222), so the POKEY
+golden symptom holds for both. The test ROM uses the `centiped` (rev 4) file names; that's only a file layout.
+
+The set supplied so far came from a ROM download site, not from the cabinet's own chips. A dump of the cabinet's own
+EPROMs (for example with Gatbox's T48) is the cleaner source and also settles which revision the cabinet runs.

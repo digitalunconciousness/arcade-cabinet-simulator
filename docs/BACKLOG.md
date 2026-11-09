@@ -35,3 +35,16 @@ is copied here.
 - **Stage 3/4: trace the netlists from the schematic.** The sync generator and address decoder netlists say they are
   representative, not transcribed. PLAN v0.3 wants netlists as the net map and pin maps for lowering, which needs the
   real board.
+
+## Found during Stage 1
+
+- **32V stuck high fires the IRQ 4x as often** (on every 16-line edge). No primitive models a changed interrupt rate;
+  `sync_timing` leaves the CPU alone for that case. A rate primitive (or a driver hook) would close it. Stage 4/5, when
+  the golden symptom is compared with a photo.
+- **`cs_dead` on a device can't cancel writes** from Lua, so strobe registers still act. A C++ "chip select gate" in
+  the patch set would make it exact. Only if a test needs it.
+- **Effect tests for `irq_stuck`, `input_dead`, `input_stuck`, `input_noisy`.** The primitives exist without tests and
+  don't count as built. Needed by Stage 4's three full-loop faults at the latest.
+- **SCP v1 serves one client per MAME session.** Reconnects and frame streaming belong to the Stage 2 spike.
+- **`trace_reads`** (in the timeline) can list which ROM bytes attract mode executes. A `cabsim` command around it would
+  help pick `rom_bit_flip` targets in a new game (Stage 6).

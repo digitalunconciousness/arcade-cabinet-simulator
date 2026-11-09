@@ -1,49 +1,75 @@
 # Status
 
-What is real, what is mocked and what is unproven, as of the end of Stage 0 (2026-11-09). Nothing here counts as
-done without the evidence it links to. The plan is `docs/PLAN_v3.md`; per-fault detail is `docs/FAULT_AUDIT.md`.
+What is real, what is mocked and what is unproven, as of the end of Stage 1 (2026-11-09). Nothing here counts as done
+without the evidence it links to. The plan is `docs/PLAN_v3.md`.
 
 ## Real (with evidence)
 
+### Fault engine (Stage 1)
+
+Each fault below has an effect test that runs `centiped3` headless twice from power-on. One run has the fault. The test
+asserts the symptom while the fault is active, and that every frame after the repair (a power cycle, ADR-0015) matches
+the baseline. All 16 pass. A second full run gave identical hashes. Each also has a twin on the original test ROM
+(`tests/effect/testrom/`, all 12 pass), which is what CI runs.
+
+| Primitive | Fault | Tier | Symptom shown | Evidence |
+|---|---|---|---|---|
+| `data_bit_stuck` | Playfield RAM D3 stuck low | A | garbled tiles and text across the playfield; the game keeps running | [result](../evidence/stage1/centipede/centipede__playfield-ram-data-bit3-stuck-low/result.json) |
+| `ram_cell_stuck` | Cell 0x0590 bit 3 stuck high | A | one wrong character that holds against the game's every-frame write (498/499 frames) | [result](../evidence/stage1/centipede/centipede__playfield-ram-cell-0590-bit3-stuck-high/result.json) |
+| `addr_line_stuck` | Playfield RAM A5 stuck high | A | rows alias in pairs (480 of 480 pairs identical; baseline 105 differ) | [result](../evidence/stage1/centipede/centipede__playfield-ram-address-a5-stuck-high/result.json) |
+| `cs_dead` (RAM) | Playfield RAM chip select dead, open bus 0x00 / 0xFF | A | every playfield byte reads open bus, writes lost | [00](../evidence/stage1/centipede/centipede__playfield-ram-chip-select-dead-open-bus-00/result.json), [ff](../evidence/stage1/centipede/centipede__playfield-ram-chip-select-dead-open-bus-ff/result.json) |
+| `cs_dead` (device) | POKEY chip select dead from power-on, 0x00 | A | black screen, watchdog resets (137 in 1070 frames), as the source warns | [result](../evidence/stage1/centipede/centipede__pokey-chip-select-dead-open-bus-00/result.json) |
+| `cs_dead` (device) | POKEY chip select dead from power-on, 0xFF | A | game runs with no mushrooms (placed past the playfield) | [result](../evidence/stage1/centipede/centipede__pokey-chip-select-dead-open-bus-ff/result.json) |
+| `reg_read_override` | POKEY RNGEN bit 1 stuck low. **Golden: mushrooms on one side** | A | 37 mushrooms on one side, 0 on the other (baseline 22/15) | [result](../evidence/stage1/centipede/centipede__pokey-random-bit1-stuck-low/result.json) |
+| `rom_dead` | ROM J1 (reset vector) dead, 0x00 / 0xFF. **Golden: bad ROM stops the boot** | A | never boots: black, frozen | [00](../evidence/stage1/centipede/centipede__rom-j1-dead-open-bus-00/result.json), [ff](../evidence/stage1/centipede/centipede__rom-j1-dead-open-bus-ff/result.json) |
+| `rom_bit_flip` | ROM FH1, one bit of the coin message | A | "1 GOIN 1 PLAY" | [result](../evidence/stage1/centipede/centipede__rom-fh1-bit-flip-coin-message/result.json) |
+| `irq_missing` | Main CPU IRQ never arrives | A | freezes; watchdog resets every 8 frames | [result](../evidence/stage1/centipede/centipede__maincpu-irq-missing/result.json) |
+| `clock_scale` | Main CPU at a quarter of its clock | A | runs slow: 263 repeated frames of 498 (baseline 44); at half speed the game still keeps up | [result](../evidence/stage1/centipede/centipede__maincpu-clock-quarter-speed/result.json) |
+| `input_inverted` | Trackball X inverted | A | shooter moves −44 where the baseline moves +44 | [result](../evidence/stage1/centipede/centipede__trackball-x-inverted/result.json) |
+| `sync_timing` | 32V stuck high, picture only. **Golden: sliced screen** | B | picture cut into repeated 32-line bands; the game untouched (a plain clear matches the baseline) | [result](../evidence/stage1/centipede/centipede__sync-32v-stuck-high-video/result.json) |
+| `sync_timing` + `irq_missing` | 32V stuck low, picture and IRQ | B+A | bands, then frozen with watchdog resets | [result](../evidence/stage1/centipede/centipede__sync-32v-stuck-low-with-irq/result.json) |
+
+Before/after/zoom images sit next to each `result.json`. Per-test notes and sources: the YAML files in
+`tests/effect/centipede/` and `tests/effect/centipede/SOURCES.md`.
+
+### Infrastructure
+
 | What | Evidence |
 |---|---|
-| MAME 0.287 builds from the pinned tag with `patches/0001`–`0003` (the series didn't apply to the tag until Stage 0) | `patches/MAME_VERSION`, ADR-0010; `mame -version` in `evidence/stage0/results.json` |
-| Headless, deterministic runs of Centipede (`centiped3`): two baseline runs match on every frame hash and every RAM byte | `evidence/stage0/results.json` (`determinism`), `evidence/stage0/baseline_hashes.txt` |
-| The plugin commands a build from this repo has: `ping`, `get_state`, `pause`, `resume`, `soft_reset`, `poke_ram`, `stuck_byte`, `clear_stuck`. Pausing, injecting and resuming on an exact frame works | audit run logs in `evidence/stage0/runs/` |
-| `stuck_byte` writes reach the game's RAM. Where the game doesn't rewrite the cell, they show on screen | `FAULT_AUDIT.md`, PSU and raw rows |
-| `FAULT_BUFFER` and `BAD_RAM_CELL` change their own waveforms in standalone nltool runs | `evidence/stage0/runs/netlist_standalone.json`, `evidence/stage0/runs/netlist.json` |
-| The legacy unit tests (117) and the audit's own tests pass | `python -m pytest -q tools tests` |
+| MAME 0.287 builds from the pinned tag with `patches/0001`–`0004`, and the series applies cleanly to a fresh tag | `patches/MAME_VERSION`, ADR-0010, ADR-0014 |
+| The fault engine plugin (`plugin/cabsim/`): game-agnostic primitives, frame-exact timeline mode, Sim Control Protocol v1 | ADR-0013, `docs/protocol/scp-v1.md`, `tools/cabsim/scp_smoke.py` (10/10 checks) |
+| Lua tap cost: taps on the hottest RAM run at ~0.74 of no-fault speed, still ~18x real time on a 2.1 GHz Xeon vCPU | `evidence/stage1/benchmark.json` |
+| The effect-test runner (`tools/cabsim/`) and its unit tests | `python -m pytest -q tools/cabsim` |
+| The original test ROM and its assembler (`testrom/`) | `python -m pytest -q testrom`; `evidence/stage1/testrom/` |
+| The Stage 0 truth audit of the legacy app | `docs/FAULT_AUDIT.md`, `evidence/stage0/` |
 
-## Mocked (state or visuals that don't come from the emulated hardware)
+## Mocked (from the legacy app, unchanged)
 
 - **Peripheral models** (PSU, CRT chassis, trackball, audio chain, coin mech, buttons, marquee, harness) are Python
-  objects in `tools/peripherals/`. Their faults change Python state for the UI. Only one path leads into the game:
-  a 5 V rail below 4.7 V arms a stuck byte at `0x0700`, which is a playfield cell, so it shows as one stray tile.
-- **CRT faults** were drawn as a browser canvas effect and, in an uncommitted plugin, as a Lua overlay. The committed
-  plugin has no `set_crt_fault`. Either way they'd be Tier C (drawn on top), not a change to the game.
-- **Audio faults** change a WebAudio test tone in the browser, not MAME's sound.
-- **Netlists** (`tests/netlist/centiped/*.cpp`) are labelled in their own headers as representative, not transcribed
-  from the schematic. They run only in standalone nltool.
+  state in `tools/peripherals/`. Only a 5 V rail below 4.7 V reaches the game, as one stray tile.
+- **CRT faults** are a browser canvas effect; the committed legacy plugin has no `set_crt_fault`.
+- **Audio faults** change a WebAudio test tone, not MAME's sound.
+- **Netlists** (`tests/netlist/centiped/*.cpp`) are representative, not transcribed from the schematic; standalone only.
 
-## Unproven or not working
+## Unproven
 
-- **Legacy faults:** 7 of 142 change the running game, and none produces the symptom it describes. 70 send only
-  commands the plugin rejects, 63 send nothing, 2 are accepted and change nothing. Every fault: `docs/FAULT_AUDIT.md`.
-- **Input over the protocol doesn't exist** in a build from this repo: `press_button`, `release_button`,
-  `trackball_delta` and the DIP commands are rejected as unknown. Trackball faults sit on that path, so none of them
-  reaches the game.
-- **The board package can't load.** `boards/centipede/fault_map.json` has a `scenarios` key the loader rejects, and
-  no launcher sets `CABINET_BOARD_PATH` anyway. The Board Inspector gets no schematic, and faults on the two
-  address-counter pins return HTTP 404.
-- **Schematic sync faults** reach MAME only as `set_crt_fault`, which the plugin rejects.
-- **Training scenarios:** 3 of 12 change the game, each through a stuck byte; none shows the symptom it describes.
-  `multi-fault` comes closest (a stuck tile, without the rolling band, dimming or hum).
-- **Stuck bytes lose to the game** on cells it redraws every frame: the legacy plugin rewrites them after the frame is
-  drawn, so the "sprite RAM glitch" and the stuck-pixel demo show on 1 of 600 frames.
-- **Rev 4 (`centiped`)**, the romset ADR-0012 targets, hasn't been run: no rev 4 set has been supplied.
-- **Windows:** nothing has run on Windows yet. CI is Stage 1.
+- **CI hasn't run.** `.github/workflows/effect-tests.yml` is in place. Its first run (42698814704) got no runner: both
+  jobs ended in about 3 seconds with no logs, as has every nightly since at least 2026-08-10. The repo is public, so
+  this looks like an account-level block on Actions (GitHub's billing settings). Every CI step was replayed on Linux in a
+  clean checkout and venv: 22 unit tests, 12/12 test-ROM effect tests, 16 real-game tests skipped (no ROMs), protocol
+  smoke 10/10.
+- **Windows**: nothing has run on Windows. The MSYS2 build follows MAME's own CI recipe but is untested.
+- **Primitives without an effect test yet**: `irq_stuck`, `input_dead`, `input_stuck`, `input_noisy`. They exist in
+  `plugin/cabsim/primitives.lua` and are not counted as built.
+- **Known gaps** in built primitives:
+  - `cs_dead` on a device can't cancel a write, so a strobe register write (POKEY's STIMER, SKRES, POTGO) still acts.
+  - 32V stuck high would also fire the IRQ on every 16-line edge, which no primitive models.
+- **Hardware facts not verified**: the open-bus value of Centipede's data bus, which chips back which ranges, and
+  which way the stuck-32V bands run on the real monitor. See `tests/effect/centipede/SOURCES.md`.
+- **Rev 4 (`centiped`)**: no rev 4 set has been supplied; Stage 1 ran on rev 3 (ADR-0012 amendment).
+- **Full speed on a mid-range Windows laptop with a fault active** (PLAN v0.3's budget): measured only on this Linux vCPU.
 
 ## Not built yet (PLAN v0.3)
 
-The interface-level fault engine, effect tests and CI (Stage 1), the Godot shell (Stage 2), cabinet packs (Stage 3),
-the 3D cabinet (Stage 4), the training loop (Stage 5) and a second game (Stage 6).
+The Godot shell and the frame transport (Stage 2), cabinet packs with part/pin lowering and JSON Schemas (Stage 3), the
+3D cabinet (Stage 4), the training loop (Stage 5) and a second game (Stage 6).

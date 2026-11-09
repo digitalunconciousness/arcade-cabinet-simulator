@@ -10,7 +10,8 @@ The earlier plan (v0.2) is [`arcade_cabinet_fault_simulator_plan.md`](../arcade_
 > The Stage 0 truth audit ran every fault below against the live game, headless, in a build made from this repo.
 > Most of them don't change the running game, so the phase statuses in the table were corrected to what the evidence
 > shows. What is real, mocked and unproven: [`docs/STATUS.md`](../docs/STATUS.md). Per fault:
-> [`docs/FAULT_AUDIT.md`](../docs/FAULT_AUDIT.md).
+> [`docs/FAULT_AUDIT.md`](../docs/FAULT_AUDIT.md). The faults that do reach the game now come from the Stage 1 fault
+> engine (`plugin/cabsim/`), each with an effect test; they are listed in STATUS.
 
 ## Status before PLAN v0.3 (as written at the time)
 
@@ -105,6 +106,10 @@ Full schedule and tier-expansion plan: [Roadmap](Roadmap.md).
 - [ADR-0010 — Pin MAME and keep the patch series applying to it](Decisions/ADR-0010-Pin-MAME.md)
 - [ADR-0011 — Native shell direction](Decisions/ADR-0011-Native-Shell-Direction.md)
 - [ADR-0012 — ROMs, romset and what CI runs against](Decisions/ADR-0012-ROM-Policy.md)
+- [ADR-0013 — The fault engine is a Lua plugin in this repo, spoken to over SCP v1](Decisions/ADR-0013-Fault-Engine-Plugin.md)
+- [ADR-0014 — A small C++ patch for the faults Lua can't reach](Decisions/ADR-0014-Lua-Fault-Hooks-Patch.md)
+- [ADR-0015 — Effect tests compare against a baseline, and repair means a power cycle](Decisions/ADR-0015-Effect-Tests.md)
+- [ADR-0016 — An original test ROM for CI](Decisions/ADR-0016-Test-ROM.md)
 
 ## How to contribute to the wiki
 
