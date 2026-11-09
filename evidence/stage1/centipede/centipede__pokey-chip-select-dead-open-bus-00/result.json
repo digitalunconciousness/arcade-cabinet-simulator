@@ -1,0 +1,187 @@
+{
+ "id": "centipede/pokey-chip-select-dead-open-bus-00",
+ "title": "POKEY chip select dead from power-on (open bus 0x00)",
+ "status": "pass",
+ "romset": "centiped3",
+ "tier": "A",
+ "symptom": "The board hangs on a black screen and the watchdog resets it over and over, as the source warns.",
+ "sources": [
+  "centi3-pokey-hang",
+  "cendef-rngen",
+  "mame-centiped-map"
+ ],
+ "inject": {
+  "at_frame": 2,
+  "primitive": "cs_dead",
+  "params": {
+   "space": ":maincpu",
+   "start": 4096,
+   "end": 4111,
+   "kind": "device",
+   "open_bus": 0
+  }
+ },
+ "repair": {
+  "at_frame": 1100,
+  "action": "clear_and_hard_reset"
+ },
+ "checks": [
+  {
+   "phase": "fault",
+   "check": "frame_hash_differs",
+   "args": {
+    "from": 30,
+    "to": 1099,
+    "min_fraction": 0.9
+   },
+   "passed": true,
+   "details": {
+    "frames": 1070,
+    "differing": 1070,
+    "fraction": 1.0,
+    "min_fraction": 0.9
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "resets",
+   "args": {
+    "after": 2,
+    "min": 30
+   },
+   "passed": true,
+   "details": {
+    "resets_faulted": 137,
+    "resets_baseline": 0,
+    "min": 30,
+    "max": 1000000000
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "not_crashed",
+   "args": {},
+   "passed": true,
+   "details": {
+    "finished": true,
+    "plugin_errors": []
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "snapshot",
+   "args": {
+    "at": 300
+   },
+   "passed": true,
+   "details": {}
+  },
+  {
+   "phase": "repair",
+   "check": "frame_hash_matches_baseline",
+   "args": {
+    "from": 1101,
+    "to": 1500
+   },
+   "passed": true,
+   "details": {
+    "frames": 400,
+    "differing": 0,
+    "first_differing": null
+   }
+  }
+ ],
+ "hashes_at_checkpoints": {
+  "2": {
+   "baseline": "870b4c30543f4525",
+   "faulted": "870b4c30543f4525"
+  },
+  "300": {
+   "baseline": "c79f60bba2acd265",
+   "faulted": "b00079523b9ce325"
+  },
+  "1100": {
+   "baseline": "2372bf1322856f65",
+   "faulted": "b00079523b9ce325"
+  },
+  "1500": {
+   "baseline": "605a03b945a00fa5",
+   "faulted": "605a03b945a00fa5"
+  }
+ },
+ "frames": {
+  "baseline": 1501,
+  "faulted": 1501
+ },
+ "seconds": {
+  "baseline": 3.33,
+  "faulted": 3.4
+ },
+ "plugin_events_faulted": [
+  "machine_start -1",
+  "reset 0",
+  "reset_requested 2 hard",
+  "apply 2 cs_dead id=1 tier=A",
+  "machine_start 2",
+  "reset 10",
+  "reset 18",
+  "reset 26",
+  "reset 34",
+  "reset 42",
+  "reset 50",
+  "reset 58",
+  "reset 66",
+  "reset 74",
+  "reset 82",
+  "reset 90",
+  "reset 98",
+  "reset 106",
+  "reset 114",
+  "reset 122",
+  "reset 130",
+  "reset 138",
+  "reset 146",
+  "reset 154",
+  "reset 162",
+  "reset 170",
+  "reset 178",
+  "reset 186",
+  "reset 194",
+  "reset 202",
+  "reset 210",
+  "reset 218",
+  "reset 226",
+  "reset 234",
+  "reset 242",
+  "reset 250",
+  "reset 258",
+  "reset 266",
+  "reset 274",
+  "reset 282",
+  "reset 290",
+  "reset 298",
+  "reset 306",
+  "reset 314",
+  "reset 322",
+  "reset 330",
+  "reset 338",
+  "reset 346",
+  "reset 354",
+  "reset 362"
+ ],
+ "snapshots": [
+  {
+   "frame": 300,
+   "baseline": "baseline_f300.png",
+   "faulted": "faulted_f300.png",
+   "zoom": "zoom_f300.png",
+   "changed_box": [
+    0,
+    1,
+    240,
+    256
+   ]
+  }
+ ],
+ "test_file": "tests/effect/centipede/pokey-cs-dead-open-bus-00.yaml"
+}

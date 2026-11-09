@@ -1,0 +1,33 @@
+id: centipede/pokey-random-bit1-stuck-low
+title: POKEY random-number register reads with bit 1 stuck low
+romset: centiped3
+display: {rotate: 90}
+tier: A
+golden: failing POKEY puts mushrooms on one side only
+symptom: Every mushroom of a new field lands on one side of the screen.
+note: >
+  The game places each mushroom at a playfield address whose bits 8-9 come from RNGEN & 3 (CENTI3.MAC around line 1219,
+  CENTI4.MAC around line 1222). Bit 1 of the second read picks the half (playfield offset 0x200 and up). With that bit
+  stuck low every mushroom lands below offset 0x200. The board is power-cycled after the fault so a new field is placed.
+sources: [centi3-mushroom-placement, centi4-mushroom-placement, cendef-rngen, mame-centiped-map]
+run:
+  end_frame: 1500
+  checkpoints: [2, 120, 300, 1100, 1500]
+  ram:
+    - {name: playfield, space: ":maincpu", start: 0x0400, end: 0x07bf}
+  events:
+    - {frame: 2, type: reset, kind: hard}
+inject:
+  at_frame: 2
+  primitive: reg_read_override
+  params: {space: ":maincpu", addr: 0x100a, rule: {and_mask: 0xfd}}
+expect:
+  - count_split: {ram: playfield, at: 120, values: [0x3c, 0x3d, 0x3e, 0x3f], split: 0x200}
+  - frame_hash_differs: {from: 30, to: 1099, min_fraction: 0.5}
+  - not_crashed: {}
+  - snapshot: {at: 120}
+repair:
+  at_frame: 1100
+  action: clear_and_hard_reset
+expect_after_repair:
+  - frame_hash_matches_baseline: {from: 1101, to: 1500}

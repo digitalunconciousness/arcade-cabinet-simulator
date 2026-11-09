@@ -1,0 +1,143 @@
+{
+ "id": "centipede/playfield-ram-address-a5-stuck-high",
+ "title": "Playfield RAM address line A5 stuck high",
+ "status": "pass",
+ "romset": "centiped3",
+ "tier": "A",
+ "symptom": "Pairs of playfield rows show the same tiles, because both rows of each pair land on one row of the chip.",
+ "sources": [
+  "mame-centiped-map",
+  "cendef-memory-map"
+ ],
+ "inject": {
+  "at_frame": 600,
+  "primitive": "addr_line_stuck",
+  "params": {
+   "space": ":maincpu",
+   "start": 1024,
+   "end": 1983,
+   "line": 5,
+   "level": 1
+  }
+ },
+ "repair": {
+  "at_frame": 1100,
+  "action": "clear_and_hard_reset"
+ },
+ "checks": [
+  {
+   "phase": "fault",
+   "check": "frame_hash_differs",
+   "args": {
+    "from": 601,
+    "to": 1099,
+    "min_fraction": 0.9
+   },
+   "passed": true,
+   "details": {
+    "frames": 499,
+    "differing": 498,
+    "fraction": 0.998,
+    "min_fraction": 0.9
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "aliased_pairs",
+   "args": {
+    "ram": "playfield",
+    "at": 900,
+    "start": 1024,
+    "line": 5
+   },
+   "passed": true,
+   "details": {
+    "pairs": 480,
+    "pairs_differing": 0,
+    "baseline_pairs_differing": 105
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "not_crashed",
+   "args": {},
+   "passed": true,
+   "details": {
+    "finished": true,
+    "plugin_errors": []
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "snapshot",
+   "args": {
+    "at": 900
+   },
+   "passed": true,
+   "details": {}
+  },
+  {
+   "phase": "repair",
+   "check": "frame_hash_matches_baseline",
+   "args": {
+    "from": 1101,
+    "to": 1500
+   },
+   "passed": true,
+   "details": {
+    "frames": 400,
+    "differing": 0,
+    "first_differing": null
+   }
+  }
+ ],
+ "hashes_at_checkpoints": {
+  "600": {
+   "baseline": "014bce00de984a65",
+   "faulted": "014bce00de984a65"
+  },
+  "900": {
+   "baseline": "3669cd7cbda69525",
+   "faulted": "f30741f0b427a725"
+  },
+  "1100": {
+   "baseline": "c69c618f873d22a5",
+   "faulted": "1f524c319a134925"
+  },
+  "1500": {
+   "baseline": "605a03b945a00fa5",
+   "faulted": "605a03b945a00fa5"
+  }
+ },
+ "frames": {
+  "baseline": 1501,
+  "faulted": 1501
+ },
+ "seconds": {
+  "baseline": 3.47,
+  "faulted": 3.38
+ },
+ "plugin_events_faulted": [
+  "machine_start -1",
+  "reset 0",
+  "apply 600 addr_line_stuck id=1 tier=A",
+  "clear_all 1100 1",
+  "reset_requested 1100 hard",
+  "machine_start 1100"
+ ],
+ "snapshots": [
+  {
+   "frame": 900,
+   "baseline": "baseline_f900.png",
+   "faulted": "faulted_f900.png",
+   "zoom": "zoom_f900.png",
+   "changed_box": [
+    0,
+    1,
+    232,
+    256
+   ]
+  }
+ ],
+ "test_file": "tests/effect/centipede/playfield-addr-a5-high.yaml"
+}

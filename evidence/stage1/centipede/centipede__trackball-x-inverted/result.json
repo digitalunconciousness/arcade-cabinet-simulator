@@ -1,0 +1,139 @@
+{
+ "id": "centipede/trackball-x-inverted",
+ "title": "Trackball X axis inverted (encoder phases swapped)",
+ "status": "pass",
+ "romset": "centiped3",
+ "tier": "A",
+ "symptom": "Rolling the trackball right moves the shooter left.",
+ "sources": [
+  "mame-centiped-inputs",
+  "cendef-motion-objects"
+ ],
+ "inject": {
+  "at_frame": 400,
+  "primitive": "input_inverted",
+  "params": {
+   "port": ":TRACK0_X",
+   "field": "Trackball X"
+  }
+ },
+ "repair": {
+  "at_frame": 600,
+  "action": "clear_and_hard_reset"
+ },
+ "checks": [
+  {
+   "phase": "fault",
+   "check": "ram_trend",
+   "args": {
+    "ram": "sprites",
+    "offset": 30,
+    "from_at": 440,
+    "to_at": 480
+   },
+   "passed": true,
+   "details": {
+    "baseline_delta": 44,
+    "faulted_delta": -44
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "frame_hash_differs",
+   "args": {
+    "from": 451,
+    "to": 599,
+    "min_fraction": 0.5
+   },
+   "passed": true,
+   "details": {
+    "frames": 149,
+    "differing": 149,
+    "fraction": 1.0,
+    "min_fraction": 0.5
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "not_crashed",
+   "args": {},
+   "passed": true,
+   "details": {
+    "finished": true,
+    "plugin_errors": []
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "snapshot",
+   "args": {
+    "at": 480
+   },
+   "passed": true,
+   "details": {}
+  },
+  {
+   "phase": "repair",
+   "check": "frame_hash_matches_baseline",
+   "args": {
+    "from": 601,
+    "to": 900
+   },
+   "passed": true,
+   "details": {
+    "frames": 300,
+    "differing": 0,
+    "first_differing": null
+   }
+  }
+ ],
+ "hashes_at_checkpoints": {
+  "440": {
+   "baseline": "993bdf85d91ff325",
+   "faulted": "7d5249303b199925"
+  },
+  "480": {
+   "baseline": "31d48ab923c57ea5",
+   "faulted": "f83baba83f1d69a5"
+  },
+  "600": {
+   "baseline": "e81a0982b1610165",
+   "faulted": "f6b7e0b48d8252e5"
+  },
+  "900": {
+   "baseline": "2dafe4c914d365a5",
+   "faulted": "2dafe4c914d365a5"
+  }
+ },
+ "frames": {
+  "baseline": 901,
+  "faulted": 901
+ },
+ "seconds": {
+  "baseline": 1.69,
+  "faulted": 2.13
+ },
+ "plugin_events_faulted": [
+  "machine_start -1",
+  "reset 0",
+  "apply 400 input_inverted id=1 tier=A",
+  "clear_all 600 1",
+  "reset_requested 600 hard",
+  "machine_start 600"
+ ],
+ "snapshots": [
+  {
+   "frame": 480,
+   "baseline": "baseline_f480.png",
+   "faulted": "faulted_f480.png",
+   "zoom": "zoom_f480.png",
+   "changed_box": [
+    0,
+    160,
+    165,
+    248
+   ]
+  }
+ ],
+ "test_file": "tests/effect/centipede/trackball-x-inverted.yaml"
+}

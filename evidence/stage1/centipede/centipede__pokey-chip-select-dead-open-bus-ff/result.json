@@ -1,0 +1,167 @@
+{
+ "id": "centipede/pokey-chip-select-dead-open-bus-ff",
+ "title": "POKEY chip select dead from power-on (open bus 0xff)",
+ "status": "pass",
+ "romset": "centiped3",
+ "tier": "A",
+ "symptom": "The game runs but no mushrooms appear. Every RNGEN read is 0xFF, so the placement code addresses 0x7E0 and up, past the playfield in motion-object RAM.",
+ "sources": [
+  "centi3-pokey-hang",
+  "cendef-rngen",
+  "mame-centiped-map"
+ ],
+ "inject": {
+  "at_frame": 2,
+  "primitive": "cs_dead",
+  "params": {
+   "space": ":maincpu",
+   "start": 4096,
+   "end": 4111,
+   "kind": "device",
+   "open_bus": 255
+  }
+ },
+ "repair": {
+  "at_frame": 1100,
+  "action": "clear_and_hard_reset"
+ },
+ "checks": [
+  {
+   "phase": "fault",
+   "check": "frame_hash_differs",
+   "args": {
+    "from": 30,
+    "to": 1099,
+    "min_fraction": 0.5
+   },
+   "passed": true,
+   "details": {
+    "frames": 1070,
+    "differing": 1070,
+    "fraction": 1.0,
+    "min_fraction": 0.5
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "count_values",
+   "args": {
+    "ram": "playfield",
+    "at": 300,
+    "values": [
+     60,
+     61,
+     62,
+     63
+    ],
+    "max": 0
+   },
+   "passed": true,
+   "details": {
+    "faulted": 0,
+    "baseline": 39,
+    "min": 0,
+    "max": 0
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "resets",
+   "args": {
+    "after": 2,
+    "max": 0
+   },
+   "passed": true,
+   "details": {
+    "resets_faulted": 0,
+    "resets_baseline": 0,
+    "min": 0,
+    "max": 0
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "not_crashed",
+   "args": {},
+   "passed": true,
+   "details": {
+    "finished": true,
+    "plugin_errors": []
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "snapshot",
+   "args": {
+    "at": 300
+   },
+   "passed": true,
+   "details": {}
+  },
+  {
+   "phase": "repair",
+   "check": "frame_hash_matches_baseline",
+   "args": {
+    "from": 1101,
+    "to": 1500
+   },
+   "passed": true,
+   "details": {
+    "frames": 400,
+    "differing": 0,
+    "first_differing": null
+   }
+  }
+ ],
+ "hashes_at_checkpoints": {
+  "2": {
+   "baseline": "870b4c30543f4525",
+   "faulted": "870b4c30543f4525"
+  },
+  "300": {
+   "baseline": "c79f60bba2acd265",
+   "faulted": "1981c56bac546ba5"
+  },
+  "1100": {
+   "baseline": "2372bf1322856f65",
+   "faulted": "63ed57355fa21565"
+  },
+  "1500": {
+   "baseline": "605a03b945a00fa5",
+   "faulted": "605a03b945a00fa5"
+  }
+ },
+ "frames": {
+  "baseline": 1501,
+  "faulted": 1501
+ },
+ "seconds": {
+  "baseline": 3.46,
+  "faulted": 3.14
+ },
+ "plugin_events_faulted": [
+  "machine_start -1",
+  "reset 0",
+  "reset_requested 2 hard",
+  "apply 2 cs_dead id=1 tier=A",
+  "machine_start 2",
+  "clear_all 1100 1",
+  "reset_requested 1100 hard",
+  "machine_start 1100"
+ ],
+ "snapshots": [
+  {
+   "frame": 300,
+   "baseline": "baseline_f300.png",
+   "faulted": "faulted_f300.png",
+   "zoom": "zoom_f300.png",
+   "changed_box": [
+    0,
+    24,
+    240,
+    240
+   ]
+  }
+ ],
+ "test_file": "tests/effect/centipede/pokey-cs-dead-open-bus-ff.yaml"
+}

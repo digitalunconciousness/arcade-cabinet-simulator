@@ -1,0 +1,142 @@
+{
+ "id": "centipede/playfield-ram-chip-select-dead-open-bus-ff",
+ "title": "Playfield RAM chip select dead (open bus 0xff)",
+ "status": "pass",
+ "romset": "centiped3",
+ "tier": "A",
+ "symptom": "The playfield shows the open-bus tile everywhere and the game's writes to it are lost; the contents come back when the chip is selected again.",
+ "sources": [
+  "mame-centiped-map",
+  "cendef-memory-map"
+ ],
+ "inject": {
+  "at_frame": 600,
+  "primitive": "cs_dead",
+  "params": {
+   "space": ":maincpu",
+   "start": 1024,
+   "end": 1983,
+   "kind": "ram",
+   "open_bus": 255
+  }
+ },
+ "repair": {
+  "at_frame": 1100,
+  "action": "clear_and_hard_reset"
+ },
+ "checks": [
+  {
+   "phase": "fault",
+   "check": "frame_hash_differs",
+   "args": {
+    "from": 601,
+    "to": 1099,
+    "min_fraction": 0.9
+   },
+   "passed": true,
+   "details": {
+    "frames": 499,
+    "differing": 498,
+    "fraction": 0.998,
+    "min_fraction": 0.9
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "all_bytes",
+   "args": {
+    "ram": "playfield",
+    "at": 900,
+    "value": 255
+   },
+   "passed": true,
+   "details": {
+    "bytes": 960,
+    "bytes_not_equal": 0,
+    "value": 255
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "not_crashed",
+   "args": {},
+   "passed": true,
+   "details": {
+    "finished": true,
+    "plugin_errors": []
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "snapshot",
+   "args": {
+    "at": 900
+   },
+   "passed": true,
+   "details": {}
+  },
+  {
+   "phase": "repair",
+   "check": "frame_hash_matches_baseline",
+   "args": {
+    "from": 1101,
+    "to": 1500
+   },
+   "passed": true,
+   "details": {
+    "frames": 400,
+    "differing": 0,
+    "first_differing": null
+   }
+  }
+ ],
+ "hashes_at_checkpoints": {
+  "600": {
+   "baseline": "014bce00de984a65",
+   "faulted": "014bce00de984a65"
+  },
+  "900": {
+   "baseline": "3669cd7cbda69525",
+   "faulted": "f75342bcc64cd265"
+  },
+  "1100": {
+   "baseline": "c69c618f873d22a5",
+   "faulted": "f56a5bb61d52bd25"
+  },
+  "1500": {
+   "baseline": "605a03b945a00fa5",
+   "faulted": "605a03b945a00fa5"
+  }
+ },
+ "frames": {
+  "baseline": 1501,
+  "faulted": 1501
+ },
+ "seconds": {
+  "baseline": 3.47,
+  "faulted": 3.59
+ },
+ "plugin_events_faulted": [
+  "machine_start -1",
+  "reset 0",
+  "apply 600 cs_dead id=1 tier=A",
+  "clear_all 1100 1",
+  "reset_requested 1100 hard",
+  "machine_start 1100"
+ ],
+ "snapshots": [
+  {
+   "frame": 900,
+   "baseline": "baseline_f900.png",
+   "faulted": "faulted_f900.png",
+   "zoom": "zoom_f900.png",
+   "changed_box": [
+    0,
+    0,
+    240,
+    256
+   ]
+  }
+ ],
+ "test_file": "tests/effect/centipede/playfield-cs-dead-open-bus-ff.yaml"
+}

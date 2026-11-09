@@ -1,0 +1,32 @@
+id: centipede/pokey-chip-select-dead-open-bus-00
+title: POKEY chip select dead from power-on (open bus 0x00)
+romset: centiped3
+display: {rotate: 90}
+tier: A
+symptom: The board hangs on a black screen and the watchdog resets it over and over, as the source warns.
+note: >
+  Reads of POKEY's registers return the open-bus value. Writes never reach the chip, so its registers stay at their
+  power-on value (a tap can't cancel a write, so each write is replaced by that value; a strobe register write still
+  acts, a known gap). The source warns the game
+  "WILL HANG IF POKEY IS GONE AND D0-D7=0'S OR 1'S" (CENTI3.MAC around line 137). The open-bus value is not verified
+  against the schematic.
+sources: [centi3-pokey-hang, cendef-rngen, mame-centiped-map]
+run:
+  end_frame: 1500
+  checkpoints: [2, 300, 1100, 1500]
+  events:
+    - {frame: 2, type: reset, kind: hard}
+inject:
+  at_frame: 2
+  primitive: cs_dead
+  params: {space: ":maincpu", start: 0x1000, end: 0x100f, kind: device, open_bus: 0x00}
+expect:
+  - frame_hash_differs: {from: 30, to: 1099, min_fraction: 0.9}
+  - resets: {after: 2, min: 30}
+  - not_crashed: {}
+  - snapshot: {at: 300}
+repair:
+  at_frame: 1100
+  action: clear_and_hard_reset
+expect_after_repair:
+  - frame_hash_matches_baseline: {from: 1101, to: 1500}

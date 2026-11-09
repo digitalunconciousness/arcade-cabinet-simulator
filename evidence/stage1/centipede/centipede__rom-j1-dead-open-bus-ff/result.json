@@ -1,0 +1,186 @@
+{
+ "id": "centipede/rom-j1-dead-open-bus-ff",
+ "title": "Program ROM J1 (0x3800-0x3FFF, holds the reset vector) dead, open bus 0xff",
+ "status": "pass",
+ "romset": "centiped3",
+ "tier": "A",
+ "symptom": "The board never boots; the screen stays black and frozen.",
+ "sources": [
+  "mame-centiped3-rom-map",
+  "mame-centiped-watchdog"
+ ],
+ "inject": {
+  "at_frame": 2,
+  "primitive": "rom_dead",
+  "params": {
+   "region": ":maincpu",
+   "start": 14336,
+   "end": 16383,
+   "open_bus": 255
+  }
+ },
+ "repair": {
+  "at_frame": 1100,
+  "action": "clear_and_hard_reset"
+ },
+ "checks": [
+  {
+   "phase": "fault",
+   "check": "frame_hash_differs",
+   "args": {
+    "from": 30,
+    "to": 1099,
+    "min_fraction": 0.9
+   },
+   "passed": true,
+   "details": {
+    "frames": 1070,
+    "differing": 1070,
+    "fraction": 1.0,
+    "min_fraction": 0.9
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "screen_frozen",
+   "args": {
+    "from": 30,
+    "to": 1099,
+    "max_distinct": 3
+   },
+   "passed": true,
+   "details": {
+    "frames": 1070,
+    "distinct_faulted": 1,
+    "distinct_baseline": 1026,
+    "max_distinct": 3
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "not_crashed",
+   "args": {},
+   "passed": true,
+   "details": {
+    "finished": true,
+    "plugin_errors": []
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "snapshot",
+   "args": {
+    "at": 300
+   },
+   "passed": true,
+   "details": {}
+  },
+  {
+   "phase": "repair",
+   "check": "frame_hash_matches_baseline",
+   "args": {
+    "from": 1101,
+    "to": 1500
+   },
+   "passed": true,
+   "details": {
+    "frames": 400,
+    "differing": 0,
+    "first_differing": null
+   }
+  }
+ ],
+ "hashes_at_checkpoints": {
+  "2": {
+   "baseline": "870b4c30543f4525",
+   "faulted": "870b4c30543f4525"
+  },
+  "300": {
+   "baseline": "c79f60bba2acd265",
+   "faulted": "b00079523b9ce325"
+  },
+  "1100": {
+   "baseline": "2372bf1322856f65",
+   "faulted": "b00079523b9ce325"
+  },
+  "1500": {
+   "baseline": "605a03b945a00fa5",
+   "faulted": "605a03b945a00fa5"
+  }
+ },
+ "frames": {
+  "baseline": 1501,
+  "faulted": 1501
+ },
+ "seconds": {
+  "baseline": 3.33,
+  "faulted": 3.14
+ },
+ "plugin_events_faulted": [
+  "machine_start -1",
+  "reset 0",
+  "reset_requested 2 hard",
+  "apply 2 rom_dead id=1 tier=A",
+  "machine_start 2",
+  "reset 10",
+  "reset 18",
+  "reset 26",
+  "reset 34",
+  "reset 42",
+  "reset 50",
+  "reset 58",
+  "reset 66",
+  "reset 74",
+  "reset 82",
+  "reset 90",
+  "reset 98",
+  "reset 106",
+  "reset 114",
+  "reset 122",
+  "reset 130",
+  "reset 138",
+  "reset 146",
+  "reset 154",
+  "reset 162",
+  "reset 170",
+  "reset 178",
+  "reset 186",
+  "reset 194",
+  "reset 202",
+  "reset 210",
+  "reset 218",
+  "reset 226",
+  "reset 234",
+  "reset 242",
+  "reset 250",
+  "reset 258",
+  "reset 266",
+  "reset 274",
+  "reset 282",
+  "reset 290",
+  "reset 298",
+  "reset 306",
+  "reset 314",
+  "reset 322",
+  "reset 330",
+  "reset 338",
+  "reset 346",
+  "reset 354",
+  "reset 362"
+ ],
+ "snapshots": [
+  {
+   "frame": 300,
+   "baseline": "baseline_f300.png",
+   "faulted": "faulted_f300.png",
+   "zoom": "zoom_f300.png",
+   "changed_box": [
+    0,
+    1,
+    240,
+    256
+   ]
+  }
+ ],
+ "test_file": "tests/effect/centipede/rom-j1-dead-open-bus-ff.yaml"
+}

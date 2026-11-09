@@ -1,0 +1,157 @@
+{
+ "id": "centipede/pokey-random-bit1-stuck-low",
+ "title": "POKEY random-number register reads with bit 1 stuck low",
+ "status": "pass",
+ "romset": "centiped3",
+ "tier": "A",
+ "symptom": "Every mushroom of a new field lands on one side of the screen.",
+ "sources": [
+  "centi3-mushroom-placement",
+  "centi4-mushroom-placement",
+  "cendef-rngen",
+  "mame-centiped-map"
+ ],
+ "inject": {
+  "at_frame": 2,
+  "primitive": "reg_read_override",
+  "params": {
+   "space": ":maincpu",
+   "addr": 4106,
+   "rule": {
+    "and_mask": 253
+   }
+  }
+ },
+ "repair": {
+  "at_frame": 1100,
+  "action": "clear_and_hard_reset"
+ },
+ "checks": [
+  {
+   "phase": "fault",
+   "check": "count_split",
+   "args": {
+    "ram": "playfield",
+    "at": 120,
+    "values": [
+     60,
+     61,
+     62,
+     63
+    ],
+    "split": 512
+   },
+   "passed": true,
+   "details": {
+    "baseline_low": 22,
+    "baseline_high": 15,
+    "faulted_low": 37,
+    "faulted_high": 0
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "frame_hash_differs",
+   "args": {
+    "from": 30,
+    "to": 1099,
+    "min_fraction": 0.5
+   },
+   "passed": true,
+   "details": {
+    "frames": 1070,
+    "differing": 1070,
+    "fraction": 1.0,
+    "min_fraction": 0.5
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "not_crashed",
+   "args": {},
+   "passed": true,
+   "details": {
+    "finished": true,
+    "plugin_errors": []
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "snapshot",
+   "args": {
+    "at": 120
+   },
+   "passed": true,
+   "details": {}
+  },
+  {
+   "phase": "repair",
+   "check": "frame_hash_matches_baseline",
+   "args": {
+    "from": 1101,
+    "to": 1500
+   },
+   "passed": true,
+   "details": {
+    "frames": 400,
+    "differing": 0,
+    "first_differing": null
+   }
+  }
+ ],
+ "hashes_at_checkpoints": {
+  "2": {
+   "baseline": "870b4c30543f4525",
+   "faulted": "870b4c30543f4525"
+  },
+  "120": {
+   "baseline": "d7cd89a18e95ea25",
+   "faulted": "d2e6870551199025"
+  },
+  "300": {
+   "baseline": "c79f60bba2acd265",
+   "faulted": "51aa52d2416870a5"
+  },
+  "1100": {
+   "baseline": "2372bf1322856f65",
+   "faulted": "2970ae266c89b8a5"
+  },
+  "1500": {
+   "baseline": "605a03b945a00fa5",
+   "faulted": "605a03b945a00fa5"
+  }
+ },
+ "frames": {
+  "baseline": 1501,
+  "faulted": 1501
+ },
+ "seconds": {
+  "baseline": 3.38,
+  "faulted": 3.5
+ },
+ "plugin_events_faulted": [
+  "machine_start -1",
+  "reset 0",
+  "reset_requested 2 hard",
+  "apply 2 reg_read_override id=1 tier=A",
+  "machine_start 2",
+  "clear_all 1100 1",
+  "reset_requested 1100 hard",
+  "machine_start 1100"
+ ],
+ "snapshots": [
+  {
+   "frame": 120,
+   "baseline": "baseline_f120.png",
+   "faulted": "faulted_f120.png",
+   "zoom": "zoom_f120.png",
+   "changed_box": [
+    0,
+    56,
+    240,
+    232
+   ]
+  }
+ ],
+ "test_file": "tests/effect/centipede/pokey-random-bit1-low.yaml"
+}

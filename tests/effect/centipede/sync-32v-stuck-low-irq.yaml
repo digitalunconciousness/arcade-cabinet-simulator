@@ -1,0 +1,30 @@
+id: centipede/sync-32v-stuck-low-with-irq
+title: Vertical counter line 32V stuck low (picture and interrupt)
+romset: centiped3
+display: {rotate: 90}
+tier: B+A
+symptom: The picture is cut into 32-line bands and freezes, and the watchdog resets the board over and over.
+note: >
+  The picture part is Tier B (rows of the exported frame remapped, row y shows row y with bit 5 clear). The interrupt
+  part is Tier A: MAME's generate_interrupt raises the IRQ from the 32V level sampled on 16V edges, so with 32V stuck
+  low the IRQ never comes, which lowers to irq_missing. A power cycle is the repair, since the frozen game doesn't
+  recover by itself.
+sources: [mame-centiped-irq, mame-centiped-watchdog]
+run:
+  end_frame: 1500
+  checkpoints: [600, 900, 1100, 1500]
+inject:
+  at_frame: 600
+  primitive: sync_timing
+  params: {line_bit: 5, level: 0, irq: missing, cpu: ":maincpu", irq_line: 0}
+expect:
+  - frame_hash_differs: {from: 601, to: 1099, min_fraction: 0.9}
+  - frame_rows_aliased: {at: 900, bit: 5, level: 0}
+  - screen_frozen: {from: 620, to: 1099, max_distinct: 2}
+  - resets: {after: 600, min: 50}
+  - snapshot: {at: 900}
+repair:
+  at_frame: 1100
+  action: clear_and_hard_reset
+expect_after_repair:
+  - frame_hash_matches_baseline: {from: 1101, to: 1500}

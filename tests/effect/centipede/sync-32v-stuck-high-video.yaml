@@ -1,0 +1,32 @@
+id: centipede/sync-32v-stuck-high-video
+title: Vertical counter line 32V stuck high (picture only)
+romset: centiped3
+display: {rotate: 90}
+tier: B
+golden: stuck 32V sync line slices the screen
+symptom: The picture is cut into 32-line bands, each band showing the band below it again; the game itself keeps running.
+note: >
+  Tier B. MAME draws Centipede's tiles functionally, not from a video counter, so the fault remaps rows of the frame
+  the plugin exports (row y shows row y with bit 5 set) instead of acting inside the emulated video hardware. 32V also
+  clocks the IRQ (MAME's generate_interrupt samples it on 16V edges); stuck high would fire the IRQ on every 16-line
+  edge, which no Stage 1 primitive models, so this test leaves the CPU alone. The stuck-low test lowers that part to
+  irq_missing. Whether the bands run across or along the player's view depends on the monitor's rotation; compare with
+  a photo of the real fault.
+sources: [mame-centiped-irq]
+run:
+  end_frame: 1500
+  checkpoints: [600, 900, 1100, 1500]
+inject:
+  at_frame: 600
+  primitive: sync_timing
+  params: {line_bit: 5, level: 1}
+expect:
+  - frame_hash_differs: {from: 601, to: 1099, min_fraction: 0.9}
+  - frame_rows_aliased: {at: 900, bit: 5, level: 1}
+  - not_crashed: {}
+  - snapshot: {at: 900}
+repair:
+  at_frame: 1100
+  action: clear
+expect_after_repair:
+  - frame_hash_matches_baseline: {from: 1101, to: 1500}

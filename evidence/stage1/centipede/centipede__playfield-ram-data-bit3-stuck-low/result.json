@@ -1,0 +1,143 @@
+{
+ "id": "centipede/playfield-ram-data-bit3-stuck-low",
+ "title": "Playfield RAM data line D3 stuck low",
+ "status": "pass",
+ "romset": "centiped3",
+ "tier": "A",
+ "symptom": "Garbled tiles and text across the playfield, mushrooms change shape, and the game keeps running.",
+ "sources": [
+  "mame-centiped-map",
+  "cendef-memory-map"
+ ],
+ "inject": {
+  "at_frame": 600,
+  "primitive": "data_bit_stuck",
+  "params": {
+   "space": ":maincpu",
+   "start": 1024,
+   "end": 1983,
+   "bit": 3,
+   "level": 0
+  }
+ },
+ "repair": {
+  "at_frame": 1100,
+  "action": "clear_and_hard_reset"
+ },
+ "checks": [
+  {
+   "phase": "fault",
+   "check": "frame_hash_differs",
+   "args": {
+    "from": 601,
+    "to": 1099,
+    "min_fraction": 0.9
+   },
+   "passed": true,
+   "details": {
+    "frames": 499,
+    "differing": 498,
+    "fraction": 0.998,
+    "min_fraction": 0.9
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "region_bits",
+   "args": {
+    "ram": "playfield",
+    "at": 900,
+    "bit": 3,
+    "level": 0
+   },
+   "passed": true,
+   "details": {
+    "bytes": 960,
+    "bytes_not_at_level": 0,
+    "baseline_bytes_not_at_level": 58
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "not_crashed",
+   "args": {},
+   "passed": true,
+   "details": {
+    "finished": true,
+    "plugin_errors": []
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "snapshot",
+   "args": {
+    "at": 900
+   },
+   "passed": true,
+   "details": {}
+  },
+  {
+   "phase": "repair",
+   "check": "frame_hash_matches_baseline",
+   "args": {
+    "from": 1101,
+    "to": 1500
+   },
+   "passed": true,
+   "details": {
+    "frames": 400,
+    "differing": 0,
+    "first_differing": null
+   }
+  }
+ ],
+ "hashes_at_checkpoints": {
+  "600": {
+   "baseline": "014bce00de984a65",
+   "faulted": "014bce00de984a65"
+  },
+  "900": {
+   "baseline": "3669cd7cbda69525",
+   "faulted": "c05a270f028ff765"
+  },
+  "1100": {
+   "baseline": "c69c618f873d22a5",
+   "faulted": "5929be5f7e3cc465"
+  },
+  "1500": {
+   "baseline": "605a03b945a00fa5",
+   "faulted": "605a03b945a00fa5"
+  }
+ },
+ "frames": {
+  "baseline": 1501,
+  "faulted": 1501
+ },
+ "seconds": {
+  "baseline": 3.47,
+  "faulted": 3.65
+ },
+ "plugin_events_faulted": [
+  "machine_start -1",
+  "reset 0",
+  "apply 600 data_bit_stuck id=1 tier=A",
+  "clear_all 1100 1",
+  "reset_requested 1100 hard",
+  "machine_start 1100"
+ ],
+ "snapshots": [
+  {
+   "frame": 900,
+   "baseline": "baseline_f900.png",
+   "faulted": "faulted_f900.png",
+   "zoom": "zoom_f900.png",
+   "changed_box": [
+    0,
+    8,
+    240,
+    256
+   ]
+  }
+ ],
+ "test_file": "tests/effect/centipede/playfield-data-bit3-low.yaml"
+}

@@ -1,0 +1,27 @@
+id: centipede/playfield-ram-cell-0590-bit3-stuck-high
+title: One playfield RAM cell (0x0590) with bit 3 stuck high
+romset: centiped3
+display: {rotate: 90}
+tier: A
+symptom: One tile shows the wrong character and stays wrong, even though the game writes that cell every frame.
+note: The legacy stuck_byte rewrote this cell after each frame and lost to the game's own write (docs/FAULT_AUDIT.md, finding 5).
+sources: [mame-centiped-map, cendef-memory-map]
+run:
+  end_frame: 1500
+  checkpoints: [600, 900, 1100, 1500]
+  ram:
+    - {name: playfield, space: ":maincpu", start: 0x0400, end: 0x07bf}
+inject:
+  at_frame: 600
+  primitive: ram_cell_stuck
+  params: {space: ":maincpu", addr: 0x0590, bit: 3, level: 1}
+expect:
+  - frame_hash_differs: {from: 601, to: 1099, min_fraction: 0.9}
+  - ram_value: {ram: playfield, at: 900, offset: 0x190, mask: 0x08, value: 0x08}
+  - not_crashed: {}
+  - snapshot: {at: 900}
+repair:
+  at_frame: 1100
+  action: clear_and_hard_reset
+expect_after_repair:
+  - frame_hash_matches_baseline: {from: 1101, to: 1500}

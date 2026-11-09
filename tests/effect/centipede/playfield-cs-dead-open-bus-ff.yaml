@@ -1,0 +1,27 @@
+id: centipede/playfield-ram-chip-select-dead-open-bus-ff
+title: Playfield RAM chip select dead (open bus 0xff)
+romset: centiped3
+display: {rotate: 90}
+tier: A
+symptom: The playfield shows the open-bus tile everywhere and the game's writes to it are lost; the contents come back when the chip is selected again.
+note: The open-bus value on Centipede's data bus is not verified against the schematic; the test runs with 0x00 and 0xFF.
+sources: [mame-centiped-map, cendef-memory-map]
+run:
+  end_frame: 1500
+  checkpoints: [600, 900, 1100, 1500]
+  ram:
+    - {name: playfield, space: ":maincpu", start: 0x0400, end: 0x07bf}
+inject:
+  at_frame: 600
+  primitive: cs_dead
+  params: {space: ":maincpu", start: 0x0400, end: 0x07bf, kind: ram, open_bus: 0xff}
+expect:
+  - frame_hash_differs: {from: 601, to: 1099, min_fraction: 0.9}
+  - all_bytes: {ram: playfield, at: 900, value: 0xff}
+  - not_crashed: {}
+  - snapshot: {at: 900}
+repair:
+  at_frame: 1100
+  action: clear_and_hard_reset
+expect_after_repair:
+  - frame_hash_matches_baseline: {from: 1101, to: 1500}

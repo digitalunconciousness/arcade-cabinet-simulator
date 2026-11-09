@@ -1,0 +1,28 @@
+id: centipede/rom-j1-dead-open-bus-ff
+title: Program ROM J1 (0x3800-0x3FFF, holds the reset vector) dead, open bus 0xff
+romset: centiped3
+display: {rotate: 90}
+tier: A
+golden: bad ROM stops the boot
+symptom: The board never boots; the screen stays black and frozen.
+note: The open-bus value is not verified against the schematic; the test runs with 0x00 and 0xFF. The fault is injected, then the board is power-cycled so it boots with the dead chip.
+sources: [mame-centiped3-rom-map, mame-centiped-watchdog]
+run:
+  end_frame: 1500
+  checkpoints: [2, 300, 1100, 1500]
+  events:
+    - {frame: 2, type: reset, kind: hard}
+inject:
+  at_frame: 2
+  primitive: rom_dead
+  params: {region: ":maincpu", start: 0x3800, end: 0x3fff, open_bus: 0xff}
+expect:
+  - frame_hash_differs: {from: 30, to: 1099, min_fraction: 0.9}
+  - screen_frozen: {from: 30, to: 1099, max_distinct: 3}
+  - not_crashed: {}
+  - snapshot: {at: 300}
+repair:
+  at_frame: 1100
+  action: clear_and_hard_reset
+expect_after_repair:
+  - frame_hash_matches_baseline: {from: 1101, to: 1500}

@@ -1,0 +1,26 @@
+id: centipede/maincpu-clock-quarter-speed
+title: Main CPU clock at a quarter of its speed
+romset: centiped3
+display: {rotate: 90}
+tier: A
+symptom: The game runs slow; about half the frames repeat the previous picture.
+note: Measured at other factors (601-1099, 499 frames) - 1.0 repeats 44 frames, 0.5 repeats 58 (the game still keeps up; it has spare CPU time per frame), 0.25 repeats 263, 0.1 repeats 491 and the watchdog resets the board.
+sources: [mame-centiped-map]
+run:
+  end_frame: 1500
+  checkpoints: [600, 900, 1100, 1500]
+inject:
+  at_frame: 600
+  primitive: clock_scale
+  params: {device: ":maincpu", factor: 0.25}
+expect:
+  - frame_hash_differs: {from: 601, to: 1099, min_fraction: 0.5}
+  - repeated_frames: {from: 601, to: 1099, min_extra_fraction: 0.3}
+  - resets: {after: 600, max: 0}
+  - not_crashed: {}
+  - snapshot: {at: 900}
+repair:
+  at_frame: 1100
+  action: clear_and_hard_reset
+expect_after_repair:
+  - frame_hash_matches_baseline: {from: 1101, to: 1500}

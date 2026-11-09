@@ -41,12 +41,15 @@ def frame_hash_matches_baseline(args, base, fault):
 
 
 def screen_frozen(args, base, fault):
-    """The faulted screen stops changing in the window, while the baseline keeps changing."""
+    """The faulted screen stops changing in the window (at most max_distinct
+    different pictures, default 1), while the baseline keeps changing."""
     frames = _window(args, base)
     fault_distinct = len({fault.hashes.get(f) for f in frames})
     base_distinct = len({base.hashes.get(f) for f in frames})
-    return fault_distinct == 1 and base_distinct > 1, {
-        "frames": len(frames), "distinct_faulted": fault_distinct, "distinct_baseline": base_distinct}
+    most = int(args.get("max_distinct", 1))
+    return fault_distinct <= most and base_distinct > most, {
+        "frames": len(frames), "distinct_faulted": fault_distinct, "distinct_baseline": base_distinct,
+        "max_distinct": most}
 
 
 def repeated_frames(args, base, fault):
@@ -128,6 +131,16 @@ def count_split(args, base, fault):
     return ok, {"baseline_low": bl, "baseline_high": bh, "faulted_low": fl, "faulted_high": fh}
 
 
+def count_values(args, base, fault):
+    """How many bytes of a RAM dump hold one of the given values, within
+    [min, max] for the faulted run and outside that range for the baseline."""
+    values = {int(v) for v in args["values"]}
+    lo, hi = int(args.get("min", 0)), int(args.get("max", 10**9))
+    f = sum(1 for b in _ram(fault, args) if b in values)
+    b = sum(1 for x in _ram(base, args) if x in values)
+    return lo <= f <= hi and not (lo <= b <= hi), {"faulted": f, "baseline": b, "min": lo, "max": hi}
+
+
 def ram_trend(args, base, fault):
     """A RAM byte moves the opposite way to the baseline between two checkpoints."""
     off = int(args["offset"])
@@ -142,6 +155,28 @@ def ram_trend(args, base, fault):
     db, df = delta(base), delta(fault)
     ok = db != 0 and df != 0 and (db > 0) != (df > 0)
     return ok, {"baseline_delta": db, "faulted_delta": df}
+
+
+def frame_rows_aliased(args, base, fault):
+    """In the faulted exported frame at a checkpoint, every row equals the row
+    with one bit of its number forced (a stuck vertical-counter line); the
+    baseline frame doesn't."""
+    at = int(args["at"])
+    bit = 1 << int(args["bit"])
+    level = int(args.get("level", 1))
+
+    def mismatches(frame):
+        w, h, data = frame
+        stride = w * 4
+        bad = 0
+        for y in range(h):
+            src = (y | bit) if level else (y & ~bit)
+            if src < h and data[y * stride:(y + 1) * stride] != data[src * stride:(src + 1) * stride]:
+                bad += 1
+        return bad
+
+    f, b = mismatches(fault.frames[at]), mismatches(base.frames[at])
+    return f == 0 and b > 0, {"rows_not_aliased_faulted": f, "rows_not_aliased_baseline": b}
 
 
 def not_crashed(args, base, fault):
@@ -165,7 +200,7 @@ def no_plugin_errors(args, base, fault):
 ASSERTIONS: dict[str, Callable] = {
     f.__name__: f for f in (
         frame_hash_differs, frame_hash_matches_baseline, screen_frozen, repeated_frames,
-        region_bits, region_diff, ram_value, all_bytes, aliased_pairs, count_split, ram_trend,
-        not_crashed, resets, no_plugin_errors,
+        region_bits, region_diff, ram_value, all_bytes, aliased_pairs, count_split, count_values, ram_trend,
+        frame_rows_aliased, not_crashed, resets, no_plugin_errors,
     )
 }

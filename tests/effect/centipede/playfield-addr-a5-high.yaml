@@ -1,0 +1,27 @@
+id: centipede/playfield-ram-address-a5-stuck-high
+title: Playfield RAM address line A5 stuck high
+romset: centiped3
+display: {rotate: 90}
+tier: A
+symptom: Pairs of playfield rows show the same tiles, because both rows of each pair land on one row of the chip.
+note: A5 is the lowest row bit of the 32-byte rows at 0x0400-0x07BF. "Open" floats high on TTL and behaves the same.
+sources: [mame-centiped-map, cendef-memory-map]
+run:
+  end_frame: 1500
+  checkpoints: [600, 900, 1100, 1500]
+  ram:
+    - {name: playfield, space: ":maincpu", start: 0x0400, end: 0x07bf}
+inject:
+  at_frame: 600
+  primitive: addr_line_stuck
+  params: {space: ":maincpu", start: 0x0400, end: 0x07bf, line: 5, level: 1}
+expect:
+  - frame_hash_differs: {from: 601, to: 1099, min_fraction: 0.9}
+  - aliased_pairs: {ram: playfield, at: 900, start: 0x0400, line: 5}
+  - not_crashed: {}
+  - snapshot: {at: 900}
+repair:
+  at_frame: 1100
+  action: clear_and_hard_reset
+expect_after_repair:
+  - frame_hash_matches_baseline: {from: 1101, to: 1500}

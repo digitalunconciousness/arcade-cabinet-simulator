@@ -1,0 +1,34 @@
+id: centipede/rom-fh1-bit-flip-coin-message
+title: Program ROM FH1, one bit flipped in the "1 COIN 1 PLAY" message
+romset: centiped3
+display: {rotate: 90}
+tier: A
+symptom: The attract screen reads "1 GOIN 1 PLAY"; everything else works.
+note: >
+  The message is stored as ASCII at 0x3547 (rev 3), with the high bit set on its last character. Bit 2 of the "C" at
+  0x3549 flips 0x43 to 0x47 ("G"). The game draws it at playfield 0x0513 plus one 32-byte row per character, so the
+  "C" lands at offset 0x153 and shows character code 0x07 instead of 0x03. The board is power-cycled after the fault
+  so the message is drawn from the bad ROM.
+sources: [mame-centiped3-rom-map, cenir3-messages]
+run:
+  end_frame: 1500
+  checkpoints: [2, 300, 1100, 1500]
+  ram:
+    - {name: playfield, space: ":maincpu", start: 0x0400, end: 0x07bf}
+  events:
+    - {frame: 2, type: reset, kind: hard}
+inject:
+  at_frame: 2
+  primitive: rom_bit_flip
+  params: {region: ":maincpu", offset: 0x3549, bit: 2}
+expect:
+  - ram_value: {ram: playfield, at: 300, offset: 0x153, value: 0x07}
+  - region_diff: {ram: playfield, at: 300, min_bytes: 1}
+  - not_crashed: {}
+  - resets: {after: 2, max: 0}
+  - snapshot: {at: 300}
+repair:
+  at_frame: 1100
+  action: clear_and_hard_reset
+expect_after_repair:
+  - frame_hash_matches_baseline: {from: 1101, to: 1500}

@@ -1,0 +1,157 @@
+{
+ "id": "centipede/rom-fh1-bit-flip-coin-message",
+ "title": "Program ROM FH1, one bit flipped in the \"1 COIN 1 PLAY\" message",
+ "status": "pass",
+ "romset": "centiped3",
+ "tier": "A",
+ "symptom": "The attract screen reads \"1 GOIN 1 PLAY\"; everything else works.",
+ "sources": [
+  "mame-centiped3-rom-map",
+  "cenir3-messages"
+ ],
+ "inject": {
+  "at_frame": 2,
+  "primitive": "rom_bit_flip",
+  "params": {
+   "region": ":maincpu",
+   "offset": 13641,
+   "bit": 2
+  }
+ },
+ "repair": {
+  "at_frame": 1100,
+  "action": "clear_and_hard_reset"
+ },
+ "checks": [
+  {
+   "phase": "fault",
+   "check": "ram_value",
+   "args": {
+    "ram": "playfield",
+    "at": 300,
+    "offset": 339,
+    "value": 7
+   },
+   "passed": true,
+   "details": {
+    "offset": 339,
+    "value": 7,
+    "expected": 7,
+    "baseline": 3
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "region_diff",
+   "args": {
+    "ram": "playfield",
+    "at": 300,
+    "min_bytes": 1
+   },
+   "passed": true,
+   "details": {
+    "bytes_differing": 1,
+    "min_bytes": 1
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "not_crashed",
+   "args": {},
+   "passed": true,
+   "details": {
+    "finished": true,
+    "plugin_errors": []
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "resets",
+   "args": {
+    "after": 2,
+    "max": 0
+   },
+   "passed": true,
+   "details": {
+    "resets_faulted": 0,
+    "resets_baseline": 0,
+    "min": 0,
+    "max": 0
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "snapshot",
+   "args": {
+    "at": 300
+   },
+   "passed": true,
+   "details": {}
+  },
+  {
+   "phase": "repair",
+   "check": "frame_hash_matches_baseline",
+   "args": {
+    "from": 1101,
+    "to": 1500
+   },
+   "passed": true,
+   "details": {
+    "frames": 400,
+    "differing": 0,
+    "first_differing": null
+   }
+  }
+ ],
+ "hashes_at_checkpoints": {
+  "2": {
+   "baseline": "870b4c30543f4525",
+   "faulted": "870b4c30543f4525"
+  },
+  "300": {
+   "baseline": "c79f60bba2acd265",
+   "faulted": "64fc3ebb5673d265"
+  },
+  "1100": {
+   "baseline": "2372bf1322856f65",
+   "faulted": "8900a22fecee6f65"
+  },
+  "1500": {
+   "baseline": "605a03b945a00fa5",
+   "faulted": "605a03b945a00fa5"
+  }
+ },
+ "frames": {
+  "baseline": 1501,
+  "faulted": 1501
+ },
+ "seconds": {
+  "baseline": 3.46,
+  "faulted": 3.34
+ },
+ "plugin_events_faulted": [
+  "machine_start -1",
+  "reset 0",
+  "reset_requested 2 hard",
+  "apply 2 rom_bit_flip id=1 tier=A",
+  "machine_start 2",
+  "clear_all 1100 1",
+  "reset_requested 1100 hard",
+  "machine_start 1100"
+ ],
+ "snapshots": [
+  {
+   "frame": 300,
+   "baseline": "baseline_f300.png",
+   "faulted": "faulted_f300.png",
+   "zoom": "zoom_f300.png",
+   "changed_box": [
+    84,
+    97,
+    87,
+    104
+   ]
+  }
+ ],
+ "test_file": "tests/effect/centipede/rom-fh1-bit-flip-coin-message.yaml"
+}

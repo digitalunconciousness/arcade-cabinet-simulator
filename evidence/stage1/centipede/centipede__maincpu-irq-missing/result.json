@@ -1,0 +1,184 @@
+{
+ "id": "centipede/maincpu-irq-missing",
+ "title": "Main CPU interrupt never arrives",
+ "status": "pass",
+ "romset": "centiped3",
+ "tier": "A",
+ "symptom": "The picture freezes and the watchdog resets the board about every 8 frames, over and over.",
+ "sources": [
+  "mame-centiped-irq",
+  "mame-centiped-watchdog",
+  "cendef-irq"
+ ],
+ "inject": {
+  "at_frame": 600,
+  "primitive": "irq_missing",
+  "params": {
+   "cpu": ":maincpu",
+   "line": 0
+  }
+ },
+ "repair": {
+  "at_frame": 1100,
+  "action": "clear_and_hard_reset"
+ },
+ "checks": [
+  {
+   "phase": "fault",
+   "check": "screen_frozen",
+   "args": {
+    "from": 620,
+    "to": 1099,
+    "max_distinct": 2
+   },
+   "passed": true,
+   "details": {
+    "frames": 480,
+    "distinct_faulted": 2,
+    "distinct_baseline": 436,
+    "max_distinct": 2
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "resets",
+   "args": {
+    "after": 600,
+    "min": 50
+   },
+   "passed": true,
+   "details": {
+    "resets_faulted": 62,
+    "resets_baseline": 0,
+    "min": 50,
+    "max": 1000000000
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "not_crashed",
+   "args": {},
+   "passed": true,
+   "details": {
+    "finished": true,
+    "plugin_errors": []
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "snapshot",
+   "args": {
+    "at": 900
+   },
+   "passed": true,
+   "details": {}
+  },
+  {
+   "phase": "repair",
+   "check": "frame_hash_matches_baseline",
+   "args": {
+    "from": 1101,
+    "to": 1500
+   },
+   "passed": true,
+   "details": {
+    "frames": 400,
+    "differing": 0,
+    "first_differing": null
+   }
+  }
+ ],
+ "hashes_at_checkpoints": {
+  "600": {
+   "baseline": "014bce00de984a65",
+   "faulted": "014bce00de984a65"
+  },
+  "900": {
+   "baseline": "3669cd7cbda69525",
+   "faulted": "8e5da33581b1d325"
+  },
+  "1100": {
+   "baseline": "c69c618f873d22a5",
+   "faulted": "8e5da33581b1d325"
+  },
+  "1500": {
+   "baseline": "605a03b945a00fa5",
+   "faulted": "605a03b945a00fa5"
+  }
+ },
+ "frames": {
+  "baseline": 1501,
+  "faulted": 1501
+ },
+ "seconds": {
+  "baseline": 3.63,
+  "faulted": 3.4
+ },
+ "plugin_events_faulted": [
+  "machine_start -1",
+  "reset 0",
+  "apply 600 irq_missing id=1 tier=A",
+  "reset 607",
+  "reset 615",
+  "reset 623",
+  "reset 631",
+  "reset 639",
+  "reset 647",
+  "reset 655",
+  "reset 663",
+  "reset 671",
+  "reset 679",
+  "reset 687",
+  "reset 695",
+  "reset 703",
+  "reset 711",
+  "reset 719",
+  "reset 727",
+  "reset 735",
+  "reset 743",
+  "reset 751",
+  "reset 759",
+  "reset 767",
+  "reset 775",
+  "reset 783",
+  "reset 791",
+  "reset 799",
+  "reset 807",
+  "reset 815",
+  "reset 823",
+  "reset 831",
+  "reset 839",
+  "reset 847",
+  "reset 855",
+  "reset 863",
+  "reset 871",
+  "reset 879",
+  "reset 887",
+  "reset 895",
+  "reset 903",
+  "reset 911",
+  "reset 919",
+  "reset 927",
+  "reset 935",
+  "reset 943",
+  "reset 951",
+  "reset 959",
+  "reset 967",
+  "reset 975"
+ ],
+ "snapshots": [
+  {
+   "frame": 900,
+   "baseline": "baseline_f900.png",
+   "faulted": "faulted_f900.png",
+   "zoom": "zoom_f900.png",
+   "changed_box": [
+    8,
+    1,
+    240,
+    256
+   ]
+  }
+ ],
+ "test_file": "tests/effect/centipede/irq-missing.yaml"
+}

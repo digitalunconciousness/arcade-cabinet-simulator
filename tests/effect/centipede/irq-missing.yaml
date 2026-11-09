@@ -1,0 +1,25 @@
+id: centipede/maincpu-irq-missing
+title: Main CPU interrupt never arrives
+romset: centiped3
+display: {rotate: 90}
+tier: A
+symptom: The picture freezes and the watchdog resets the board about every 8 frames, over and over.
+note: Measured, not assumed. MAME's centiped driver sets the watchdog to 8 vblanks; each reset shows as a one-frame blip, so the frozen screen has two distinct pictures.
+sources: [mame-centiped-irq, mame-centiped-watchdog, cendef-irq]
+run:
+  end_frame: 1500
+  checkpoints: [600, 900, 1100, 1500]
+inject:
+  at_frame: 600
+  primitive: irq_missing
+  params: {cpu: ":maincpu", line: 0}
+expect:
+  - screen_frozen: {from: 620, to: 1099, max_distinct: 2}
+  - resets: {after: 600, min: 50}
+  - not_crashed: {}
+  - snapshot: {at: 900}
+repair:
+  at_frame: 1100
+  action: clear_and_hard_reset
+expect_after_repair:
+  - frame_hash_matches_baseline: {from: 1101, to: 1500}
