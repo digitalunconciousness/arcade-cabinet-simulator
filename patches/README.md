@@ -45,3 +45,10 @@ as `src/lib/netlist/generated/nld_devinc.h` must be patched in the format that t
     `set_crt_fault` and DIP commands, which no commit contains (see `docs/FAULT_AUDIT.md`).
 - `0003-Add-BAD_RAM_CELL-netlist-device-for-cell-level-RAM-f.patch`
   - Adds the `BAD_RAM_CELL` netlist device (a 16 × 1 SRAM with one stuck cell) and registers it like `0001`.
+- `0004-Add-Lua-bindings-for-fault-injection-input-line-over.patch`
+  - `device_execute_interface::set_input_line_override()`: holds a CPU input line clear or asserted whatever the driver
+    asks for (the `irq_missing` and `irq_stuck` faults), and releases it again.
+  - Lua: `device:set_input_line_override(line, "clear" | "assert" | nil)`, `device:input_line_override(line)` and a
+    writable `device.clock_scale` (the `clock_scale` fault). See ADR-0014.
+
+The fault engine's Lua code is not a patch: it lives in `plugin/cabsim/` and is loaded with `-pluginspath` (ADR-0013).

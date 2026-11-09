@@ -1,0 +1,176 @@
+From 52ed56209fe70178e14cb7f8efdec14f3d6a8648 Mon Sep 17 00:00:00 2001
+From: arcade-cabinet-simulator <noreply@invalid>
+Date: Mon, 9 Nov 2026 20:42:16 +0000
+Subject: [PATCH] Add Lua bindings for fault injection: input-line override,
+ clock scale
+
+Two small, generic hooks the arcade-cabinet-simulator fault engine needs
+and the Lua API doesn't have:
+
+- device_execute_interface::set_input_line_override(line, state) holds
+  an input line at CLEAR_LINE or ASSERT_LINE whatever the driver asks
+  for, or releases the hold (state < 0). The driver's last request is
+  remembered and re-applied when the override changes. Bound to Lua as
+  device:set_input_line_override(line, "clear" | "assert" | "none" | nil)
+  and device:input_line_override(line).
+- device.clock_scale is now readable and writable from Lua (wrapping
+  device_t::set_clock_scale), with a check that it stays above zero.
+---
+ src/emu/diexec.cpp              | 28 +++++++++++++++
+ src/emu/diexec.h                |  8 +++++
+ src/frontend/mame/luaengine.cpp | 60 +++++++++++++++++++++++++++++++++
+ 3 files changed, 96 insertions(+)
+
+diff --git a/src/emu/diexec.cpp b/src/emu/diexec.cpp
+index 1cd5266c..450a406c 100644
+--- a/src/emu/diexec.cpp
++++ b/src/emu/diexec.cpp
+@@ -615,6 +615,27 @@ void device_execute_interface::pulse_input_line(int irqline, const attotime &dur
+ //  DEVICE INPUT
+ //**************************************************************************
+ 
++//-------------------------------------------------
++//  set_input_line_override - hold an input line
++//  at a fixed state for fault injection, or
++//  release it (state < 0) so it follows the
++//  driver again
++//-------------------------------------------------
++
++void device_execute_interface::set_input_line_override(int linenum, int state)
++{
++	assert(device().started());
++	if (linenum < 0 || linenum >= MAX_INPUT_LINES)
++		throw emu_fatalerror("set_input_line_override: invalid input line %d", linenum);
++	if (state >= 0 && state != CLEAR_LINE && state != ASSERT_LINE)
++		throw emu_fatalerror("set_input_line_override: state must be CLEAR_LINE, ASSERT_LINE or negative");
++	device_input &input = m_input[linenum];
++	input.m_override = (state < 0) ? -1 : state;
++	// re-apply the driver's last request so the new effective state takes hold now
++	input.set_state_synced(input.m_requested);
++}
++
++
+ //-------------------------------------------------
+ //  device_input - constructor
+ //-------------------------------------------------
+@@ -625,6 +646,8 @@ device_execute_interface::device_input::device_input()
+ 	, m_stored_vector(0)
+ 	, m_curvector(0)
+ 	, m_curstate(CLEAR_LINE)
++	, m_override(-1)
++	, m_requested(CLEAR_LINE)
+ 	, m_qindex(0)
+ {
+ 	std::fill(std::begin(m_queue), std::end(m_queue), 0);
+@@ -667,6 +690,11 @@ void device_execute_interface::device_input::set_state_synced(int state, int vec
+ 	if (TEMPLOG) printf("setline(%s,%d,%d,%d)\n", m_execute->device().tag(), m_linenum, state, (vector == USE_STORED_VECTOR) ? 0 : vector);
+ 	assert(state == ASSERT_LINE || state == HOLD_LINE || state == CLEAR_LINE);
+ 
++	// a fault-injection override replaces whatever the driver asked for
++	m_requested = state;
++	if (m_override >= 0)
++		state = m_override;
++
+ 	// if we're full of events, flush the queue and log a message
+ 	int event_index = m_qindex++;
+ 	if (event_index >= std::size(m_queue))
+diff --git a/src/emu/diexec.h b/src/emu/diexec.h
+index 1e830328..e6cf9c31 100644
+--- a/src/emu/diexec.h
++++ b/src/emu/diexec.h
+@@ -163,6 +163,12 @@ public:
+ 	void set_input_line(int linenum, int state) { assert(device().started()); m_input[linenum].set_state_synced(state); }
+ 	void set_input_line_vector(int linenum, int vector) { assert(device().started()); m_input[linenum].set_vector(vector); }
+ 	void set_input_line_and_vector(int linenum, int state, int vector) { assert(device().started()); m_input[linenum].set_state_synced(state, vector); }
++
++	// fault injection: hold an input line at a fixed state whatever the
++	// driver asks for (state = CLEAR_LINE or ASSERT_LINE), or release the
++	// hold (state < 0) so the line follows the driver again
++	void set_input_line_override(int linenum, int state);
++	int input_line_override(int linenum) const { return m_input[linenum].m_override; }
+ 	int input_line_state(int linenum) const { assert(device().started()); return m_input[linenum].m_curstate; }
+ 	void pulse_input_line(int irqline, const attotime &duration);
+ 
+@@ -265,6 +271,8 @@ private:
+ 		s32             m_stored_vector;    // most recently written vector
+ 		s32             m_curvector;        // most recently processed vector
+ 		u8              m_curstate;         // most recently processed state
++		s32             m_override;         // forced state for fault injection, or -1
++		s32             m_requested;        // most recent state the driver asked for
+ 		s32             m_queue[32];        // queue of pending events
+ 		int             m_qindex;           // index within the queue
+ 
+diff --git a/src/frontend/mame/luaengine.cpp b/src/frontend/mame/luaengine.cpp
+index 3e3e848e..478dd6ae 100644
+--- a/src/frontend/mame/luaengine.cpp
++++ b/src/frontend/mame/luaengine.cpp
+@@ -1585,6 +1585,66 @@ void lua_engine::initialize()
+ 	device_type["owner"] = sol::property(&device_t::owner);
+ 	device_type["configured"] = sol::property(&device_t::configured);
+ 	device_type["started"] = sol::property(&device_t::started);
++	// fault injection: scale a device's clock (1.0 = nominal)
++	device_type["clock_scale"] = sol::property(
++			&device_t::clock_scale,
++			[] (device_t &dev, double scale, sol::this_state s)
++			{
++				if (!(scale > 0.0))
++					luaL_error(s, "clock_scale must be greater than zero");
++				else
++					dev.set_clock_scale(scale);
++			});
++	// fault injection: hold an input line of an executing device at "clear" or
++	// "assert", or pass nil (or "none") to let it follow the driver again
++	device_type.set_function(
++			"set_input_line_override",
++			[] (device_t &dev, int linenum, sol::object mode, sol::this_state s)
++			{
++				device_execute_interface *exec = nullptr;
++				if (!dev.interface(exec))
++				{
++					luaL_error(s, "set_input_line_override: %s is not an executing device", dev.tag());
++					return;
++				}
++				if ((linenum < 0) || (linenum >= MAX_INPUT_LINES))
++				{
++					luaL_error(s, "set_input_line_override: invalid input line %d", linenum);
++					return;
++				}
++				int state = -1;
++				if (mode.is<std::string>())
++				{
++					std::string const m = mode.as<std::string>();
++					if (m == "clear")
++						state = CLEAR_LINE;
++					else if (m == "assert")
++						state = ASSERT_LINE;
++					else if (m != "none")
++					{
++						luaL_error(s, "set_input_line_override: mode must be \"clear\", \"assert\", \"none\" or nil");
++						return;
++					}
++				}
++				else if (mode != sol::lua_nil)
++				{
++					luaL_error(s, "set_input_line_override: mode must be a string or nil");
++					return;
++				}
++				exec->set_input_line_override(linenum, state);
++			});
++	device_type.set_function(
++			"input_line_override",
++			[] (device_t &dev, int linenum) -> sol::optional<std::string>
++			{
++				device_execute_interface *exec = nullptr;
++				if (!dev.interface(exec) || (linenum < 0) || (linenum >= MAX_INPUT_LINES))
++					return sol::nullopt;
++				int const state = exec->input_line_override(linenum);
++				if (state < 0)
++					return std::string("none");
++				return std::string((state == ASSERT_LINE) ? "assert" : "clear");
++			});
+ 	device_type["debug"] = sol::property(
+ 			[] (device_t &dev, sol::this_state s) -> sol::object
+ 			{
+-- 
+2.43.0
+
