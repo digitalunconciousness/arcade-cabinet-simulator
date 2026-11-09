@@ -4,9 +4,15 @@ Software simulator for a complete arcade cabinet (PCB + power supply +
 monitor + trackball + coin mech + harness + lights + audio) that lets a
 user inject realistic faults at any subsystem. Initial target is the Atari
 Centipede.
-The master plan is in [`arcade_cabinet_fault_simulator_plan.md`](../arcade_cabinet_fault_simulator_plan.md).
+The earlier plan (v0.2) is [`arcade_cabinet_fault_simulator_plan.md`](../arcade_cabinet_fault_simulator_plan.md).
 
-## Current status
+> **Superseded by PLAN v0.3 (2026-11-09).** The plan of record is [`docs/PLAN_v3.md`](../docs/PLAN_v3.md).
+> The Stage 0 truth audit ran every fault below against the live game, headless, in a build made from this repo.
+> Most of them don't change the running game, so the phase statuses in the table were corrected to what the evidence
+> shows. What is real, mocked and unproven: [`docs/STATUS.md`](../docs/STATUS.md). Per fault:
+> [`docs/FAULT_AUDIT.md`](../docs/FAULT_AUDIT.md).
+
+## Status before PLAN v0.3 (as written at the time)
 
 **Phase 9 complete — Linux desktop shell shipped; live fault diagnostics added.**
 The simulator now runs as a Tauri desktop app that orchestrates the full
@@ -64,23 +70,23 @@ The next major program milestones are now explicit:
 
 ## Phase index
 
-| Phase | Title | Status |
+| Phase | Title | Status after the Stage 0 audit |
 | ----- | ----- | ------ |
-| 0 | [Bootstrap](Phases/Phase-0-Bootstrap.md) | ✅ complete |
-| 1 | [Fault buffer](Phases/Phase-1-Fault-Buffer.md) | ✅ complete |
-| 2 | [Sync generator](Phases/Phase-2-Sync-Generator.md) | ✅ complete |
-| 3 | [Cabinet bus + UI](Phases/Phase-3-Cabinet-Bus.md) | ✅ complete |
-| 3.5 | [MAME bridge](Phases/Phase-3.5-MAME-Bridge.md) | ✅ complete |
-| 4 | [PSU + peripherals](Phases/Phase-4-PSU-Peripherals.md) | ✅ complete |
-| 5 | [Address decoder + RAM](Phases/Phase-5-Address-Decoder-RAM.md) | ✅ complete |
-| 5.5 | [RAM region (cell-level faults)](Phases/Phase-5.5-RAM-Region.md) | ✅ complete |
-| 6 | [CRT + trackball + audio](Phases/Phase-6-CRT-Trackball-Audio.md) | ✅ complete |
-| 7 | [Cabinet UI + training mode](Phases/Phase-7-Cabinet-UI-Training.md) | ✅ complete |
-| 8 | [Schematic board packages + training surfaces](Phases/Phase-8-Schematic-Board-Package.md) | ✅ complete |
-| 9 | [Desktop productization](Phases/Phase-9-Desktop-Productization.md) | ✅ complete |
-| 10 | [3D cabinet digital twin](Phases/Phase-10-3D-Cabinet-Digital-Twin.md) | ⏳ planned |
-| 11 | [Interactive technician workflow](Phases/Phase-11-Interactive-Technician-Workflow.md) | ⏳ planned |
-| 12 | [Physical prototype + parts plan](Phases/Phase-12-Physical-Prototype-Parts-Plan.md) | ⏳ planned |
+| 0 | [Bootstrap](Phases/Phase-0-Bootstrap.md) | built; the patch series only applied to the pinned tag after a Stage 0 fix (ADR-0010) |
+| 1 | [Fault buffer](Phases/Phase-1-Fault-Buffer.md) | works in standalone nltool only |
+| 2 | [Sync generator](Phases/Phase-2-Sync-Generator.md) | representative netlist, standalone nltool only; never in the game |
+| 3 | [Cabinet bus + UI](Phases/Phase-3-Cabinet-Bus.md) | legacy Flask UI; retired by PLAN v0.3 |
+| 3.5 | [MAME bridge](Phases/Phase-3.5-MAME-Bridge.md) | partly: 8 plugin commands are committed; input, CRT and DIP commands are in no commit |
+| 4 | [PSU + peripherals](Phases/Phase-4-PSU-Peripherals.md) | Python state models (mocked); only a rail below 4.7 V reaches the game, as one stuck tile |
+| 5 | [Address decoder + RAM](Phases/Phase-5-Address-Decoder-RAM.md) | representative netlist, standalone nltool only |
+| 5.5 | [RAM region (cell-level faults)](Phases/Phase-5.5-RAM-Region.md) | `BAD_RAM_CELL` works in standalone nltool only |
+| 6 | [CRT + trackball + audio](Phases/Phase-6-CRT-Trackball-Audio.md) | doesn't reach the game: CRT and trackball commands are rejected; audio is a browser test tone |
+| 7 | [Cabinet UI + training mode](Phases/Phase-7-Cabinet-UI-Training.md) | scenarios run; 3 of 12 change the game and none shows its described symptom (see FAULT_AUDIT) |
+| 8 | [Schematic board packages + training surfaces](Phases/Phase-8-Schematic-Board-Package.md) | the board package fails to load (`fault_map.json` has a key the loader rejects), and no launcher points at it |
+| 9 | [Desktop productization](Phases/Phase-9-Desktop-Productization.md) | Linux-only Tauri app; superseded by ADR-0011 |
+| 10 | [3D cabinet digital twin](Phases/Phase-10-3D-Cabinet-Digital-Twin.md) | replaced by PLAN v0.3 Stage 4 |
+| 11 | [Interactive technician workflow](Phases/Phase-11-Interactive-Technician-Workflow.md) | replaced by PLAN v0.3 Stage 5 |
+| 12 | [Physical prototype + parts plan](Phases/Phase-12-Physical-Prototype-Parts-Plan.md) | not scheduled in PLAN v0.3 |
 
 Full schedule and tier-expansion plan: [Roadmap](Roadmap.md).
 
@@ -95,6 +101,10 @@ Full schedule and tier-expansion plan: [Roadmap](Roadmap.md).
 ### Decisions
 
 - [ADR-0001 — Wiki workflow](Decisions/ADR-0001-wiki-workflow.md)
+- [ADR-0009 — Desktop shell: Tauri](Decisions/ADR-0009-Desktop-Shell-Tauri.md) (superseded by ADR-0011)
+- [ADR-0010 — Pin MAME and keep the patch series applying to it](Decisions/ADR-0010-Pin-MAME.md)
+- [ADR-0011 — Native shell direction](Decisions/ADR-0011-Native-Shell-Direction.md)
+- [ADR-0012 — ROMs, romset and what CI runs against](Decisions/ADR-0012-ROM-Policy.md)
 
 ## How to contribute to the wiki
 

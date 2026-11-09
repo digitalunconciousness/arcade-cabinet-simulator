@@ -1,6 +1,11 @@
 # Phase 3.5 — MAME bridge
 
-**Status:** ✅ complete
+> **Stage 0 audit note (2026-11-09).** The plugin a fresh checkout builds is the one in
+> `patches/0002`. It has only `ping`, `get_state`, `pause`, `resume`, `soft_reset`, `poke_ram`, `stuck_byte` and
+> `clear_stuck`. The button, trackball, `set_crt_fault`, `list_buttons` and DIP commands described below are in no
+> commit, so a build from this repo answers them with `unknown command`. Evidence: `docs/FAULT_AUDIT.md`.
+
+**Status:** partly reproducible (see the note above)
 **Goal:** Wire MAME running Centipede into the cabinet bus, so the
 browser GUI can talk to a live emulator alongside the existing fault
 injection on the standalone netlist. End-state: open the UI, see live

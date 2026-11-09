@@ -1,6 +1,6 @@
 # ADR-0009 — Desktop shell: Tauri with Python sidecar
 
-**Status:** accepted  
+**Status:** superseded by [ADR-0011](ADR-0011-Native-Shell-Direction.md)  
 **Date:** 2025  
 **Deciders:** project owner
 
