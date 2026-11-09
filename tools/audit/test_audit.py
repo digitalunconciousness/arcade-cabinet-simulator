@@ -96,6 +96,21 @@ class FaultCommandTests(unittest.TestCase):
         extra = ra.fault_commands({"plugin": [tb, tb, tb]}, {"plugin": [tb, tb]})
         self.assertEqual(len(extra), 1)
 
+    def test_reset_traffic_is_not_a_fault_command(self):
+        resets = [
+            _cmd({"cmd": "clear_stuck"}),
+            _cmd({"cmd": "stuck_byte", "addr": 0x400, "value": None, "cpu": "maincpu"}),
+            _cmd({"cmd": "set_crt_fault", "effect": "normal", "brightness": 1.0}, ok=False),
+        ]
+        fault = _cmd({"cmd": "set_crt_fault", "effect": "vertical_collapse", "brightness": 1.0}, ok=False)
+        extra = ra.fault_commands({"plugin": resets + [fault]}, {"plugin": []})
+        self.assertEqual(extra, [fault])
+        diff = ra.compare(_cap({2: "b"}), _cap({2: "b"}), pause_frame=1)
+        self.assertEqual(ra.verdict(diff, extra), "rejected-by-plugin")
+
+    def test_dim_crt_is_not_a_reset(self):
+        self.assertFalse(ra.is_reset({"cmd": "set_crt_fault", "effect": "normal", "brightness": 0.6}))
+
     def test_held_resume_is_not_a_fault_command(self):
         held = {"cmd": {"cmd": "resume"}, "held_by_audit": True}
         self.assertEqual(ra.fault_commands({"plugin": [held]}, {"plugin": []}), [])

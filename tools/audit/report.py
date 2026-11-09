@@ -101,6 +101,8 @@ def render(results: dict) -> str:
                 ev = f"[run]({r['evidence']})"
                 if r.get("images"):
                     ev += f", [before]({r['images']['baseline']}) / [after]({r['images']['faulted']})"
+                    if r["images"].get("zoom"):
+                        ev += f" / [zoom]({r['images']['zoom']})"
                 out.append(f"| `{r['id']}` | `{r['verdict']}` | {_what_reached_mame(r)} | {_effect(r)} | {ev} |")
         out.append("")
     out.append(END)

@@ -70,15 +70,30 @@ def _command_key(entry: dict) -> str:
     return json.dumps(cmd, sort_keys=True)
 
 
+def is_reset(cmd: dict) -> bool:
+    """Clean-up the legacy server sends around every fault: disarming stuck
+    bytes (value null), clear_stuck, clear_buttons and set_crt_fault "normal".
+    They can't carry a fault, so they don't count as the fault's commands."""
+    name = cmd.get("cmd")
+    if name in ("clear_stuck", "clear_buttons"):
+        return True
+    if name == "stuck_byte" and cmd.get("value") is None:
+        return True
+    if name == "set_crt_fault" and cmd.get("effect") == "normal" and float(cmd.get("brightness", 1.0)) == 1.0:
+        return True
+    return False
+
+
 def fault_commands(run_log: dict, baseline_log: dict) -> list[dict]:
-    """Acting plugin commands the faulted run sent that the baseline didn't."""
+    """Acting plugin commands the faulted run sent that the baseline didn't,
+    leaving out held resumes and reset traffic (is_reset)."""
     remaining: dict[str, int] = {}
     for e in baseline_log.get("plugin", []):
         k = _command_key(e)
         remaining[k] = remaining.get(k, 0) + 1
     extra = []
     for e in run_log.get("plugin", []):
-        if e["cmd"].get("cmd") not in ACTING_COMMANDS or e.get("held_by_audit"):
+        if e["cmd"].get("cmd") not in ACTING_COMMANDS or e.get("held_by_audit") or is_reset(e["cmd"]):
             continue
         k = _command_key(e)
         if remaining.get(k, 0) > 0:
@@ -328,8 +343,14 @@ def main(argv: list[str] | None = None) -> int:
                 "diff": diff,
                 "plugin_commands": [{"cmd": e["cmd"], "reply": e.get("reply"), "error": e.get("error")}
                                     for e in extra],
-                "http_apply": (cap.worker or {}).get("http", [None])[0],
+                "http_apply": (cap.worker or {}).get("apply"),
             })
+            summary = (cap.worker or {}).get("schematic_summary")
+            if summary is not None:
+                resp = summary.get("response") or {}
+                record["schematic_source"] = {"status": summary["status"],
+                                              "available": resp.get("available"),
+                                              "error": resp.get("error")}
             if cap.error:
                 record["error"] = cap.error
             if record["verdict"] == "changes-game-output":
@@ -372,6 +393,8 @@ def main(argv: list[str] | None = None) -> int:
         "determinism": determinism,
         "results": results,
     }, indent=1))
+    import zoom
+    zoom.add_zooms(out)
     counts: dict[str, int] = {}
     for r in results:
         counts[r["verdict"]] = counts.get(r["verdict"], 0) + 1

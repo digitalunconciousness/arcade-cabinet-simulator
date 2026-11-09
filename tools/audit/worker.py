@@ -75,14 +75,16 @@ def _recording_client(mame_client_mod, log: list, port: int):
     return RecordingClient(mame_client_mod.MameClientConfig(port=port))
 
 
-def _http(client, method: str, path: str, body: dict, http_log: list) -> None:
-    resp = client.open(path, method=method, json=body)
+def _http(client, method: str, path: str, body: dict, http_log: list) -> dict:
+    resp = client.open(path, method=method, json=body if method != "GET" else None)
     try:
         payload = resp.get_json()
     except Exception:  # noqa: BLE001
         payload = None
-    http_log.append({"method": method, "path": path, "body": body,
-                     "status": resp.status_code, "response": payload})
+    entry = {"method": method, "path": path, "body": body,
+             "status": resp.status_code, "response": payload}
+    http_log.append(entry)
+    return entry
 
 
 def run_mame(args) -> int:
@@ -99,9 +101,16 @@ def run_mame(args) -> int:
     app = server.create_app(mame_client=client, board_package_path=board)
     http = app.test_client()
 
+    # Record whether a schematic source loaded, so a silent fallback to the
+    # sync-generator manifest shows up in the evidence.
+    summary = None
+    if entry is not None and entry.get("kind") == "schematic":
+        summary = _http(http, "GET", "/api/schematic/summary", {}, http_log)
+
+    applied = None
     if entry is not None:
         a = entry["apply"]
-        _http(http, a["method"], a["path"], a["body"], http_log)
+        applied = _http(http, a["method"], a["path"], a["body"], http_log)
     for method, path, body in STIMULUS:
         _http(http, method, path, body, http_log)
     time.sleep(PSU_WATCHER_TICK_S)
@@ -115,6 +124,8 @@ def run_mame(args) -> int:
 
     args.log.write_text(json.dumps({
         "entry": entry,
+        "apply": applied,
+        "schematic_summary": summary,
         "http": http_log,
         "plugin": plugin_log,
         "resume_error": resume_error,
