@@ -1,0 +1,144 @@
+{
+ "id": "testrom/playfield-addr-a5-high",
+ "title": "Playfield RAM address line A5 stuck high",
+ "status": "pass",
+ "romset": "centiped",
+ "rom": "original test ROM (testrom/)",
+ "tier": "A",
+ "symptom": "Pairs of playfield rows hold the same bytes.",
+ "sources": [
+  "testrom-centtest",
+  "mame-centiped-map"
+ ],
+ "inject": {
+  "at_frame": 300,
+  "primitive": "addr_line_stuck",
+  "params": {
+   "space": ":maincpu",
+   "start": 1024,
+   "end": 1983,
+   "line": 5,
+   "level": 1
+  }
+ },
+ "repair": {
+  "at_frame": 600,
+  "action": "clear_and_hard_reset"
+ },
+ "checks": [
+  {
+   "phase": "fault",
+   "check": "aliased_pairs",
+   "args": {
+    "ram": "playfield",
+    "at": 400,
+    "start": 1024,
+    "line": 5
+   },
+   "passed": true,
+   "details": {
+    "pairs": 480,
+    "pairs_differing": 0,
+    "baseline_pairs_differing": 480
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "frame_hash_differs",
+   "args": {
+    "from": 301,
+    "to": 599,
+    "min_fraction": 0.9
+   },
+   "passed": true,
+   "details": {
+    "frames": 299,
+    "differing": 298,
+    "fraction": 0.9967,
+    "min_fraction": 0.9
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "not_crashed",
+   "args": {},
+   "passed": true,
+   "details": {
+    "finished": true,
+    "plugin_errors": []
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "snapshot",
+   "args": {
+    "at": 400
+   },
+   "passed": true,
+   "details": {}
+  },
+  {
+   "phase": "repair",
+   "check": "frame_hash_matches_baseline",
+   "args": {
+    "from": 601,
+    "to": 900
+   },
+   "passed": true,
+   "details": {
+    "frames": 300,
+    "differing": 0,
+    "first_differing": null
+   }
+  }
+ ],
+ "hashes_at_checkpoints": {
+  "300": {
+   "baseline": "b51d62890eae2cfd",
+   "faulted": "b51d62890eae2cfd"
+  },
+  "400": {
+   "baseline": "d7ee1b8fe53f7a61",
+   "faulted": "89573f669bda3a43"
+  },
+  "600": {
+   "baseline": "9c212009b0ff467e",
+   "faulted": "5ebbca8d407995ae"
+  },
+  "900": {
+   "baseline": "bd81c07fac91d9b4",
+   "faulted": "bd81c07fac91d9b4"
+  }
+ },
+ "frames": {
+  "baseline": 901,
+  "faulted": 901
+ },
+ "seconds": {
+  "baseline": 2.15,
+  "faulted": 2.23
+ },
+ "plugin_events_faulted": [
+  "machine_start -1",
+  "reset 0",
+  "apply 300 addr_line_stuck id=1 tier=A",
+  "clear_all 600 1",
+  "reset_requested 600 hard",
+  "machine_start 600"
+ ],
+ "snapshots": [
+  {
+   "frame": 400,
+   "baseline": "baseline_f400.png",
+   "faulted": "faulted_f400.png",
+   "zoom": "zoom_f400.png",
+   "changed_box": [
+    8,
+    0,
+    232,
+    256
+   ]
+  }
+ ],
+ "test_file": "tests/effect/testrom/playfield-addr-a5-high.yaml"
+}

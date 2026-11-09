@@ -1,0 +1,147 @@
+{
+ "id": "testrom/pokey-random-bit1-low",
+ "title": "POKEY random number bit 1 stuck low from power-on",
+ "status": "pass",
+ "romset": "centiped",
+ "rom": "original test ROM (testrom/)",
+ "tier": "A",
+ "symptom": "The random-number histogram never counts values with bit 1 set.",
+ "sources": [
+  "testrom-centtest",
+  "mame-centiped-map"
+ ],
+ "inject": {
+  "at_frame": 2,
+  "primitive": "reg_read_override",
+  "params": {
+   "space": ":maincpu",
+   "addr": 4106,
+   "rule": {
+    "and_mask": 253
+   }
+  }
+ },
+ "repair": {
+  "at_frame": 600,
+  "action": "clear_and_hard_reset"
+ },
+ "checks": [
+  {
+   "phase": "fault",
+   "check": "all_bytes",
+   "args": {
+    "ram": "rng_bit1_bins",
+    "at": 300,
+    "value": 0
+   },
+   "passed": true,
+   "details": {
+    "bytes": 2,
+    "bytes_not_equal": 0,
+    "value": 0
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "region_diff",
+   "args": {
+    "ram": "rng_bit1_bins",
+    "at": 300,
+    "min_bytes": 1
+   },
+   "passed": true,
+   "details": {
+    "bytes_differing": 2,
+    "min_bytes": 1
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "not_crashed",
+   "args": {},
+   "passed": true,
+   "details": {
+    "finished": true,
+    "plugin_errors": []
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "snapshot",
+   "args": {
+    "at": 300
+   },
+   "passed": true,
+   "details": {}
+  },
+  {
+   "phase": "repair",
+   "check": "frame_hash_matches_baseline",
+   "args": {
+    "from": 601,
+    "to": 900
+   },
+   "passed": true,
+   "details": {
+    "frames": 300,
+    "differing": 0,
+    "first_differing": null
+   }
+  }
+ ],
+ "hashes_at_checkpoints": {
+  "2": {
+   "baseline": "b00079523b9ce325",
+   "faulted": "b00079523b9ce325"
+  },
+  "300": {
+   "baseline": "b31fcbff63f4d3fb",
+   "faulted": "bee73c3eb6ae39f8"
+  },
+  "400": {
+   "baseline": "c39bff3178eed913",
+   "faulted": "3ba3c5585465838c"
+  },
+  "600": {
+   "baseline": "19740ddf16bc8896",
+   "faulted": "ef6f33afda512bca"
+  },
+  "900": {
+   "baseline": "bd81c07fac91d9b4",
+   "faulted": "bd81c07fac91d9b4"
+  }
+ },
+ "frames": {
+  "baseline": 901,
+  "faulted": 901
+ },
+ "seconds": {
+  "baseline": 2.03,
+  "faulted": 1.91
+ },
+ "plugin_events_faulted": [
+  "machine_start -1",
+  "reset 0",
+  "reset_requested 2 hard",
+  "apply 2 reg_read_override id=1 tier=A",
+  "machine_start 2",
+  "clear_all 600 1",
+  "reset_requested 600 hard",
+  "machine_start 600"
+ ],
+ "snapshots": [
+  {
+   "frame": 300,
+   "baseline": "baseline_f300.png",
+   "faulted": "faulted_f300.png",
+   "zoom": "zoom_f300.png",
+   "changed_box": [
+    0,
+    1,
+    8,
+    232
+   ]
+  }
+ ],
+ "test_file": "tests/effect/testrom/pokey-random-bit1-low.yaml"
+}

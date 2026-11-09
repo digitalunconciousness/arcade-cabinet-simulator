@@ -97,32 +97,50 @@ class Runner:
         self.romset_override = romset_override
         self._baselines: dict[str, RunResult] = {}
         self._romsets: dict[str, bool] = {}
+        self._testrom: Path | None = None
 
-    def romset_available(self, romset: str) -> bool:
-        if romset not in self._romsets:
-            proc = subprocess.run([str(self.cfg.mame), "-rompath", str(self.cfg.rompath), "-verifyroms", romset],
+    def testrom_path(self) -> Path:
+        """Build the original test ROM (testrom/) once per run into a scratch folder."""
+        if self._testrom is None:
+            import sys
+            import tempfile
+            repo = Path(__file__).resolve().parents[2]
+            sys.path.insert(0, str(repo / "testrom"))
+            from build_testrom import build
+            self._testrom = build(Path(tempfile.mkdtemp(prefix="cabsim-testrom-", dir=self.cfg.tmp)))
+        return self._testrom
+
+    def _rompath(self, test: dict) -> Path:
+        return self.testrom_path() if test.get("testrom") else self.cfg.rompath
+
+    def romset_available(self, romset: str, rompath: Path | None = None) -> bool:
+        rompath = rompath or self.cfg.rompath
+        key = f"{rompath}|{romset}"
+        if key not in self._romsets:
+            proc = subprocess.run([str(self.cfg.mame), "-rompath", str(rompath), "-verifyroms", romset],
                                   capture_output=True, text=True)
             # "is good" or "is best available"; a set with only wrong checksums (the test ROM) reports "is bad"
             ok = proc.returncode == 0 or " is bad" in proc.stdout and "NOT FOUND" not in proc.stdout
-            self._romsets[romset] = ok
-        return self._romsets[romset]
+            self._romsets[key] = ok
+        return self._romsets[key]
 
-    def _run(self, romset: str, plan: dict) -> RunResult:
-        cfg = MameConfig(self.cfg.mame, self.cfg.rompath, romset, self.cfg.tmp, self.cfg.timeout_s)
+    def _run(self, romset: str, plan: dict, rompath: Path) -> RunResult:
+        cfg = MameConfig(self.cfg.mame, rompath, romset, self.cfg.tmp, self.cfg.timeout_s)
         return run_plan(cfg, plan)
 
-    def baseline(self, romset: str, plan: dict) -> RunResult:
-        key = romset + json.dumps(plan, sort_keys=True)
+    def baseline(self, romset: str, plan: dict, rompath: Path) -> RunResult:
+        key = f"{rompath}|{romset}" + json.dumps(plan, sort_keys=True)
         if key not in self._baselines:
-            self._baselines[key] = self._run(romset, plan)
+            self._baselines[key] = self._run(romset, plan, rompath)
         return self._baselines[key]
 
     def run_test(self, test: dict) -> Outcome:
-        romset = self.romset_override or test["romset"]
-        if not self.romset_available(romset):
-            return Outcome(test["id"], "skip", reason=f"romset {romset} not found in {self.cfg.rompath}")
-        base = self.baseline(romset, build_plan(test, faulted=False))
-        fault = self._run(romset, build_plan(test, faulted=True))
+        romset = test["romset"] if test.get("testrom") else (self.romset_override or test["romset"])
+        rompath = self._rompath(test)
+        if not self.romset_available(romset, rompath):
+            return Outcome(test["id"], "skip", reason=f"romset {romset} not found in {rompath}")
+        base = self.baseline(romset, build_plan(test, faulted=False), rompath)
+        fault = self._run(romset, build_plan(test, faulted=True), rompath)
         if not base.finished:
             return Outcome(test["id"], "error", reason="baseline run did not finish: " + base.log_tail[-500:])
 
@@ -152,6 +170,7 @@ class Runner:
             "title": test.get("title", ""),
             "status": status,
             "romset": romset,
+            "rom": "original test ROM (testrom/)" if test.get("testrom") else "user-supplied",
             "tier": test.get("tier"),
             "symptom": test.get("symptom"),
             "sources": test.get("sources", []),

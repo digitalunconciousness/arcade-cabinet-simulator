@@ -1,0 +1,148 @@
+{
+ "id": "testrom/rom-bit-flip-boot-check",
+ "title": "One program ROM bit flipped (FH1, 0x3000 bit 2)",
+ "status": "pass",
+ "romset": "centiped",
+ "rom": "original test ROM (testrom/)",
+ "tier": "A",
+ "symptom": "The boot check fails and the program shows its bad-ROM screen.",
+ "sources": [
+  "testrom-centtest",
+  "mame-centiped-map"
+ ],
+ "inject": {
+  "at_frame": 2,
+  "primitive": "rom_bit_flip",
+  "params": {
+   "region": ":maincpu",
+   "offset": 12288,
+   "bit": 2
+  }
+ },
+ "repair": {
+  "at_frame": 600,
+  "action": "clear_and_hard_reset"
+ },
+ "checks": [
+  {
+   "phase": "fault",
+   "check": "ram_value",
+   "args": {
+    "ram": "vars",
+    "at": 300,
+    "offset": 24,
+    "value": 186
+   },
+   "passed": true,
+   "details": {
+    "offset": 24,
+    "value": 186,
+    "expected": 186,
+    "baseline": 0
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "all_bytes",
+   "args": {
+    "ram": "playfield",
+    "at": 300,
+    "value": 42
+   },
+   "passed": true,
+   "details": {
+    "bytes": 960,
+    "bytes_not_equal": 0,
+    "value": 42
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "not_crashed",
+   "args": {},
+   "passed": true,
+   "details": {
+    "finished": true,
+    "plugin_errors": []
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "snapshot",
+   "args": {
+    "at": 300
+   },
+   "passed": true,
+   "details": {}
+  },
+  {
+   "phase": "repair",
+   "check": "frame_hash_matches_baseline",
+   "args": {
+    "from": 601,
+    "to": 900
+   },
+   "passed": true,
+   "details": {
+    "frames": 300,
+    "differing": 0,
+    "first_differing": null
+   }
+  }
+ ],
+ "hashes_at_checkpoints": {
+  "2": {
+   "baseline": "b00079523b9ce325",
+   "faulted": "b00079523b9ce325"
+  },
+  "300": {
+   "baseline": "b31fcbff63f4d3fb",
+   "faulted": "adac033737e6fc25"
+  },
+  "400": {
+   "baseline": "c39bff3178eed913",
+   "faulted": "adac033737e6fc25"
+  },
+  "600": {
+   "baseline": "19740ddf16bc8896",
+   "faulted": "adac033737e6fc25"
+  },
+  "900": {
+   "baseline": "bd81c07fac91d9b4",
+   "faulted": "bd81c07fac91d9b4"
+  }
+ },
+ "frames": {
+  "baseline": 901,
+  "faulted": 901
+ },
+ "seconds": {
+  "baseline": 1.97,
+  "faulted": 2.01
+ },
+ "plugin_events_faulted": [
+  "machine_start -1",
+  "reset 0",
+  "reset_requested 2 hard",
+  "apply 2 rom_bit_flip id=1 tier=A",
+  "machine_start 2",
+  "clear_all 600 1",
+  "reset_requested 600 hard",
+  "machine_start 600"
+ ],
+ "snapshots": [
+  {
+   "frame": 300,
+   "baseline": "baseline_f300.png",
+   "faulted": "faulted_f300.png",
+   "zoom": "zoom_f300.png",
+   "changed_box": [
+    0,
+    0,
+    240,
+    256
+   ]
+  }
+ ],
+ "test_file": "tests/effect/testrom/rom-bit-flip-boot-check.yaml"
+}

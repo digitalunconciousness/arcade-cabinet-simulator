@@ -1,0 +1,133 @@
+{
+ "id": "testrom/clock-half",
+ "title": "Main CPU clock at half speed",
+ "status": "pass",
+ "romset": "centiped",
+ "rom": "original test ROM (testrom/)",
+ "tier": "A",
+ "symptom": "The free-running main loop makes about half as many passes per frame.",
+ "sources": [
+  "testrom-centtest",
+  "mame-centiped-map"
+ ],
+ "inject": {
+  "at_frame": 300,
+  "primitive": "clock_scale",
+  "params": {
+   "device": ":maincpu",
+   "factor": 0.5
+  }
+ },
+ "repair": {
+  "at_frame": 600,
+  "action": "clear_and_hard_reset"
+ },
+ "checks": [
+  {
+   "phase": "fault",
+   "check": "counter_rate",
+   "args": {
+    "ram": "vars",
+    "offset": 16,
+    "from_at": 400,
+    "to_at": 500,
+    "min_ratio": 0.4,
+    "max_ratio": 0.6
+   },
+   "passed": true,
+   "details": {
+    "baseline": 32533,
+    "faulted": 16174,
+    "ratio": 0.497,
+    "min_ratio": 0.4,
+    "max_ratio": 0.6
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "not_crashed",
+   "args": {},
+   "passed": true,
+   "details": {
+    "finished": true,
+    "plugin_errors": []
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "snapshot",
+   "args": {
+    "at": 400
+   },
+   "passed": true,
+   "details": {}
+  },
+  {
+   "phase": "repair",
+   "check": "frame_hash_matches_baseline",
+   "args": {
+    "from": 601,
+    "to": 900
+   },
+   "passed": true,
+   "details": {
+    "frames": 300,
+    "differing": 0,
+    "first_differing": null
+   }
+  }
+ ],
+ "hashes_at_checkpoints": {
+  "300": {
+   "baseline": "b51d62890eae2cfd",
+   "faulted": "b51d62890eae2cfd"
+  },
+  "400": {
+   "baseline": "d7ee1b8fe53f7a61",
+   "faulted": "d64932e55fe6901c"
+  },
+  "500": {
+   "baseline": "2297579899b1890f",
+   "faulted": "1fd7ed5ccaf47a8b"
+  },
+  "600": {
+   "baseline": "9c212009b0ff467e",
+   "faulted": "15ba781eae5194a7"
+  },
+  "900": {
+   "baseline": "bd81c07fac91d9b4",
+   "faulted": "bd81c07fac91d9b4"
+  }
+ },
+ "frames": {
+  "baseline": 901,
+  "faulted": 901
+ },
+ "seconds": {
+  "baseline": 2.1,
+  "faulted": 2.11
+ },
+ "plugin_events_faulted": [
+  "machine_start -1",
+  "reset 0",
+  "apply 300 clock_scale id=1 tier=A",
+  "clear_all 600 1",
+  "reset_requested 600 hard",
+  "machine_start 600"
+ ],
+ "snapshots": [
+  {
+   "frame": 400,
+   "baseline": "baseline_f400.png",
+   "faulted": "faulted_f400.png",
+   "zoom": "zoom_f400.png",
+   "changed_box": [
+    0,
+    2,
+    8,
+    256
+   ]
+  }
+ ],
+ "test_file": "tests/effect/testrom/clock-half.yaml"
+}

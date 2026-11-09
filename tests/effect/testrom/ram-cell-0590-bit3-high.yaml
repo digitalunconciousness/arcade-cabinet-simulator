@@ -1,0 +1,28 @@
+id: testrom/ram-cell-0590-bit3-high
+title: "Playfield cell 0x0590 bit 3 stuck high"
+testrom: true
+romset: centiped
+display: {rotate: 90}
+tier: A
+symptom: "The cell the program clears on every pass keeps bit 3 set."
+sources: [testrom-centtest, mame-centiped-map]
+run:
+  end_frame: 900
+  checkpoints: [300, 400, 600, 900]
+  ram:
+    - {name: vars, space: ":maincpu", start: 0x0000, end: 0x003f}
+    - {name: playfield, space: ":maincpu", start: 0x0400, end: 0x07bf}
+inject:
+  at_frame: 300
+  primitive: ram_cell_stuck
+  params: {space: ":maincpu", addr: 0x0590, bit: 3, level: 1}
+expect:
+  - ram_value: {ram: playfield, at: 400, offset: 0x190, mask: 0x08, value: 0x08}
+  - frame_hash_differs: {from: 301, to: 599, min_fraction: 0.9}
+  - not_crashed: {}
+  - snapshot: {at: 400}
+repair:
+  at_frame: 600
+  action: clear_and_hard_reset
+expect_after_repair:
+  - frame_hash_matches_baseline: {from: 601, to: 900}

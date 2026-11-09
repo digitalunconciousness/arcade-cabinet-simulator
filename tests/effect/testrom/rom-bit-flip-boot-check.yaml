@@ -1,0 +1,30 @@
+id: testrom/rom-bit-flip-boot-check
+title: "One program ROM bit flipped (FH1, 0x3000 bit 2)"
+testrom: true
+romset: centiped
+display: {rotate: 90}
+tier: A
+symptom: "The boot check fails and the program shows its bad-ROM screen."
+sources: [testrom-centtest, mame-centiped-map]
+run:
+  end_frame: 900
+  checkpoints: [2, 300, 400, 600, 900]
+  ram:
+    - {name: vars, space: ":maincpu", start: 0x0000, end: 0x003f}
+    - {name: playfield, space: ":maincpu", start: 0x0400, end: 0x07bf}
+  events:
+    - {frame: 2, type: reset, kind: hard}
+inject:
+  at_frame: 2
+  primitive: rom_bit_flip
+  params: {region: ":maincpu", offset: 0x3000, bit: 2}
+expect:
+  - ram_value: {ram: vars, at: 300, offset: 0x18, value: 0xba}
+  - all_bytes: {ram: playfield, at: 300, value: 0x2a}
+  - not_crashed: {}
+  - snapshot: {at: 300}
+repair:
+  at_frame: 600
+  action: clear_and_hard_reset
+expect_after_repair:
+  - frame_hash_matches_baseline: {from: 601, to: 900}

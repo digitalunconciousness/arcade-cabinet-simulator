@@ -1,0 +1,28 @@
+id: testrom/sync-32v-high-video
+title: "Vertical counter line 32V stuck high (picture only)"
+testrom: true
+romset: centiped
+display: {rotate: 90}
+tier: B
+symptom: "The exported picture repeats in 32-line bands; the program itself is untouched."
+sources: [testrom-centtest, mame-centiped-map]
+run:
+  end_frame: 900
+  checkpoints: [300, 400, 600, 900]
+  ram:
+    - {name: vars, space: ":maincpu", start: 0x0000, end: 0x003f}
+    - {name: playfield, space: ":maincpu", start: 0x0400, end: 0x07bf}
+inject:
+  at_frame: 300
+  primitive: sync_timing
+  params: {line_bit: 5, level: 1}
+expect:
+  - frame_rows_aliased: {at: 400, bit: 5, level: 1}
+  - frame_hash_differs: {from: 301, to: 599, min_fraction: 0.9}
+  - not_crashed: {}
+  - snapshot: {at: 400}
+repair:
+  at_frame: 600
+  action: clear
+expect_after_repair:
+  - frame_hash_matches_baseline: {from: 601, to: 900}

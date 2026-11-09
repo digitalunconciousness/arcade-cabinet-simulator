@@ -1,0 +1,141 @@
+{
+ "id": "testrom/irq-missing",
+ "title": "Main CPU interrupt never arrives",
+ "status": "pass",
+ "romset": "centiped",
+ "rom": "original test ROM (testrom/)",
+ "tier": "A",
+ "symptom": "The program stops kicking the watchdog (it does that in the IRQ handler), so the board resets over and over.",
+ "sources": [
+  "testrom-centtest",
+  "mame-centiped-map"
+ ],
+ "inject": {
+  "at_frame": 300,
+  "primitive": "irq_missing",
+  "params": {
+   "cpu": ":maincpu",
+   "line": 0
+  }
+ },
+ "repair": {
+  "at_frame": 600,
+  "action": "clear_and_hard_reset"
+ },
+ "checks": [
+  {
+   "phase": "fault",
+   "check": "resets",
+   "args": {
+    "after": 300,
+    "min": 20
+   },
+   "passed": true,
+   "details": {
+    "resets_faulted": 27,
+    "resets_baseline": 0,
+    "min": 20,
+    "max": 1000000000
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "snapshot",
+   "args": {
+    "at": 400
+   },
+   "passed": true,
+   "details": {}
+  },
+  {
+   "phase": "repair",
+   "check": "frame_hash_matches_baseline",
+   "args": {
+    "from": 601,
+    "to": 900
+   },
+   "passed": true,
+   "details": {
+    "frames": 300,
+    "differing": 0,
+    "first_differing": null
+   }
+  }
+ ],
+ "hashes_at_checkpoints": {
+  "300": {
+   "baseline": "b51d62890eae2cfd",
+   "faulted": "b51d62890eae2cfd"
+  },
+  "400": {
+   "baseline": "d7ee1b8fe53f7a61",
+   "faulted": "f15395398dda31ef"
+  },
+  "600": {
+   "baseline": "9c212009b0ff467e",
+   "faulted": "86b4b286674fc931"
+  },
+  "900": {
+   "baseline": "bd81c07fac91d9b4",
+   "faulted": "bd81c07fac91d9b4"
+  }
+ },
+ "frames": {
+  "baseline": 901,
+  "faulted": 901
+ },
+ "seconds": {
+  "baseline": 2.15,
+  "faulted": 2.11
+ },
+ "plugin_events_faulted": [
+  "machine_start -1",
+  "reset 0",
+  "apply 300 irq_missing id=1 tier=A",
+  "reset 307",
+  "reset 318",
+  "reset 329",
+  "reset 340",
+  "reset 351",
+  "reset 362",
+  "reset 373",
+  "reset 384",
+  "reset 395",
+  "reset 406",
+  "reset 417",
+  "reset 428",
+  "reset 439",
+  "reset 450",
+  "reset 461",
+  "reset 472",
+  "reset 483",
+  "reset 494",
+  "reset 505",
+  "reset 516",
+  "reset 527",
+  "reset 538",
+  "reset 549",
+  "reset 560",
+  "reset 571",
+  "reset 582",
+  "reset 593",
+  "clear_all 600 1",
+  "reset_requested 600 hard",
+  "machine_start 600"
+ ],
+ "snapshots": [
+  {
+   "frame": 400,
+   "baseline": "baseline_f400.png",
+   "faulted": "faulted_f400.png",
+   "zoom": "zoom_f400.png",
+   "changed_box": [
+    0,
+    0,
+    192,
+    256
+   ]
+  }
+ ],
+ "test_file": "tests/effect/testrom/irq-missing.yaml"
+}

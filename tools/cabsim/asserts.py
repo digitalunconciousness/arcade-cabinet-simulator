@@ -157,6 +157,26 @@ def ram_trend(args, base, fault):
     return ok, {"baseline_delta": db, "faulted_delta": df}
 
 
+def counter_rate(args, base, fault):
+    """A 16-bit little-endian counter in RAM advances at most max_ratio as fast
+    as in the baseline between two checkpoints (it wraps at 65536, so keep the
+    checkpoints close enough)."""
+    off = int(args["offset"])
+    a, b = int(args["from_at"]), int(args["to_at"])
+
+    def advance(run):
+        x = run.ram[(args["ram"], a)]
+        y = run.ram[(args["ram"], b)]
+        return ((y[off] | y[off + 1] << 8) - (x[off] | x[off + 1] << 8)) & 0xFFFF
+
+    db, df = advance(base), advance(fault)
+    ratio = df / db if db else float("inf")
+    most = float(args.get("max_ratio", 0.75))
+    least = float(args.get("min_ratio", 0.0))
+    return db > 0 and least <= ratio <= most, {"baseline": db, "faulted": df, "ratio": round(ratio, 3),
+                                                 "min_ratio": least, "max_ratio": most}
+
+
 def frame_rows_aliased(args, base, fault):
     """In the faulted exported frame at a checkpoint, every row equals the row
     with one bit of its number forced (a stuck vertical-counter line); the
@@ -201,6 +221,6 @@ ASSERTIONS: dict[str, Callable] = {
     f.__name__: f for f in (
         frame_hash_differs, frame_hash_matches_baseline, screen_frozen, repeated_frames,
         region_bits, region_diff, ram_value, all_bytes, aliased_pairs, count_split, count_values, ram_trend,
-        frame_rows_aliased, not_crashed, resets, no_plugin_errors,
+        frame_rows_aliased, counter_rate, not_crashed, resets, no_plugin_errors,
     )
 }

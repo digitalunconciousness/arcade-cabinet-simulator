@@ -1,0 +1,29 @@
+id: testrom/rom-j1-dead-00
+title: "Program ROM J1 dead (reset vector), open bus 0x00"
+testrom: true
+romset: centiped
+display: {rotate: 90}
+tier: A
+symptom: "The board never boots; the screen stays frozen."
+sources: [testrom-centtest, mame-centiped-map]
+run:
+  end_frame: 900
+  checkpoints: [2, 300, 400, 600, 900]
+  ram:
+    - {name: vars, space: ":maincpu", start: 0x0000, end: 0x003f}
+    - {name: playfield, space: ":maincpu", start: 0x0400, end: 0x07bf}
+  events:
+    - {frame: 2, type: reset, kind: hard}
+inject:
+  at_frame: 2
+  primitive: rom_dead
+  params: {region: ":maincpu", start: 0x3800, end: 0x3fff, open_bus: 0x00}
+expect:
+  - screen_frozen: {from: 30, to: 599, max_distinct: 3}
+  - not_crashed: {}
+  - snapshot: {at: 300}
+repair:
+  at_frame: 600
+  action: clear_and_hard_reset
+expect_after_repair:
+  - frame_hash_matches_baseline: {from: 601, to: 900}

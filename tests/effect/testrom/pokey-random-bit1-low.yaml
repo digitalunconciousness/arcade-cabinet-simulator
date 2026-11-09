@@ -1,0 +1,31 @@
+id: testrom/pokey-random-bit1-low
+title: "POKEY random number bit 1 stuck low from power-on"
+testrom: true
+romset: centiped
+display: {rotate: 90}
+tier: A
+symptom: "The random-number histogram never counts values with bit 1 set."
+sources: [testrom-centtest, mame-centiped-map]
+run:
+  end_frame: 900
+  checkpoints: [2, 300, 400, 600, 900]
+  ram:
+    - {name: vars, space: ":maincpu", start: 0x0000, end: 0x003f}
+    - {name: playfield, space: ":maincpu", start: 0x0400, end: 0x07bf}
+    - {name: rng_bit1_bins, space: ":maincpu", start: 0x0022, end: 0x0023}
+  events:
+    - {frame: 2, type: reset, kind: hard}
+inject:
+  at_frame: 2
+  primitive: reg_read_override
+  params: {space: ":maincpu", addr: 0x100a, rule: {and_mask: 0xfd}}
+expect:
+  - all_bytes: {ram: rng_bit1_bins, at: 300, value: 0}
+  - region_diff: {ram: rng_bit1_bins, at: 300, min_bytes: 1}
+  - not_crashed: {}
+  - snapshot: {at: 300}
+repair:
+  at_frame: 600
+  action: clear_and_hard_reset
+expect_after_repair:
+  - frame_hash_matches_baseline: {from: 601, to: 900}

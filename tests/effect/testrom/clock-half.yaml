@@ -1,0 +1,27 @@
+id: testrom/clock-half
+title: "Main CPU clock at half speed"
+testrom: true
+romset: centiped
+display: {rotate: 90}
+tier: A
+symptom: "The free-running main loop makes about half as many passes per frame."
+sources: [testrom-centtest, mame-centiped-map]
+run:
+  end_frame: 900
+  checkpoints: [300, 400, 500, 600, 900]
+  ram:
+    - {name: vars, space: ":maincpu", start: 0x0000, end: 0x003f}
+    - {name: playfield, space: ":maincpu", start: 0x0400, end: 0x07bf}
+inject:
+  at_frame: 300
+  primitive: clock_scale
+  params: {device: ":maincpu", factor: 0.5}
+expect:
+  - counter_rate: {ram: vars, offset: 0x10, from_at: 400, to_at: 500, min_ratio: 0.4, max_ratio: 0.6}
+  - not_crashed: {}
+  - snapshot: {at: 400}
+repair:
+  at_frame: 600
+  action: clear_and_hard_reset
+expect_after_repair:
+  - frame_hash_matches_baseline: {from: 601, to: 900}

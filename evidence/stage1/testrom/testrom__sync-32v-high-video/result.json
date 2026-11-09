@@ -1,0 +1,137 @@
+{
+ "id": "testrom/sync-32v-high-video",
+ "title": "Vertical counter line 32V stuck high (picture only)",
+ "status": "pass",
+ "romset": "centiped",
+ "rom": "original test ROM (testrom/)",
+ "tier": "B",
+ "symptom": "The exported picture repeats in 32-line bands; the program itself is untouched.",
+ "sources": [
+  "testrom-centtest",
+  "mame-centiped-map"
+ ],
+ "inject": {
+  "at_frame": 300,
+  "primitive": "sync_timing",
+  "params": {
+   "line_bit": 5,
+   "level": 1
+  }
+ },
+ "repair": {
+  "at_frame": 600,
+  "action": "clear"
+ },
+ "checks": [
+  {
+   "phase": "fault",
+   "check": "frame_rows_aliased",
+   "args": {
+    "at": 400,
+    "bit": 5,
+    "level": 1
+   },
+   "passed": true,
+   "details": {
+    "rows_not_aliased_faulted": 0,
+    "rows_not_aliased_baseline": 16
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "frame_hash_differs",
+   "args": {
+    "from": 301,
+    "to": 599,
+    "min_fraction": 0.9
+   },
+   "passed": true,
+   "details": {
+    "frames": 299,
+    "differing": 299,
+    "fraction": 1.0,
+    "min_fraction": 0.9
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "not_crashed",
+   "args": {},
+   "passed": true,
+   "details": {
+    "finished": true,
+    "plugin_errors": []
+   }
+  },
+  {
+   "phase": "fault",
+   "check": "snapshot",
+   "args": {
+    "at": 400
+   },
+   "passed": true,
+   "details": {}
+  },
+  {
+   "phase": "repair",
+   "check": "frame_hash_matches_baseline",
+   "args": {
+    "from": 601,
+    "to": 900
+   },
+   "passed": true,
+   "details": {
+    "frames": 300,
+    "differing": 0,
+    "first_differing": null
+   }
+  }
+ ],
+ "hashes_at_checkpoints": {
+  "300": {
+   "baseline": "b51d62890eae2cfd",
+   "faulted": "b51d62890eae2cfd"
+  },
+  "400": {
+   "baseline": "d7ee1b8fe53f7a61",
+   "faulted": "96225f110c1e5f99"
+  },
+  "600": {
+   "baseline": "9c212009b0ff467e",
+   "faulted": "96225f110c1e5f99"
+  },
+  "900": {
+   "baseline": "518e046d117b29c6",
+   "faulted": "518e046d117b29c6"
+  }
+ },
+ "frames": {
+  "baseline": 901,
+  "faulted": 901
+ },
+ "seconds": {
+  "baseline": 2.0,
+  "faulted": 2.19
+ },
+ "plugin_events_faulted": [
+  "machine_start -1",
+  "reset 0",
+  "apply 300 sync_timing id=1 tier=B",
+  "clear_all 600 1"
+ ],
+ "snapshots": [
+  {
+   "frame": 400,
+   "baseline": "baseline_f400.png",
+   "faulted": "faulted_f400.png",
+   "zoom": "zoom_f400.png",
+   "changed_box": [
+    0,
+    0,
+    224,
+    256
+   ]
+  }
+ ],
+ "test_file": "tests/effect/testrom/sync-32v-high-video.yaml"
+}

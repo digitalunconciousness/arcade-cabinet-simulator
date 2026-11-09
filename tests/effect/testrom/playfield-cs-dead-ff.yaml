@@ -1,0 +1,28 @@
+id: testrom/playfield-cs-dead-ff
+title: "Playfield RAM chip select dead, open bus 0xFF"
+testrom: true
+romset: centiped
+display: {rotate: 90}
+tier: A
+symptom: "The whole playfield reads 0xFF."
+sources: [testrom-centtest, mame-centiped-map]
+run:
+  end_frame: 900
+  checkpoints: [300, 400, 600, 900]
+  ram:
+    - {name: vars, space: ":maincpu", start: 0x0000, end: 0x003f}
+    - {name: playfield, space: ":maincpu", start: 0x0400, end: 0x07bf}
+inject:
+  at_frame: 300
+  primitive: cs_dead
+  params: {space: ":maincpu", start: 0x0400, end: 0x07bf, kind: ram, open_bus: 0xff}
+expect:
+  - all_bytes: {ram: playfield, at: 400, value: 0xff}
+  - frame_hash_differs: {from: 301, to: 599, min_fraction: 0.9}
+  - not_crashed: {}
+  - snapshot: {at: 400}
+repair:
+  at_frame: 600
+  action: clear_and_hard_reset
+expect_after_repair:
+  - frame_hash_matches_baseline: {from: 601, to: 900}

@@ -1,0 +1,26 @@
+id: testrom/irq-missing
+title: "Main CPU interrupt never arrives"
+testrom: true
+romset: centiped
+display: {rotate: 90}
+tier: A
+symptom: "The program stops kicking the watchdog (it does that in the IRQ handler), so the board resets over and over."
+sources: [testrom-centtest, mame-centiped-map]
+run:
+  end_frame: 900
+  checkpoints: [300, 400, 600, 900]
+  ram:
+    - {name: vars, space: ":maincpu", start: 0x0000, end: 0x003f}
+    - {name: playfield, space: ":maincpu", start: 0x0400, end: 0x07bf}
+inject:
+  at_frame: 300
+  primitive: irq_missing
+  params: {cpu: ":maincpu", line: 0}
+expect:
+  - resets: {after: 300, min: 20}
+  - snapshot: {at: 400}
+repair:
+  at_frame: 600
+  action: clear_and_hard_reset
+expect_after_repair:
+  - frame_hash_matches_baseline: {from: 601, to: 900}

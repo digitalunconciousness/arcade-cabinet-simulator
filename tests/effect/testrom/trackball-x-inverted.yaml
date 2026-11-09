@@ -1,0 +1,88 @@
+id: testrom/trackball-x-inverted
+title: "Trackball X inverted"
+testrom: true
+romset: centiped
+display: {rotate: 90}
+tier: A
+symptom: "Rolling the trackball one way moves the program's tracked position the other way."
+sources: [testrom-centtest, mame-centiped-map]
+run:
+  end_frame: 900
+  checkpoints: [300, 310, 390, 600, 900]
+  ram:
+    - {name: vars, space: ":maincpu", start: 0x0000, end: 0x003f}
+    - {name: playfield, space: ":maincpu", start: 0x0400, end: 0x07bf}
+  events:
+    - {frame: 320, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 321, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 322, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 323, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 324, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 325, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 326, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 327, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 328, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 329, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 330, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 331, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 332, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 333, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 334, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 335, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 336, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 337, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 338, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 339, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 340, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 341, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 342, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 343, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 344, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 345, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 346, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 347, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 348, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 349, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 350, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 351, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 352, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 353, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 354, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 355, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 356, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 357, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 358, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 359, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 360, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 361, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 362, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 363, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 364, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 365, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 366, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 367, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 368, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 369, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 370, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 371, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 372, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 373, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 374, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 375, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 376, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 377, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 378, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+    - {frame: 379, type: analog, port: ":TRACK0_X", field: "Trackball X", delta: 1}
+inject:
+  at_frame: 300
+  primitive: input_inverted
+  params: {port: ":TRACK0_X", field: "Trackball X"}
+expect:
+  - ram_trend: {ram: vars, offset: 0x16, from_at: 310, to_at: 390}
+  - not_crashed: {}
+  - snapshot: {at: 400}
+repair:
+  at_frame: 600
+  action: clear_and_hard_reset
+expect_after_repair:
+  - frame_hash_matches_baseline: {from: 601, to: 900}

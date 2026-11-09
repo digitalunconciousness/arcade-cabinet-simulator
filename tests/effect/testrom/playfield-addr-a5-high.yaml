@@ -1,0 +1,28 @@
+id: testrom/playfield-addr-a5-high
+title: "Playfield RAM address line A5 stuck high"
+testrom: true
+romset: centiped
+display: {rotate: 90}
+tier: A
+symptom: "Pairs of playfield rows hold the same bytes."
+sources: [testrom-centtest, mame-centiped-map]
+run:
+  end_frame: 900
+  checkpoints: [300, 400, 600, 900]
+  ram:
+    - {name: vars, space: ":maincpu", start: 0x0000, end: 0x003f}
+    - {name: playfield, space: ":maincpu", start: 0x0400, end: 0x07bf}
+inject:
+  at_frame: 300
+  primitive: addr_line_stuck
+  params: {space: ":maincpu", start: 0x0400, end: 0x07bf, line: 5, level: 1}
+expect:
+  - aliased_pairs: {ram: playfield, at: 400, start: 0x0400, line: 5}
+  - frame_hash_differs: {from: 301, to: 599, min_fraction: 0.9}
+  - not_crashed: {}
+  - snapshot: {at: 400}
+repair:
+  at_frame: 600
+  action: clear_and_hard_reset
+expect_after_repair:
+  - frame_hash_matches_baseline: {from: 601, to: 900}
