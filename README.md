@@ -1,47 +1,56 @@
 # Arcade Cabinet Fault Simulator
-Workspace for the project described in `arcade_cabinet_fault_simulator_plan.md`.
-Goal: simulate an entire Centipede cabinet (PCB + power supply + monitor +
-trackball + coin mech + harness + lights + audio) and let a user inject
-realistic faults at any subsystem. Phase 1 is complete — fault-injection
-plumbing in the MAME netlist solver works end-to-end on a trivial netlist.
+
+Runs a real arcade ROM in MAME (Centipede first) and lets you inject hardware faults and watch the game break.
+The goal is a native Windows and Linux app with a 3D cabinet, simulated troubleshooting and repair, and a
+"cabinet pack" format so other people can add games.
+
+- **Plan:** [`docs/PLAN_v3.md`](docs/PLAN_v3.md) is the source of truth. Where it conflicts with
+  `arcade_cabinet_fault_simulator_plan.md` (v0.2) or the wiki, PLAN_v3 wins.
+- **What works today:** [`docs/STATUS.md`](docs/STATUS.md) lists what is real, mocked and unproven.
+- **Which faults reach the game:** [`docs/FAULT_AUDIT.md`](docs/FAULT_AUDIT.md), with evidence in `evidence/stage0/`.
+- **Rules for contributors and agents:** [`CLAUDE.md`](CLAUDE.md). Parked ideas: [`docs/BACKLOG.md`](docs/BACKLOG.md).
+
+The desktop app on `main` is still the legacy Tauri + Xvfb + MJPEG + Flask shell (Linux only). It stays until the
+Godot spike in Stage 2 works ([ADR-0011](wiki/Decisions/ADR-0011-Native-Shell-Direction.md)).
+
 ## Layout (tracked)
-- `arcade_cabinet_fault_simulator_plan.md` — master plan / source of truth.
-- `patches/` — patch series we keep on top of upstream MAME. See
-  `patches/README.md` for how to apply.
+- `patches/` — patch series we keep on top of MAME, applied to the tag in `patches/MAME_VERSION`. See
+  `patches/README.md`.
+- `tools/audit/` — the Stage 0 truth audit (headless runs of every legacy fault).
 - `tools/preprocessor/` — Python auto-instrumentation tool that walks a
   netlist `.cpp` and inserts `FAULT_BUFFER` on every fault-eligible pin,
-  emitting a JSON manifest the UI consumes.
-- `tests/netlist/` — nltool harness netlists used to verify the
-  fault-injection devices.
+  emitting a JSON manifest.
+- `tests/netlist/` — nltool harness netlists for the fault-injection devices. They run standalone and are not
+  connected to the running game.
 - `docs/devices/` — documentation for the netlist devices we add to MAME.
-- `ui/` — placeholder for the future UI app (web/Electron, TBD).
+- `ui/`, `src-tauri/`, `tools/cabinet_bus/` — the legacy web UI, Tauri shell and Flask server.
 ## Layout (untracked, gitignored)
-- `vendor/mame/` — upstream MAME shallow clone. Apply
-  `patches/*.patch` after cloning to reproduce our additions.
+- `vendor/mame/` — MAME cloned at the pinned tag, with `patches/*.patch` applied.
 - `vendor/discrete/` — MAME-KiCad bridge (`mamedev/discrete`).
-- `roms/` — local ROM set; legal sourcing required, never committed.
+- `roms/` — your own ROM set. Never committed, pushed or bundled ([ADR-0012](wiki/Decisions/ADR-0012-ROM-Policy.md)).
 - `docs/{centipede,wells-gardner,cojag}/` — service manuals (PDFs).
 - `scans/centipede/` — Sean Riddle PCB scans + our freshly-refit board scans.
 - `scratch/` — throwaway experiments.
-- `.venv/` — Python venv (`pyparsing`, `lark`, `jsonschema` installed).
+- `.venv/` — Python venv.
 ## Bootstrapping a fresh checkout
 ```bash
 # 1. Clone the workspace.
 git clone <this repo> arcade-sim && cd arcade-sim
-# 2. Pull MAME and apply our patch series.
-git clone --depth=1 https://github.com/mamedev/mame.git vendor/mame
-( cd vendor/mame && git am ../../patches/*.patch )
+# 2. Pull the pinned MAME tag and apply our patch series.
+read -r MAME_TAG MAME_SHA < patches/MAME_VERSION
+git clone --depth=1 --branch "$MAME_TAG" https://github.com/mamedev/mame.git vendor/mame
+git -C vendor/mame am "$PWD"/patches/*.patch
 git clone --depth=1 https://github.com/mamedev/discrete.git vendor/discrete
 # 3. Python venv.
 python -m venv .venv
 source .venv/bin/activate
 pip install pyparsing lark jsonschema flask
-# 4. Install Xvfb (headless X11 for the video stream).
+# 4. Legacy desktop app only: install Xvfb (headless X11 for the video stream).
 #    Arch: sudo pacman -S xorg-server-xvfb
 #    Debian/Ubuntu: sudo apt install xvfb
 # 5. Build MAME (Centipede driver + nltool).
 cd vendor/mame
-make -j"$(nproc)" SOURCES=src/mame/atari/centiped.cpp TOOLS=1
+make -j"$(nproc)" SOURCES=src/mame/atari/centiped.cpp TOOLS=1 USE_QTDEBUG=0
 # 6. Smoke-test.
 ./mame -rompath ../../roms -bench 5 centiped3
 ./nltool --cmd=run --time_to_run=0.005 -l FB1.Y \
@@ -52,7 +61,10 @@ Use the new sound system explicitly:
 ```bash
 ./mame -rompath ../../roms -window -sound pipewire centiped3
 ```
-## Demo (Phase 7 vertical-slice)
+## Legacy demo (Phase 7 vertical slice)
+
+This section describes the legacy app as it was documented. The Stage 0 audit found that most of its faults don't
+change the running game in a build made from this repo; see [`docs/FAULT_AUDIT.md`](docs/FAULT_AUDIT.md).
 
 One command starts everything:
 
