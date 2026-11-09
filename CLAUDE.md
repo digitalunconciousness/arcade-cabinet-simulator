@@ -34,5 +34,7 @@ PLAN_v3 wins. What is real, mocked and unproven today is in `docs/STATUS.md`. Id
 - The cabinet_bus plugin that a fresh checkout reproduces is the one in `patches/0002`. Commands that the server or wiki
   mention but that patch lacks don't exist in any build made from this repo.
 - Legacy unit tests: `python -m pytest -q tools tests` (needs `flask`, `requests`, `jsonschema`, `pyparsing`, `lark`, `pytest`).
+- The Stage 0 truth audit is in `tools/audit/` (how to run it: `tools/audit/README.md`). It drives the legacy server from a
+  `legacy-tauri` worktree and records evidence in `evidence/stage0/`.
 - `digitalunconciousness/Gatbox` is a separate public project, read-only from here. Its roster, manuals, ROM dumps and rail
   logs never come into this repo. Ideas for using its data are in `docs/BACKLOG.md`.
