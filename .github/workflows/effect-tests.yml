@@ -1,0 +1,135 @@
+name: Effect tests
+
+# Builds MAME at the pinned tag with patches/*.patch (cached), then runs the
+# fault effect tests against the original test ROM on Linux and Windows.
+# No game ROM is used here, ever (ADR-0012); real-game tests run where a
+# user's ROM set exists and their evidence is committed.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: effect-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  effect-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read the pinned MAME version
+        id: pin
+        shell: bash
+        run: |
+          read -r tag sha < patches/MAME_VERSION
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "patches=$(cat patches/*.patch | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
+          if [ "$RUNNER_OS" = "Windows" ]; then echo "exe=mame.exe" >> "$GITHUB_OUTPUT"; else echo "exe=mame" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Restore the MAME build
+        id: cache
+        uses: actions/cache/restore@v4
+        with:
+          path: mame-bin
+          key: mame-${{ runner.os }}-${{ steps.pin.outputs.tag }}-${{ steps.pin.outputs.patches }}-v1
+
+      - name: Fetch MAME and apply the patch series
+        if: steps.cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          git clone --depth=1 --branch "${{ steps.pin.outputs.tag }}" https://github.com/mamedev/mame.git vendor/mame
+          test "$(git -C vendor/mame rev-parse HEAD)" = "${{ steps.pin.outputs.sha }}"
+          git -C vendor/mame -c user.name=ci -c user.email=ci@invalid am "$PWD"/patches/*.patch
+
+      - name: Build MAME (Linux)
+        if: runner.os == 'Linux' && steps.cache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsdl2-dev libsdl2-ttf-dev libfontconfig-dev libasound2-dev libxinerama-dev libxi-dev
+          make -C vendor/mame -j"$(nproc)" SOURCES=src/mame/atari/centiped.cpp USE_QTDEBUG=0 \
+            NO_USE_PORTAUDIO=1 NO_USE_PIPEWIRE=1 NO_USE_PULSEAUDIO=1 SYMBOLS=0
+          mkdir -p mame-bin
+          cp vendor/mame/mame mame-bin/
+          cp -r vendor/mame/plugins mame-bin/plugins
+
+      - name: Set up MSYS2 (Windows)
+        if: runner.os == 'Windows' && steps.cache.outputs.cache-hit != 'true'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          install: git make mingw-w64-x86_64-gcc mingw-w64-x86_64-python mingw-w64-x86_64-lld mingw-w64-x86_64-llvm mingw-w64-x86_64-libc++
+
+      - name: Build MAME (Windows)
+        if: runner.os == 'Windows' && steps.cache.outputs.cache-hit != 'true'
+        shell: msys2 {0}
+        env:
+          OVERRIDE_AR: llvm-ar
+          OVERRIDE_CC: gcc
+          OVERRIDE_CXX: g++
+          ARCHOPTS: -fuse-ld=lld
+        run: |
+          make -C vendor/mame -j4 SOURCES=src/mame/atari/centiped.cpp USE_QTDEBUG=0 SYMBOLS=0
+          mkdir -p mame-bin
+          cp vendor/mame/mame.exe mame-bin/
+          cp -r vendor/mame/plugins mame-bin/plugins
+
+      - name: Save the MAME build
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: mame-bin
+          key: ${{ steps.cache.outputs.cache-primary-key }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python packages
+        run: python -m pip install pytest pyyaml pillow
+
+      - name: Unit tests (runner, assembler, test ROM)
+        run: python -m pytest -q tools/cabsim testrom
+
+      - name: Legacy unit tests (Linux; the legacy app is Linux-only and retiring)
+        if: runner.os == 'Linux'
+        run: |
+          python -m pip install flask requests jsonschema pyparsing lark
+          python -m pytest -q tools tests
+
+      - name: MAME version
+        run: mame-bin/${{ steps.pin.outputs.exe }} -version
+
+      - name: Effect tests on the original test ROM
+        run: python -m tools.cabsim effect run tests/effect/testrom --mame mame-bin/${{ steps.pin.outputs.exe }} --rompath roms --out ci-evidence/testrom
+
+      - name: Real-game effect tests (skipped without a user ROM set)
+        run: python -m tools.cabsim effect run tests/effect/centipede --mame mame-bin/${{ steps.pin.outputs.exe }} --rompath roms --out ci-evidence/centipede
+
+      - name: Sim Control Protocol v1 smoke test
+        shell: bash
+        run: |
+          python testrom/build_testrom.py build/testrom
+          python -m tools.cabsim.scp_smoke --mame mame-bin/${{ steps.pin.outputs.exe }} --rompath build/testrom --romset centiped
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: effect-evidence-${{ runner.os }}
+          path: ci-evidence
+          if-no-files-found: warn

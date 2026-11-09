@@ -22,7 +22,7 @@ def main(argv: list[str] | None = None) -> int:
     sub = parser.add_subparsers(dest="group", required=True)
     eff = sub.add_parser("effect").add_subparsers(dest="action", required=True)
     run = eff.add_parser("run", help="run effect tests headless")
-    run.add_argument("tests", nargs="+", type=Path)
+    run.add_argument("tests", nargs="+", type=Path, help="test files or folders of them")
     run.add_argument("--mame", type=Path, required=True)
     run.add_argument("--rompath", type=Path, required=True)
     run.add_argument("--romset", default=None, help="run every test against this set instead of its own")
@@ -33,8 +33,11 @@ def main(argv: list[str] | None = None) -> int:
 
     cfg = MameConfig(args.mame.resolve(), args.rompath.resolve(), "", args.tmp, args.timeout)
     runner = Runner(cfg, args.out, args.romset)
+    paths: list[Path] = []
+    for p in args.tests:  # a folder means every *.yaml in it (no shell globbing needed on Windows)
+        paths.extend(sorted(p.glob("*.yaml")) if p.is_dir() else [p])
     failed = 0
-    for path in args.tests:
+    for path in paths:
         test = load(path)
         outcome = runner.run_test(test)
         print(f"{outcome.status.upper():5s} {outcome.test_id} {outcome.reason}".rstrip())
