@@ -1,0 +1,167 @@
+name: Effect tests
+
+# Forgejo Actions copy of .github/workflows/effect-tests.yml, for a self-hosted
+# Forgejo while GitHub Actions is unavailable (ADR-0017). Setup: docs/ci-forgejo.md.
+#
+# Builds MAME at the pinned tag with patches/*.patch (cached), then runs the
+# unit tests, the effect tests on the original test ROM, the real-game tests
+# (skipped unless a ROM folder is configured on the runner host; ROMs never
+# go in git), and the Sim Control Protocol smoke test.
+#
+# Repository variables (Settings > Actions > Variables), all optional:
+#   CABSIM_WINDOWS = true    run the Windows job (needs a runner labelled "windows")
+#   CABSIM_ROMPATH = <path>  ROM folder as the job sees it, for the real-game tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  linux:
+    runs-on: docker
+    container:
+      # Debian 12 with Node (needed by actions like checkout), git, gcc and make
+      image: node:22-bookworm
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read the pinned MAME version
+        id: pin
+        shell: bash
+        run: |
+          read -r tag sha < patches/MAME_VERSION
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "patches=$(cat patches/*.patch | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
+
+      - name: Install build and test packages
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends python3 python3-venv libsdl2-dev libsdl2-ttf-dev \
+            libfontconfig-dev libasound2-dev libxinerama-dev libxi-dev
+
+      - name: Restore the MAME build
+        id: cache
+        uses: actions/cache/restore@v4
+        with:
+          path: mame-bin
+          key: mame-linux-${{ steps.pin.outputs.tag }}-${{ steps.pin.outputs.patches }}-v1
+
+      - name: Build MAME
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: bash tools/ci/build-mame.sh
+
+      - name: Save the MAME build
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: mame-bin
+          key: ${{ steps.cache.outputs.cache-primary-key }}
+
+      - name: Python environment
+        run: |
+          python3 -m venv /opt/cabsim-venv
+          /opt/cabsim-venv/bin/pip install pytest pyyaml pillow flask requests jsonschema pyparsing lark
+
+      - name: Unit tests
+        run: /opt/cabsim-venv/bin/python -m pytest -q tools tests testrom
+
+      - name: MAME version
+        run: mame-bin/mame -version
+
+      - name: Effect tests on the original test ROM
+        run: /opt/cabsim-venv/bin/python -m tools.cabsim effect run tests/effect/testrom --mame mame-bin/mame --rompath roms --out ci-evidence/testrom
+
+      - name: Real-game effect tests (skipped without a ROM folder)
+        run: /opt/cabsim-venv/bin/python -m tools.cabsim effect run tests/effect/centipede --mame mame-bin/mame --rompath "${{ vars.CABSIM_ROMPATH || 'roms' }}" --out ci-evidence/centipede
+
+      - name: Sim Control Protocol v1 smoke test
+        run: |
+          /opt/cabsim-venv/bin/python testrom/build_testrom.py build/testrom
+          /opt/cabsim-venv/bin/python -m tools.cabsim.scp_smoke --mame mame-bin/mame --rompath build/testrom --romset centiped
+
+      - name: Upload evidence
+        if: always()
+        # GitHub's upload-artifact@v4 refuses to run off github.com; this is Forgejo's build of it
+        uses: https://code.forgejo.org/forgejo/upload-artifact@v4
+        with:
+          name: effect-evidence-linux
+          path: ci-evidence
+
+  windows:
+    # Runs only when the repository variable CABSIM_WINDOWS is "true" and a
+    # Windows machine is registered with the label "windows" (host mode, no
+    # Docker). That machine needs Git for Windows, Node.js, Python 3.12 and
+    # MSYS2 at C:\msys64 with the packages in docs/ci-forgejo.md.
+    if: ${{ vars.CABSIM_WINDOWS == 'true' }}
+    runs-on: windows
+    timeout-minutes: 300
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read the pinned MAME version
+        id: pin
+        # PowerShell, not bash: on Windows "bash" can resolve to WSL's bash.exe
+        run: |
+          $tag, $sha = (Get-Content patches/MAME_VERSION -First 1).Trim() -split '\s+'
+          $bytes = [System.Collections.Generic.List[byte]]::new()
+          Get-ChildItem patches/*.patch | Sort-Object Name | ForEach-Object { $bytes.AddRange([IO.File]::ReadAllBytes($_.FullName)) }
+          $hash = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($bytes.ToArray())).Substring(0, 16).ToLower()
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "tag=$tag", "sha=$sha", "patches=$hash"
+
+      - name: Restore the MAME build
+        id: cache
+        uses: actions/cache/restore@v4
+        with:
+          path: mame-bin
+          key: mame-windows-${{ steps.pin.outputs.tag }}-${{ steps.pin.outputs.patches }}-v1
+
+      - name: Build MAME (MSYS2 MINGW64, as MAME's own CI does)
+        if: steps.cache.outputs.cache-hit != 'true'
+        env:
+          MSYSTEM: MINGW64
+          CHERE_INVOKING: "1"
+        run: |
+          C:\msys64\usr\bin\bash.exe -lc 'tools/ci/build-mame.sh'
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Save the MAME build
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: mame-bin
+          key: ${{ steps.cache.outputs.cache-primary-key }}
+
+      - name: Python environment
+        run: |
+          python -m venv .venv-ci
+          .venv-ci\Scripts\python -m pip install pytest pyyaml pillow
+
+      - name: Unit tests
+        run: .venv-ci\Scripts\python -m pytest -q tools/cabsim testrom
+
+      - name: MAME version
+        run: mame-bin\mame.exe -version
+
+      - name: Effect tests on the original test ROM
+        run: .venv-ci\Scripts\python -m tools.cabsim effect run tests/effect/testrom --mame mame-bin/mame.exe --rompath roms --out ci-evidence/testrom
+
+      - name: Real-game effect tests (skipped without a ROM folder)
+        run: .venv-ci\Scripts\python -m tools.cabsim effect run tests/effect/centipede --mame mame-bin/mame.exe --rompath "${{ vars.CABSIM_ROMPATH || 'roms' }}" --out ci-evidence/centipede
+
+      - name: Sim Control Protocol v1 smoke test
+        run: |
+          .venv-ci\Scripts\python testrom/build_testrom.py build/testrom
+          .venv-ci\Scripts\python -m tools.cabsim.scp_smoke --mame mame-bin/mame.exe --rompath build/testrom --romset centiped
+
+      - name: Upload evidence
+        if: always()
+        uses: https://code.forgejo.org/forgejo/upload-artifact@v4
+        with:
+          name: effect-evidence-windows
+          path: ci-evidence

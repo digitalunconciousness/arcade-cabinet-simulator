@@ -37,7 +37,11 @@ PLAN_v3 wins. What is real, mocked and unproven today is in `docs/STATUS.md`. Id
   `python -m tools.cabsim effect run <files or folders> --mame vendor/mame/mame --rompath roms`
   (format and assertions: `tools/cabsim/README.md`; repair semantics: ADR-0015). Real-game evidence goes in
   `evidence/stage1/`. Every fact a test relies on is cited in that folder's `SOURCES.md`.
-- **CI**: `.github/workflows/effect-tests.yml` (ubuntu-latest, windows-latest).
+- **CI**: GitHub Actions is locked for this account, so CI runs on the owner's Forgejo (ADR-0017): the workflow is
+  `.forgejo/workflows/effect-tests.yml`, with commits copied from GitHub by `tools/forgejo/sync-github-to-forgejo.sh`
+  (setup: `docs/ci-forgejo.md`). `.github/workflows/effect-tests.yml` stays for when GitHub comes back. Both build MAME
+  with `tools/ci/build-mame.sh`. A Claude session pushes to GitHub only; it sees Forgejo results when the owner shares
+  them.
 - The legacy Tauri + Xvfb + MJPEG + Flask app stays on `main` until the Stage 2 Godot spike works. The snapshot from before
   v0.3 is the `legacy-tauri` tag.
 - The cabinet_bus plugin that a fresh checkout reproduces is the one in `patches/0002`. Commands that the server or wiki

@@ -110,6 +110,7 @@ Full schedule and tier-expansion plan: [Roadmap](Roadmap.md).
 - [ADR-0014 — A small C++ patch for the faults Lua can't reach](Decisions/ADR-0014-Lua-Fault-Hooks-Patch.md)
 - [ADR-0015 — Effect tests compare against a baseline, and repair means a power cycle](Decisions/ADR-0015-Effect-Tests.md)
 - [ADR-0016 — An original test ROM for CI](Decisions/ADR-0016-Test-ROM.md)
+- [ADR-0017 — Run CI on the owner's Forgejo while GitHub Actions is locked](Decisions/ADR-0017-CI-On-Forgejo.md)
 
 ## How to contribute to the wiki
 

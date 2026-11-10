@@ -53,12 +53,14 @@ Before/after/zoom images sit next to each `result.json`. Per-test notes and sour
 
 ## Unproven
 
-- **CI hasn't run.** `.github/workflows/effect-tests.yml` is in place. Its first run (42698814704) got no runner: both
-  jobs ended in about 3 seconds with no logs, as has every nightly since at least 2026-08-10. The repo is public, so
-  this looks like an account-level block on Actions (GitHub's billing settings). Every CI step was replayed on Linux in a
-  clean checkout and venv: 22 unit tests, 12/12 test-ROM effect tests, 16 real-game tests skipped (no ROMs), protocol
-  smoke 10/10.
-- **Windows**: nothing has run on Windows. The MSYS2 build follows MAME's own CI recipe but is untested.
+- **CI hasn't run yet.** GitHub Actions gives this repository no runner (an account lock; every job since at least
+  2026-08-10 ended in about 3 seconds with no logs). CI moves to the owner's Forgejo (ADR-0017,
+  `docs/ci-forgejo.md`): `.forgejo/workflows/effect-tests.yml` and the GitHub-to-Forgejo sync script are ready. The
+  shared build script cloned the pinned tag and applied all four patches in a fresh checkout (the full compile from
+  scratch was still running at this commit), and the sync script was tested against local stand-in repositories. No Forgejo run has happened yet. On Linux, every CI step was replayed in a clean checkout and
+  venv: 22 unit tests, 12/12 test-ROM effect tests, 16 real-game tests skipped (no ROMs), protocol smoke 10/10.
+- **Windows**: nothing has run on Windows. The MSYS2 build follows MAME's own CI recipe but is untested, and on Forgejo
+  it needs a Windows machine registered as a runner.
 - **Primitives without an effect test yet**: `irq_stuck`, `input_dead`, `input_stuck`, `input_noisy`. They exist in
   `plugin/cabsim/primitives.lua` and are not counted as built.
 - **Known gaps** in built primitives:

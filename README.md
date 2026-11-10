@@ -20,6 +20,8 @@ Godot spike in Stage 2 works ([ADR-0011](wiki/Decisions/ADR-0011-Native-Shell-Di
 - `tools/cabsim/` — the effect-test runner (`python -m tools.cabsim effect run ...`), benchmark and protocol smoke test.
 - `tests/effect/` — one effect test per fault, for the real game (`centipede/`) and the original test ROM (`testrom/`).
 - `testrom/` — the original 6502 test program and assembler that CI runs the fault primitives on.
+- `tools/ci/build-mame.sh` — builds the pinned, patched MAME into `mame-bin/` (CI and local).
+- `.forgejo/workflows/`, `tools/forgejo/` — CI on a self-hosted Forgejo; setup in [`docs/ci-forgejo.md`](docs/ci-forgejo.md).
 - `evidence/` — committed test output and images (`stage0/` legacy audit, `stage1/` fault engine).
 - `tools/audit/` — the Stage 0 truth audit (headless runs of every legacy fault).
 - `tools/preprocessor/` — Python auto-instrumentation tool that walks a

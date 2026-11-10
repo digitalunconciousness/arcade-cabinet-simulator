@@ -41,3 +41,8 @@ build/pyinstaller/work/
 dist/arcade-sim-server
 # Placeholder icons are tracked; real ones generated before release.
 # src-tauri/icons/ is intentionally NOT in .gitignore.
+
+# CI and local build output
+mame-bin/
+ci-evidence/
+build/testrom/

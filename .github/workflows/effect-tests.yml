@@ -48,24 +48,12 @@ jobs:
           path: mame-bin
           key: mame-${{ runner.os }}-${{ steps.pin.outputs.tag }}-${{ steps.pin.outputs.patches }}-v1
 
-      - name: Fetch MAME and apply the patch series
-        if: steps.cache.outputs.cache-hit != 'true'
-        shell: bash
-        run: |
-          git clone --depth=1 --branch "${{ steps.pin.outputs.tag }}" https://github.com/mamedev/mame.git vendor/mame
-          test "$(git -C vendor/mame rev-parse HEAD)" = "${{ steps.pin.outputs.sha }}"
-          git -C vendor/mame -c user.name=ci -c user.email=ci@invalid am "$PWD"/patches/*.patch
-
       - name: Build MAME (Linux)
         if: runner.os == 'Linux' && steps.cache.outputs.cache-hit != 'true'
         run: |
           sudo apt-get update
           sudo apt-get install -y libsdl2-dev libsdl2-ttf-dev libfontconfig-dev libasound2-dev libxinerama-dev libxi-dev
-          make -C vendor/mame -j"$(nproc)" SOURCES=src/mame/atari/centiped.cpp USE_QTDEBUG=0 \
-            NO_USE_PORTAUDIO=1 NO_USE_PIPEWIRE=1 NO_USE_PULSEAUDIO=1 SYMBOLS=0
-          mkdir -p mame-bin
-          cp vendor/mame/mame mame-bin/
-          cp -r vendor/mame/plugins mame-bin/plugins
+          bash tools/ci/build-mame.sh
 
       - name: Set up MSYS2 (Windows)
         if: runner.os == 'Windows' && steps.cache.outputs.cache-hit != 'true'
@@ -77,16 +65,7 @@ jobs:
       - name: Build MAME (Windows)
         if: runner.os == 'Windows' && steps.cache.outputs.cache-hit != 'true'
         shell: msys2 {0}
-        env:
-          OVERRIDE_AR: llvm-ar
-          OVERRIDE_CC: gcc
-          OVERRIDE_CXX: g++
-          ARCHOPTS: -fuse-ld=lld
-        run: |
-          make -C vendor/mame -j4 SOURCES=src/mame/atari/centiped.cpp USE_QTDEBUG=0 SYMBOLS=0
-          mkdir -p mame-bin
-          cp vendor/mame/mame.exe mame-bin/
-          cp -r vendor/mame/plugins mame-bin/plugins
+        run: tools/ci/build-mame.sh
 
       - name: Save the MAME build
         if: steps.cache.outputs.cache-hit != 'true'
