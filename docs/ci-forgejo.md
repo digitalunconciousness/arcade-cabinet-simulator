@@ -52,8 +52,8 @@ Node, git and gcc).
    forgejo-runner daemon --config config.yml        # or run it as a service
    ```
 
-The first run builds MAME from source: give the runner about 6 GB of free disk and as many cores as you can spare. The
-binary is cached afterwards, keyed on the MAME tag and the patches, so later runs skip the build.
+The first run builds MAME from source. Measured here on 4 cores: about 9 minutes and a 1.8 GB build tree, so leave a few
+GB free. The binary is cached afterwards, keyed on the MAME tag and the patches, so later runs skip the build.
 
 ## 3. Sync from GitHub
 
